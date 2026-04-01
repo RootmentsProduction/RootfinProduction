@@ -1,0 +1,665 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+% Page setup
+\geometry{margin=1in}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\fancyfoot[C]{RootFin - Complete Project Documentation}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={RootFin - Complete Project Documentation},
+    pdfauthor={Jishnu M},
+    pdfsubject={Financial Management Platform},
+}
+
+% Code listing setup
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10},
+    language=JavaScript,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=5pt,
+    showstringspaces=false,
+    tabsize=2
+}
+
+% Title formatting
+\titleformat{\section}{\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{1em}{}
+
+% Title page
+\title{RootFin - Complete Project Documentation}
+\author{Jishnu M \\ \texttt{mjishnu990@gmail.com}}
+\date{January 2025 \\ Version 1.0.0}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\textbf{RootFin} is a comprehensive financial management platform built using the MERN stack (MongoDB, Express.js, React, Node.js). The platform manages store/venue transactions, bookings, and financial reporting with robust tools for tracking income, expenses, security deposits, cash/bank ledgers, and generating detailed closing reports. This document provides complete technical documentation including architecture, installation, API reference, database schema, and development guidelines.
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Executive Summary}
+
+RootFin is a modern financial management platform designed for managing store/venue transactions, bookings, and financial reporting. The platform provides comprehensive tools for tracking income, expenses, security deposits, cash/bank ledgers, and closing reports.
+
+\subsection{Key Statistics}
+
+\begin{itemize}
+    \item \textbf{Tech Stack:} MERN (MongoDB, Express.js, React 19, Node.js)
+    \item \textbf{Code Quality:} ⭐⭐⭐⭐⭐ (Zero linter errors, zero dead code)
+    \item \textbf{Frontend:} React 19 with Vite, Tailwind CSS 4, DaisyUI
+    \item \textbf{Backend:} Express.js 4.21, MongoDB with Mongoose 8.12
+    \item \textbf{Authentication:} JWT with bcrypt password hashing
+    \item \textbf{Status:} ✅ Production Ready
+\end{itemize}
+
+\section{Project Overview}
+
+\subsection{Purpose}
+
+RootFin serves as a centralized financial management system for businesses managing multiple stores or venues. It enables:
+
+\begin{itemize}
+    \item Transaction management (Create, Read, Update, Delete)
+    \item Financial reporting (Day Book, Financial Summary, Revenue Reports)
+    \item Booking management (Track bookings, rentals, and associated payments)
+    \item Security deposit tracking (Manage security deposits, returns, and pending amounts)
+    \item Multi-store support (Handle multiple locations with role-based access)
+    \item Daily closing (Automated closing reports with cash/bank reconciliation)
+\end{itemize}
+
+\subsection{Target Users}
+
+\begin{enumerate}
+    \item \textbf{Store Managers:} Daily transaction entry and reporting
+    \item \textbf{Administrators:} Multi-store management, user creation, consolidated reporting
+    \item \textbf{Business Owners:} Financial oversight, analytics, and reporting
+\end{enumerate}
+
+\subsection{Key Features}
+
+\begin{itemize}
+    \item Secure authentication and authorization with role-based access control
+    \item Transaction CRUD operations with multiple payment methods
+    \item File attachment support and CSV export functionality
+    \item Multiple reporting views (Day Book, Financial Summary, Revenue, etc.)
+    \item Multi-store management with admin controls
+    \item Security deposit tracking and closing report automation
+\end{itemize}
+
+\section{Architecture \& Design}
+
+\subsection{Monorepo Structure}
+
+\begin{lstlisting}[language=bash, caption=Project Structure]
+TESTROOTFIN/
+├── frontend/          # React + Vite Application
+│   ├── src/
+│   │   ├── api/      # API configuration
+│   │   ├── components/ # Reusable components
+│   │   ├── pages/    # Page components (18 pages)
+│   │   ├── hooks/    # Custom React hooks
+│   │   ├── utils/    # Utility functions
+│   │   └── data/     # Static data
+│   └── package.json
+├── backend/           # Express.js + MongoDB API
+│   ├── controllers/  # Business logic (6 controllers)
+│   ├── model/        # MongoDB schemas (5 models)
+│   ├── route/        # API routes (3 route files)
+│   ├── db/           # Database configuration
+│   ├── utils/        # Utility functions
+│   └── server.js     # Entry point
+└── Documentation/    # Project documentation
+\end{lstlisting}
+
+\subsection{Design Principles}
+
+\begin{enumerate}
+    \item \textbf{Separation of Concerns:} Clear separation between frontend and backend
+    \item \textbf{Component-Based Architecture:} Modular React components
+    \item \textbf{RESTful API:} Standard REST endpoints
+    \item \textbf{Database Normalization:} Proper schema design
+    \item \textbf{Security First:} Authentication, authorization, and data validation
+    \item \textbf{Scalability:} Designed to handle multiple stores and users
+    \item \textbf{Maintainability:} Clean code principles throughout
+\end{enumerate}
+
+\section{Technology Stack}
+
+\subsection{Frontend Technologies}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Technology} & \textbf{Version} & \textbf{Purpose} \\
+\midrule
+React & 19.0.0 & UI library \\
+React Router DOM & 7.2.0 & Client-side routing \\
+Vite & 6.3.5 & Build tool \\
+Tailwind CSS & 4.0.9 & Styling framework \\
+DaisyUI & 4.12.24 & Component library \\
+React Icons & 5.5.0 & Icon library \\
+React CSV & 2.2.2 & CSV export \\
+React Toastify & 11.0.5 & Notifications \\
+\bottomrule
+\end{tabular}
+\caption{Frontend Technologies}
+\end{table}
+
+\subsection{Backend Technologies}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Technology} & \textbf{Version} & \textbf{Purpose} \\
+\midrule
+Node.js & Latest LTS & JavaScript runtime \\
+Express.js & 4.21.2 & Web framework \\
+MongoDB & Latest & NoSQL database \\
+Mongoose & 8.12.2 & MongoDB ODM \\
+Bcrypt & 5.1.1 & Password hashing \\
+Swagger & Latest & API documentation \\
+CORS & 2.8.5 & Cross-origin support \\
+\bottomrule
+\end{tabular}
+\caption{Backend Technologies}
+\end{table}
+
+\section{Installation \& Setup}
+
+\subsection{Prerequisites}
+
+Before installing RootFin, ensure you have:
+
+\begin{itemize}
+    \item Node.js v16 or higher
+    \item MongoDB (local installation or MongoDB Atlas)
+    \item npm or yarn package manager
+    \item Git for version control
+\end{itemize}
+
+\subsection{Installation Steps}
+
+\subsubsection{1. Clone Repository}
+
+\begin{lstlisting}[language=bash]
+git clone <repository-url>
+cd TESTROOTFIN
+\end{lstlisting}
+
+\subsubsection{2. Install Backend Dependencies}
+
+\begin{lstlisting}[language=bash]
+cd backend
+npm install
+\end{lstlisting}
+
+\subsubsection{3. Install Frontend Dependencies}
+
+\begin{lstlisting}[language=bash]
+cd ../frontend
+npm install
+\end{lstlisting}
+
+\subsubsection{4. Environment Configuration}
+
+\textbof{Backend} (\texttt{backend/.env.development}):
+
+\begin{lstlisting}
+NODE_ENV=development
+PORT=7000
+MONGODB_URI_DEV=mongodb://localhost:27017/rootfin_dev
+MONGODB_URI_PROD=mongodb+srv://user:pass@cluster.mongodb.net/rootfin_prod
+JWT_SECRET=your_very_secure_jwt_secret_key_min_32_chars
+\end{lstlisting}
+
+\textbf{Frontend} (\texttt{frontend/.env}):
+
+\begin{lstlisting}
+VITE_API_URL=http://localhost:7000/
+\end{lstlisting}
+
+\subsubsection{5. Start Application}
+
+\begin{lstlisting}[language=bash]
+# Terminal 1 - Backend
+cd backend && npm run dev
+
+# Terminal 2 - Frontend
+cd frontend && npm run dev
+\end{lstlisting}
+
+\subsubsection{6. Access Application}
+
+\begin{itemize}
+    \item Frontend: \url{http://localhost:5173}
+    \item Backend API: \url{http://localhost:7000}
+    \item API Docs: \url{http://localhost:7000/api-docs}
+\end{itemize}
+
+\section{Database Schema}
+
+\subsection{User Model}
+
+\textbf{Collection:} \texttt{users}
+
+\begin{lstlisting}[language=JavaScript, caption=User Schema]
+{
+  username: String,      // Required
+  email: String,         // Required, Unique
+  password: String,      // Required, Hashed (bcrypt)
+  locCode: String,       // Required, Location code
+  power: String,         // Required: "admin" or "normal"
+  createdAt: Date,       // Auto
+  updatedAt: Date        // Auto
+}
+\end{lstlisting}
+
+\subsection{Transaction Model}
+
+\textbf{Collection:} \texttt{transactions}
+
+\begin{lstlisting}[language=JavaScript, caption=Transaction Schema]
+{
+  type: String,                    // Required
+  invoiceNo: String,               // Required, Unique (Auto-generated)
+  category: String,                // Required
+  remark: String,                  // Optional
+  billValue: Number,               // Optional (default: 0)
+  amount: String,                  // Required
+  cash: String,                    // Required
+  bank: String,                    // Required
+  upi: String,                     // Required
+  paymentMethod: String,           // Required: "cash","bank","upi","split"
+  date: Date,                      // Required
+  locCode: String,                 // Required
+  quantity: String,                // Optional
+  customerName: String,            // Optional
+  securityAmount: Number,          // Optional (default: 0)
+  Balance: Number,                 // Optional (default: 0)
+  subCategory1: String,            // Optional
+  totalTransaction: Number,        // Optional (default: 0)
+  attachment: {                    // Optional: File attachment
+    filename: String,
+    contentType: String,
+    data: Buffer
+  },
+  timestamps: true
+}
+\end{lstlisting}
+
+\subsection{Transaction History Model}
+
+\textbf{Collection:} \texttt{transactionhistories}
+
+\begin{lstlisting}[language=JavaScript, caption=Transaction History Schema]
+{
+  invoiceNo: String,               // Required
+  originalTransactionId: ObjectId, // Required (Reference)
+  historyType: String,             // Required: "EDIT" or "DELETE"
+  changedBy: ObjectId,             // Required (User reference)
+  changedAt: Date,                 // Auto
+  reason: String,                  // Optional
+  oldData: Object,                 // Required
+  newData: Object,                 // Optional (null for DELETE)
+  timestamps: true
+}
+\end{lstlisting}
+
+\subsection{Closing Model}
+
+\textbf{Collection:} \texttt{closes}
+
+\begin{lstlisting}[language=JavaScript, caption=Closing Schema]
+{
+  cash: Number,                    // Required
+  Closecash: Number,               // Required
+  bank: Number,                    // Required
+  date: Date,                      // Required
+  locCode: String,                 // Required
+  email: String,                   // Optional
+  timestamps: true
+}
+\end{lstlisting}
+
+\subsection{Counter Model}
+
+\textbf{Collection:} \texttt{counters}
+
+\begin{lstlisting}[language=JavaScript, caption=Counter Schema]
+{
+  _id: String,                     // Location code
+  seq: Number                      // Sequence number (Auto-increment)
+}
+\end{lstlisting}
+
+\section{API Documentation}
+
+\subsection{Base URL}
+
+\begin{itemize}
+    \item Development: \url{http://localhost:7000}
+    \item Production: \url{https://rootfin-testenv-ebb5.onrender.com}
+    \item Swagger UI: \url{http://localhost:7000/api-docs}
+\end{itemize}
+
+\subsection{Authentication Endpoints}
+
+\subsubsection{POST /user/signin}
+
+Register a new user.
+
+\textbf{Request Body:}
+
+\begin{lstlisting}[language=JSON]
+{
+  "username": "Store Manager",
+  "email": "manager@store.com",
+  "password": "securepassword123",
+  "locCode": "144",
+  "power": "admin"
+}
+\end{lstlisting}
+
+\subsubsection{POST /user/login}
+
+User login and authentication.
+
+\textbf{Request Body:}
+
+\begin{lstlisting}[language=JSON]
+{
+  "email": "manager@store.com",
+  "EmpId": "securepassword123"
+}
+\end{lstlisting}
+
+\textbf{Response:}
+
+\begin{lstlisting}[language=JSON]
+{
+  "message": "Login successful",
+  "user": { ... },
+  "token": "jwt_token_here"
+}
+\end{lstlisting}
+
+\subsubsection{GET /user/getAllStores}
+
+Get all stores/users.
+
+\textbf{Headers:} \texttt{Authorization: Bearer <jwt\_token>}
+
+\subsection{Transaction Endpoints}
+
+\subsubsection{POST /user/createPayment}
+
+Create a new transaction.
+
+\textbf{Request Body:}
+
+\begin{lstlisting}[language=JSON]
+{
+  "type": "income",
+  "category": "Compensation",
+  "remark": "Monthly payment",
+  "locCode": "144",
+  "amount": "10000",
+  "cash": "5000",
+  "bank": "3000",
+  "upi": "2000",
+  "paymentMethod": "split",
+  "date": "2025-01-01"
+}
+\end{lstlisting}
+
+\subsubsection{GET /user/Getpayment}
+
+Get transactions with filters.
+
+\textbf{Query Parameters:}
+\begin{itemize}
+    \item \texttt{LocCode} (required): Location code
+    \item \texttt{DateFrom} (optional): Start date (YYYY-MM-DD)
+    \item \texttt{DateTo} (optional): End date (YYYY-MM-DD)
+\end{itemize}
+
+\subsubsection{POST /user/editPayment}
+
+Edit an existing transaction.
+
+\subsubsection{DELETE /user/deletePayment/:id}
+
+Delete a transaction.
+
+\subsection{Cash/Bank Endpoints}
+
+\subsubsection{POST /user/saveCashBank}
+
+Save cash/bank closing data.
+
+\subsubsection{GET /user/getsaveCashBank}
+
+Get cash/bank closing data.
+
+\textbf{Query Parameters:}
+\begin{itemize}
+    \item \texttt{locCode} (required): Location code
+    \item \texttt{date} (optional): Date (YYYY-MM-DD)
+\end{itemize}
+
+\section{Features \& Functionality}
+
+\subsection{Authentication \& Authorization}
+
+\begin{itemize}
+    \item User registration with email validation
+    \item Secure password hashing (bcrypt, 10 rounds)
+    \item JWT token-based authentication
+    \item Role-based access control (Admin/Normal)
+\end{itemize}
+
+\subsection{Transaction Management}
+
+\begin{itemize}
+    \item Create, edit, delete transactions
+    \item Multiple payment methods (Cash, Bank, UPI, Split)
+    \item File attachment support
+    \item Auto-generated invoice numbers
+    \item Transaction history tracking
+\end{itemize}
+
+\subsection{Financial Reporting}
+
+\begin{itemize}
+    \item \textbf{Day Book:} Daily transaction listing with filters
+    \item \textbf{Financial Summary:} Date-range reports with category breakdown
+    \item \textbf{Revenue Report:} Revenue analytics and trend analysis
+    \item \textbf{Booking Report:} Booking transaction management
+    \item \textbf{Security Report:} Security deposit tracking
+\end{itemize}
+
+\subsection{Cash/Bank Ledger}
+
+\begin{itemize}
+    \item Separate cash and bank tracking
+    \item Cash/Bank transfer operations
+    \item Balance reconciliation
+    \item Daily closing reports
+    \item Multi-store closing (Admin)
+\end{itemize}
+
+\subsection{Admin Features}
+
+\begin{itemize}
+    \item Store management and user creation
+    \item Multi-store reports and analytics
+    \item Admin closing operations
+    \item Consolidated reporting
+\end{itemize}
+
+\subsection{Data Management}
+
+\begin{itemize}
+    \item CSV export functionality
+    \item Print reports with professional formatting
+    \item Date-range filtering
+    \item Search and category filtering
+\end{itemize}
+
+\section{Security Implementation}
+
+\subsection{Password Security}
+
+\begin{itemize}
+    \item Bcrypt hashing with 10 salt rounds
+    \item No plain text password storage
+\end{itemize}
+
+\subsection{Authentication Security}
+
+\begin{itemize}
+    \item JWT tokens with secret key signing
+    \item Token expiration
+    \item Protected routes with middleware
+\end{itemize}
+
+\subsection{API Security}
+
+\begin{itemize}
+    \item CORS configuration for allowed origins
+    \item Input validation and sanitization
+    \item Mongoose parameterized queries (SQL injection protection)
+\end{itemize}
+
+\subsection{Authorization}
+
+\begin{itemize}
+    \item Role-based access control
+    \item Store data isolation
+    \item Admin-only route protection
+\end{itemize}
+
+\section{Development Guide}
+
+\subsection{Running in Development}
+
+\begin{lstlisting}[language=bash]
+# Backend
+cd backend && npm run dev
+
+# Frontend
+cd frontend && npm run dev
+\end{lstlisting}
+
+\subsection{Building for Production}
+
+\begin{lstlisting}[language=bash]
+# Backend
+cd backend && npm start
+
+# Frontend
+cd frontend && npm run build
+\end{lstlisting}
+
+\subsection{Adding New Features}
+
+\textbf{New Page:}
+\begin{enumerate}
+    \item Create component in \texttt{frontend/src/pages/}
+    \item Add route in \texttt{frontend/src/App.jsx}
+    \item Add navigation link
+\end{enumerate}
+
+\textbf{New API Endpoint:}
+\begin{enumerate}
+    \item Create controller in \texttt{backend/controllers/}
+    \item Add route in \texttt{backend/route/}
+    \item Add Swagger documentation
+\end{enumerate}
+
+\section{Deployment}
+
+\subsection{Backend Deployment}
+
+\begin{enumerate}
+    \item Set environment variables:
+    \begin{itemize}
+        \item \texttt{NODE\_ENV=production}
+        \item \texttt{MONGODB\_URI\_PROD}
+        \item \texttt{JWT\_SECRET}
+    \end{itemize}
+    \item Deploy to Render/Heroku/Vercel
+\end{enumerate}
+
+\subsection{Frontend Deployment}
+
+\begin{enumerate}
+    \item Set \texttt{VITE\_API\_URL} to production API URL
+    \item Build: \texttt{npm run build}
+    \item Deploy \texttt{dist/} folder to Vercel/Netlify
+\end{enumerate}
+
+\subsection{Production Checklist}
+
+\begin{itemize}
+    \item[$\square$] Environment variables configured
+    \item[$\square$] Database connection verified
+    \item[$\square$] CORS configured
+    \item[$\square$] SSL/HTTPS enabled
+    \item[$\square$] Error logging configured
+\end{itemize}
+
+\section{Support \& Contact}
+
+\textbf{Developer:} Jishnu M \\
+\textbf{Email:} \texttt{mjishnu990@gmail.com} \\
+\textbf{LinkedIn:} \url{https://www.linkedin.com/in/jishnu-m-11760b2b0/} \\
+\textbf{GitHub:} \url{https://github.com/jishnuMgit}
+
+\textbf{License:} MIT License - Rootments
+
+\section*{Document Information}
+
+\textbf{Document Version:} 1.0.0 \\
+\textbf{Last Updated:} January 2025 \\
+\textbf{Status:} ✅ Complete \\
+\textbf{Author:} Jishnu M
+
+\end{document}
