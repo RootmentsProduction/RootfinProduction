@@ -851,7 +851,7 @@ const Datewisedaybook = () => {
           rbl, // ✅ Added RBL to export
           bank,
           upi,
-          attachment: t.attachment ? "Yes" : "No",
+          attachment: t.hasAttachment ? "Yes" : "No",
         };
       }),
   ];
@@ -1473,7 +1473,7 @@ const Datewisedaybook = () => {
                                       )}
                                     </td>
                                     <td rowSpan="2" className="border p-2">
-                                      {t.attachment && t._id ? (
+                                      {t.hasAttachment && t._id ? (
                                         <a
                                           href={`${baseUrl.baseUrl}user/transaction/${t._id}/attachment`}
                                           target="_blank"
@@ -1626,7 +1626,7 @@ const Datewisedaybook = () => {
                                   )}
                                 </td>
                                 <td className="border p-2">
-                                  {t.attachment && t._id ? (
+                                  {t.hasAttachment && t._id ? (
                                     <a
                                       href={`${baseUrl.baseUrl}user/transaction/${t._id}/attachment`}
                                       target="_blank"

@@ -237,11 +237,13 @@ export const GetPayment = async (req, res) => {
             query.locCode = String(LocCode);
         }
 
-        // Query transactions based on LocCode and Date Range
-        const transactions = await Transaction.find(query)
-        .select("-attachment")
-        .sort({ date: -1 })
-        .allowDiskUse(true);
+        // Query transactions based on LocCode and Date Range — exclude binary attachment but include hasAttachment flag
+        const transactions = await Transaction.aggregate([
+          { $match: query },
+          { $addFields: { hasAttachment: { $cond: [{ $gt: [{ $ifNull: ["$attachment.data", null] }, null] }, true, false] } } },
+          { $project: { attachment: 0 } },
+          { $sort: { date: -1 } }
+        ]).option({ allowDiskUse: true });
 
         console.log(`   Found ${transactions.length} transactions`);
         
