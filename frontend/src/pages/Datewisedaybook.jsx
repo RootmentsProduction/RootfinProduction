@@ -103,10 +103,7 @@ const Datewisedaybook = () => {
   const [apiUrl2, setApiUrl2] = useState("");
   const [preOpen, setPreOpen] = useState([])
 
-  const [apiUrl3, setApiUrl3] = useState("");
-  const [apiUrl4, setApiUrl4] = useState("");
   const [apiUrl5, setApiUrl5] = useState("");
-  console.log(apiUrl5);
 
   const currentusers = JSON.parse(localStorage.getItem("rootfinuser"));
 

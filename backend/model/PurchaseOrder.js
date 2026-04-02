@@ -95,6 +95,11 @@ const purchaseOrderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Indexes for faster queries
+purchaseOrderSchema.index({ userId: 1, date: -1 });
+purchaseOrderSchema.index({ locCode: 1, date: -1 });
+purchaseOrderSchema.index({ status: 1, date: -1 });
+
 const PurchaseOrder = mongoose.model("PurchaseOrder", purchaseOrderSchema);
 export default PurchaseOrder;
 

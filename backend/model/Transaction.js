@@ -146,5 +146,10 @@ const transactionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Compound index for GetPayment queries (locCode + date) — biggest perf win
+transactionSchema.index({ locCode: 1, date: -1 });
+// Date-only index for admin queries across all stores
+transactionSchema.index({ date: -1 });
+
 const Transaction = mongoose.model("Transaction", transactionSchema);
 export default Transaction;

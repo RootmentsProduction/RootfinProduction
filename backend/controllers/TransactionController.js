@@ -50,7 +50,8 @@ export const getOptimizedTransactions = async (req, res) => {
           totalTransaction: { $add: ["$cashNum", "$rblNum", "$bankNum", "$upiNum"] }
         }
       },
-      { $sort: { date: -1, createdAt: -1 } }
+      { $sort: { date: -1, createdAt: -1 } },
+      { $project: { attachment: 0 } }
     ];
 
     const transactions = await Transaction.aggregate(pipeline);
@@ -238,6 +239,7 @@ export const GetPayment = async (req, res) => {
 
         // Query transactions based on LocCode and Date Range
         const transactions = await Transaction.find(query)
+        .select("-attachment")
         .sort({ date: -1 })
         .allowDiskUse(true);
 

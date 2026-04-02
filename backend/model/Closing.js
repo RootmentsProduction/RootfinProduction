@@ -32,5 +32,9 @@ const CloseSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+// Indexes for frequent queries by locCode + date
+CloseSchema.index({ locCode: 1, date: -1 });
+CloseSchema.index({ date: -1 });
+
 const CloseTransaction = mongoose.model("Close", CloseSchema);
 export default CloseTransaction;

@@ -89,6 +89,11 @@ const billSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Indexes for faster queries
+billSchema.index({ userId: 1, billDate: -1 });
+billSchema.index({ locCode: 1, billDate: -1 });
+billSchema.index({ status: 1, billDate: -1 });
+
 const Bill = mongoose.model("Bill", billSchema);
 export default Bill;
 

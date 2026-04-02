@@ -172,9 +172,11 @@ const salesInvoiceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index for faster queries
+// Add missing indexes
 salesInvoiceSchema.index({ userId: 1, createdAt: -1 });
 salesInvoiceSchema.index({ invoiceNumber: 1 });
+salesInvoiceSchema.index({ locCode: 1, invoiceDate: -1 });
+salesInvoiceSchema.index({ status: 1, invoiceDate: -1 });
 
 const SalesInvoice = mongoose.model("SalesInvoice", salesInvoiceSchema);
 export default SalesInvoice;
