@@ -75,169 +75,93 @@ export const createSalesInvoice = async (req, res) => {
     const userId = invoiceData.userId;
 
     if (!invoiceData.customer || !userId) {
-      return res.status(400).json({
-        message: "Customer name and userId are required"
-      });
+      return res.status(400).json({ message: "Customer name and userId are required" });
     }
 
-    // Get user to check store access control
-    const user = await User.findOne({ email: userId });
+    // Determine invoice prefix
+    let invoicePrefix = "INV-";
+    const categoryLower = (invoiceData.category || "").toLowerCase();
+    if (invoiceData.invoiceNumber?.startsWith("RTN-") || categoryLower === "return") {
+      invoicePrefix = "RTN-";
+    } else if (invoiceData.invoiceNumber?.startsWith("RET-")) {
+      invoicePrefix = "RET-";
+    }
+
+    // Run user lookup and invoice number generation in parallel
+    const [user, existingInvoice] = await Promise.all([
+      User.findOne({ email: userId }).lean(),
+      invoiceData.invoiceNumber
+        ? SalesInvoice.findOne({ invoiceNumber: invoiceData.invoiceNumber }).lean()
+        : Promise.resolve(null)
+    ]);
+
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
 
-    // Store-level access control validation
-    // Store users can only create invoices for their own store
+    // Store-level access control
     if (user.role === "store_manager" || user.role === "store_user") {
       const userStore = user.storeName || user.username;
       if (invoiceData.branch !== userStore) {
         return res.status(403).json({
           message: "You can only create invoices for your store",
-          userStore: userStore,
+          userStore,
           requestedStore: invoiceData.branch
         });
       }
     }
 
+    // Resolve final invoice number
     let finalInvoiceNumber = invoiceData.invoiceNumber;
-
-    // Determine the prefix based on invoice category or existing invoice number
-    let invoicePrefix = "INV-";
-    if (finalInvoiceNumber) {
-      // Extract prefix from provided invoice number (e.g., "RTN-", "RET-", "INV-")
-      if (finalInvoiceNumber.startsWith("RTN-")) {
-        invoicePrefix = "RTN-";
-      } else if (finalInvoiceNumber.startsWith("RET-")) {
-        invoicePrefix = "RET-";
-      } else if (finalInvoiceNumber.startsWith("INV-")) {
-        invoicePrefix = "INV-";
-      }
-    } else if (invoiceData.category) {
-      // Use prefix based on category if no invoice number provided
-      const categoryLower = (invoiceData.category || "").toLowerCase();
-      if (categoryLower === "return") {
-        invoicePrefix = "RTN-";
-      }
-    }
-
-    if (!finalInvoiceNumber) {
+    if (!finalInvoiceNumber || existingInvoice) {
       finalInvoiceNumber = await nextGlobalSalesInvoice(invoicePrefix);
-    } else {
-      const existingInvoice = await SalesInvoice.findOne({
-        invoiceNumber: finalInvoiceNumber,
-      });
-
-      if (existingInvoice) {
-        // Preserve the prefix when generating new invoice number for duplicates
-        finalInvoiceNumber = await nextGlobalSalesInvoice(invoicePrefix);
-      }
     }
 
     invoiceData.invoiceNumber = finalInvoiceNumber;
-    invoiceData.createdBy = userId; // Track who created the invoice
-    invoiceData.storeId = user.storeId; // Tag with store ID for filtering
+    invoiceData.createdBy = userId;
+    invoiceData.storeId = user.storeId;
 
-    console.log("=== INVOICE CREATION DEBUG ===");
-    console.log("Creating invoice with customerPhone:", invoiceData.customerPhone);
-    console.log("Category:", invoiceData.category);
-    console.log("SubCategory:", invoiceData.subCategory);
-    console.log("PaymentMethod:", invoiceData.paymentMethod);
-    console.log("CustomerNotes/Remarks:", invoiceData.customerNotes);
-    console.log("Subject:", invoiceData.subject);
-    console.log("Remark field:", invoiceData.remark);
-    console.log("Full invoice data:", JSON.stringify(invoiceData, null, 2));
-    console.log("=== END DEBUG ===");
-
-    // Save to MongoDB
+    // Save invoice to MongoDB
     const invoice = await SalesInvoice.create(invoiceData);
-    console.log("✅ MongoDB invoice created:", invoice.invoiceNumber);
 
-    console.log("Created invoice with customerPhone:", invoice.customerPhone);
-    console.log("Full created invoice:", invoice.toObject());
-
-    // ✅ AUTOMATICALLY CREATE FINANCIAL TRANSACTION
-    try {
-      await createFinancialTransaction(invoice);
-      console.log("✅ Financial transaction created successfully");
-    } catch (transactionError) {
-      console.error("❌ Error creating financial transaction:", transactionError);
-      // Don't fail the invoice creation if transaction fails
-    }
-
-    // ✅ UPDATE STOCK FOR ALL INVOICES (except Return/Refund/Cancel which should reverse stock)
-    // Use MongoDB transaction for atomicity
-    const session = await mongoose.startSession();
-    
-    try {
-      await session.withTransaction(async () => {
-        console.log(`\n========== STOCK UPDATE CHECK ==========`);
-        console.log(`📊 Invoice category: "${invoice.category}"`);
-        console.log(`📊 Invoice warehouse: "${invoice.warehouse}"`);
-        console.log(`📊 Invoice branch: "${invoice.branch}"`);
-        console.log(`📊 Line items count: ${invoice.lineItems?.length || 0}`);
-        
-        const categoryLower = (invoice.category || "").toLowerCase().trim();
-        
-        // Categories that should REVERSE stock (increase available, decrease committed)
-        const reverseStockCategories = ["return", "refund", "cancel"];
-        const shouldReverseStock = reverseStockCategories.includes(categoryLower);
-        
-        console.log(`📊 Category: "${categoryLower}", Should reverse stock: ${shouldReverseStock}`);
-        console.log(`========================================\n`);
-        
-        if (invoice.lineItems && invoice.lineItems.length > 0) {
-          // Try warehouse first, then branch, then default
-          const warehouse = invoice.warehouse || invoice.branch || "Warehouse";
-          console.log(`🏢 Using warehouse for stock update: "${warehouse}"`);
-          
-          if (shouldReverseStock) {
-            // For Return/Refund/Cancel - reverse the stock (add back to available)
-            console.log(`🔄 Calling reverseStockOnInvoiceDelete (for ${categoryLower})...`);
-            await reverseStockOnInvoiceDelete(invoice.lineItems, warehouse, session);
-            console.log(`✅ Stock reversed successfully for ${categoryLower} invoice`);
-          } else {
-            // For all other categories - reduce stock with enhanced validation
-            console.log(`🔄 Calling enhanced updateStockOnInvoiceCreate...`);
-            const stockReport = await updateStockOnInvoiceCreate(invoice.lineItems, warehouse, session);
-            console.log(`✅ Enhanced stock update completed for ${categoryLower || "uncategorized"} invoice`);
-            console.log(`📊 Success Rate: ${stockReport.summary.successRate}`);
-            
-            // Log any failures for monitoring
-            if (stockReport.summary.failed > 0) {
-              console.warn(`⚠️ ${stockReport.summary.failed} items failed stock deduction`);
-              stockReport.failures.forEach(failure => {
-                console.warn(`   - ${failure.itemCode}: ${failure.reason}`);
-              });
-            }
-          }
-        } else {
-          console.log(`⏭️ Skipping stock update - no line items`);
-        }
-      });
-    } catch (stockError) {
-      console.error("❌ Error updating stock:", stockError);
-      console.error("❌ Stock error stack:", stockError.stack);
-      // FAIL the invoice creation if stock update fails
-      throw new Error(`Stock update failed: ${stockError.message}`);
-    } finally {
-      await session.endSession();
-    }
-
+    // Respond immediately — don't wait for stock/transaction updates
     res.status(201).json(invoice);
+
+    // Run stock update + financial transaction in background (non-blocking)
+    setImmediate(async () => {
+      try {
+        await createFinancialTransaction(invoice);
+      } catch (err) {
+        console.error("Background financial transaction error:", err.message);
+      }
+
+      if (invoice.lineItems?.length > 0) {
+        const warehouse = invoice.warehouse || invoice.branch || "Warehouse";
+        const shouldReverseStock = ["return", "refund", "cancel"].includes(
+          (invoice.category || "").toLowerCase().trim()
+        );
+        try {
+          if (shouldReverseStock) {
+            await reverseStockOnInvoiceDelete(invoice.lineItems, warehouse);
+          } else {
+            await updateStockOnInvoiceCreate(invoice.lineItems, warehouse);
+          }
+        } catch (err) {
+          console.error("Background stock update error:", err.message);
+        }
+      }
+    });
+
   } catch (error) {
     console.error("Create sales invoice error:", error);
 
     if (error.code === 11000) {
       return res.status(409).json({ message: "Invoice number already exists" });
     }
-
     if (error.name === "ValidationError") {
-      const errors = Object.values(error.errors)
-        .map((e) => e.message)
-        .join(", ");
+      const errors = Object.values(error.errors).map((e) => e.message).join(", ");
       return res.status(400).json({ message: "Validation error", error: errors });
     }
-
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -289,21 +213,6 @@ const createFinancialTransaction = async (invoice) => {
 
     // Save transaction to MongoDB
     const transaction = await Transaction.create(transactionData);
-    console.log("✅ MongoDB transaction created:", transaction.invoiceNo);
-
-    console.log("Transaction details:", {
-      type: transactionType,
-      category: invoice.category,
-      subCategory: invoice.subCategory,
-      paymentMethod: invoice.paymentMethod,
-      selectedPaymentMethod: paymentMethodForTransaction,
-      cash: cash,
-      rbl: rbl,
-      bank: bank,
-      upi: upi,
-      billValue: invoice.finalTotal
-    });
-    
     return transaction;
   } catch (error) {
     console.error("❌ Error creating financial transaction:", error);
