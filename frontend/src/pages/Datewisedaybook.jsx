@@ -1,13 +1,11 @@
 import Headers from '../components/Header.jsx';
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEnterToSave } from "../hooks/useEnterToSave";
 import Select from "react-select";
-import useFetch from '../hooks/useFetch.jsx';
 import baseUrl from '../api/api.js';
 import { CSVLink } from 'react-csv';
 import { Helmet } from "react-helmet";
 import { FiDownload } from "react-icons/fi";
-import dataCache from '../utils/cache.js';
 
 const categories = [
   { value: "all", label: "All" },
@@ -98,20 +96,14 @@ const Datewisedaybook = () => {
   const todayStr = new Date().toISOString().split('T')[0];
   const [fromDate, setFromDate] = useState(todayStr);
   const [toDate, setToDate] = useState(todayStr);
-  const [apiUrl, setApiUrl] = useState("");
-  const [apiUrl1, setApiUrl1] = useState("");
-  const [apiUrl2, setApiUrl2] = useState("");
-  const [preOpen, setPreOpen] = useState([])
-
   const [apiUrl5, setApiUrl5] = useState("");
+  const [preOpen, setPreOpen] = useState([])
 
   const currentusers = JSON.parse(localStorage.getItem("rootfinuser"));
 
   const showAction = (currentusers.power || "").toLowerCase() === "admin";
   const isClusterManager = (currentusers.role || "").toLowerCase() === "cluster_manager";
   const clusterAllowedLocCodes = currentusers.allowedLocCodes || [];
-
-  console.log("🔍 User role:", currentusers.role, "| isClusterManager:", isClusterManager, "| allowedLocCodes:", clusterAllowedLocCodes);
 
   // For cluster managers, filter AllLoation to only their allowed stores
   const visibleLocations = isClusterManager
@@ -141,8 +133,7 @@ const Datewisedaybook = () => {
     const mongoU = `${baseUrl.baseUrl}user/Getpayment?LocCode=${currentusers.locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
     const openingU = `${baseUrl.baseUrl}user/getsaveCashBank?locCode=${currentusers.locCode}&date=${prevDayStr}`;
 
-    setApiUrl(bookingU); setApiUrl1(rentoutU); setApiUrl2(returnU);
-    setApiUrl3(mongoU); setApiUrl4(deleteU); setApiUrl5(openingU);
+    setApiUrl5(openingU);
     GetCreateCashBank(openingU);
 
     // Helper to get store footer totals with RBL support and refund bank/UPI prevention
@@ -402,54 +393,39 @@ const Datewisedaybook = () => {
     }
 
     if (selectedStore === "all") {
-      const tempSummary = [];
-      let totalCash = 0, totalRbl = 0, totalBank = 0, totalUpi = 0; // ✅ Added totalRbl
-      for (const store of visibleLocations) {
-        const { locCode, locName } = store;
-        const summary = await getStoreFooterTotals(locCode, fromDate, toDate);
-        tempSummary.push({
-          store: locName,
-          locCode,
-          cash: summary.cash,
-          rbl: summary.rbl, // ✅ Added RBL
-          bank: summary.bank,
-          upi: summary.upi,
-          amount: summary.amount,
-        });
-        totalCash += summary.cash;
-        totalRbl += summary.rbl; // ✅ Added RBL accumulation
-        totalBank += summary.bank;
-        totalUpi += summary.upi;
-      }
-      const totalAmount = totalCash + totalRbl + totalBank + totalUpi; // ✅ Added rbl
-      setAllStoresSummary(tempSummary);
-      setAllStoresTotals({ cash: totalCash, rbl: totalRbl, bank: totalBank, upi: totalUpi, amount: totalAmount }); // ✅ Added rbl
+      const results = await Promise.all(
+        visibleLocations.map(async ({ locCode, locName }) => {
+          const summary = await getStoreFooterTotals(locCode, fromDate, toDate);
+          return { store: locName, locCode, ...summary };
+        })
+      );
+      const totals = results.reduce(
+        (acc, s) => ({
+          cash: acc.cash + s.cash,
+          rbl: acc.rbl + s.rbl,
+          bank: acc.bank + s.bank,
+          upi: acc.upi + s.upi,
+          amount: acc.amount + s.amount,
+        }),
+        { cash: 0, rbl: 0, bank: 0, upi: 0, amount: 0 }
+      );
+      setAllStoresSummary(results);
+      setAllStoresTotals(totals);
       setIsFetching(false);
       return;
     }
 
     try {
-      console.log('[handleFetch] Fetching URLs:', { bookingU, rentoutU, returnU, deleteU, mongoU, openingU });
       const [bookingRes, rentoutRes, returnRes, deleteRes, mongoRes] = await Promise.all([
         fetch(bookingU), fetch(rentoutU), fetch(returnU), fetch(deleteU), fetch(mongoU)
       ]);
-      console.log('[handleFetch] bookingRes:', bookingRes);
-      console.log('[handleFetch] rentoutRes:', rentoutRes);
-      console.log('[handleFetch] returnRes:', returnRes);
-      console.log('[handleFetch] deleteRes:', deleteRes);
-      console.log('[handleFetch] mongoRes:', mongoRes);
       if (!mongoRes.ok) {
         const errorText = await mongoRes.text();
-        console.error('[handleFetch] mongoRes not ok:', mongoRes.status, errorText);
         throw new Error(`mongoRes failed: ${mongoRes.status} ${errorText}`);
       }
       const [bookingData, rentoutData, returnData, deleteData, mongoData] = await Promise.all([
         bookingRes.json(), rentoutRes.json(), returnRes.json(), deleteRes.json(), mongoRes.json()
       ]);
-      console.log('[handleFetch] mongoData:', mongoData);
-      console.log('[handleFetch] bookingData count:', bookingData?.dataSet?.data?.length || 0);
-      console.log('[handleFetch] bookingData sample:', bookingData?.dataSet?.data?.slice(0, 3));
-      console.log('[handleFetch] Ajay in bookingData:', bookingData?.dataSet?.data?.filter(b => b.customerName?.toLowerCase().includes('ajay')));
 
       const bookingList = (bookingData?.dataSet?.data || []).map(item => ({
         ...item,
@@ -662,78 +638,18 @@ const Datewisedaybook = () => {
 
       const allTransactions = [...finalTws, ...mongoList];
       
-      // Debug: Check for Ajay before deduplication
-      const ajayBeforeDedup = allTransactions.filter(t => t.customerName?.toLowerCase().includes('ajay'));
-      console.log('🔍 DEBUG - Ajay BEFORE dedup:', ajayBeforeDedup.length, 'transactions');
-      ajayBeforeDedup.forEach((tx, i) => {
-        console.log(`  Before #${i+1}:`, {
-          invoiceNo: tx.invoiceNo,
-          date: tx.date,
-          Category: tx.Category || tx.type,
-          source: tx.source,
-          _id: tx._id ? 'YES' : 'NO'
-        });
-      });
- 
       const deduped = Array.from(
         new Map(
           allTransactions.map((tx) => {
             const dateKey = new Date(tx.date).toISOString().split("T")[0];
-            // Use _id as primary key if available (for mongo transactions)
-            // For TWS transactions, use invoiceNo + date + category + source to ensure uniqueness
-            // This prevents MongoDB RentOut from overriding TWS Booking for the same invoice
             const key = tx._id 
               ? tx._id 
               : `${tx.invoiceNo || tx.locCode}-${dateKey}-${tx.Category || tx.type || ""}-${tx.source || ""}`;
-         
             return [key, tx];
           })
         ).values()
       );
 
-      // Merge edited transactions with fresh data to preserve edits
-      // Keep track of which transactions were edited
-      const dedupedWithEdits = deduped.map(tx => {
-        // For mongo transactions with _id, check if they were edited
-        if (tx._id) {
-          const edited = mongoTransactions.find(m => m._id === tx._id);
-          return edited ? { ...tx, ...edited } : tx;
-        }
-        // For TWS transactions (booking, rentout, etc.), they don't have _id
-        // so we keep them as-is from the fresh fetch
-        return tx;
-      });
-      
-      console.log('🔍 DEBUG - Deduped count:', deduped.length);
-      console.log('🔍 DEBUG - Booking count:', deduped.filter(t => t.source === 'booking').length);
-      console.log('🔍 DEBUG - RentOut count:', deduped.filter(t => t.source === 'rentout').length);
-      
-      const ajayTransactions = deduped.filter(t => t.customerName?.toLowerCase().includes('ajay'));
-      console.log('🔍 DEBUG - Ajay transactions:', ajayTransactions);
-      ajayTransactions.forEach((tx, i) => {
-        console.log(`  Ajay #${i+1}:`, {
-          invoiceNo: tx.invoiceNo,
-          date: tx.date,
-          Category: tx.Category,
-          source: tx.source,
-          amount: tx.amount,
-          _id: tx._id
-        });
-      });
-      
-      const invoice202601200140004 = deduped.filter(t => t.invoiceNo === '202601200140004');
-      console.log('🔍 DEBUG - Invoice 202601200140004:', invoice202601200140004);
-      invoice202601200140004.forEach((tx, i) => {
-        console.log(`  Invoice #${i+1}:`, {
-          customerName: tx.customerName,
-          date: tx.date,
-          Category: tx.Category,
-          source: tx.source,
-          amount: tx.amount,
-          _id: tx._id
-        });
-      });
-      
       setMergedTransactions(deduped);
       setMongoTransactions(mongoList);
     } catch (err) {
@@ -802,219 +718,14 @@ const Datewisedaybook = () => {
     w.close();
   };
 
-  const fetchOptions = useMemo(() => ({}), []);
-
-  const { data } = useFetch(apiUrl, fetchOptions);
-  const { data: data1 } = useFetch(apiUrl1, fetchOptions);
-  const { data: data2 } = useFetch(apiUrl2, fetchOptions);
   const [mongoTransactions, setMongoTransactions] = useState([]);
   const [mergedTransactions, setMergedTransactions] = useState([]);
-
-  useEffect(() => {
-    if (apiUrl3) {
-      console.log('[useEffect] Fetching apiUrl3:', apiUrl3);
-      fetch(apiUrl3)
-        .then(res => {
-          if (!res.ok) {
-            console.error('[useEffect] apiUrl3 fetch failed:', res.status, res.statusText);
-          }
-          return res.json();
-        })
-        .then(res => {
-          console.log('[useEffect] apiUrl3 response:', res);
-          setMongoTransactions(res.data || []);
-        })
-        .catch(err => {
-          console.error('[useEffect] apiUrl3 fetch error:', err);
-        });
-    }
-  }, [apiUrl3]);
-
-  const { data: data4 } = useFetch(apiUrl4, fetchOptions);
-
-  // ✅ Updated booking transactions with RBL
-  const bookingTransactions = (data?.dataSet?.data || []).map(transaction => {
-    const bookingCashAmount = parseInt(transaction?.bookingCashAmount || 0, 10);
-    const bookingBankAmount = parseInt(transaction?.bookingBankAmount || 0, 10);
-    const bookingUPIAmount = parseInt(transaction?.bookingUPIAmount || 0, 10);
-    const rblAmount = parseInt(transaction?.rblRazorPay || 0, 10); // ✅ Added RBL
-    const invoiceAmount = parseInt(transaction?.invoiceAmount || 0, 10);
-
-    const totalAmount = bookingCashAmount + bookingBankAmount + bookingUPIAmount + rblAmount; // ✅ Added rbl
-
-    return {
-      ...transaction,
-      date: transaction?.bookingDate || null,
-      bookingCashAmount,
-      bookingBankAmount,
-      billValue: transaction.invoiceAmount,
-      invoiceAmount,
-      bookingBank1: bookingBankAmount,
-      TotaltransactionBooking: totalAmount,
-      Category: "Booking",
-      SubCategory: "Advance",
-      totalTransaction: totalAmount,
-      cash: bookingCashAmount,
-      rbl: rblAmount, // ✅ Added RBL
-      bank: bookingBankAmount,
-      upi: bookingUPIAmount,
-      amount: totalAmount,
-    };
-  });
-
-  // ✅ Updated rent out transactions with RBL
-  const rentOutTransactions = (data1?.dataSet?.data || []).map(transaction => {
-    const rentoutCashAmount = parseInt(transaction?.rentoutCashAmount ?? 0, 10);
-    const rentoutBankAmount = parseInt(transaction?.rentoutBankAmount ?? 0, 10);
-    const invoiceAmount = parseInt(transaction?.invoiceAmount ?? 0, 10);
-    const advanceAmount = parseInt(transaction?.advanceAmount ?? 0, 10);
-    const rentoutUPIAmount = parseInt(transaction?.rentoutUPIAmount ?? 0, 10);
-    const rblAmount = parseInt(transaction?.rblRazorPay ?? 0, 10); // ✅ Added RBL
-    const securityAmount = parseInt(transaction?.securityAmount ?? 0, 10);
-
-    return {
-      ...transaction,
-      date: transaction?.rentOutDate ?? "",
-      rentoutCashAmount,
-      rentoutBankAmount,
-      invoiceAmount,
-      billValue: transaction.invoiceAmount,
-      discountAmount: parseInt(transaction?.discountAmount ?? 0, 10),
-      securityAmount,
-      advanceAmount,
-      Balance: invoiceAmount - advanceAmount,
-      rentoutUPIAmount,
-      Category: "RentOut",
-      SubCategory: "Security",
-      SubCategory1: "Balance Payable",
-      totalTransaction: rentoutCashAmount + rentoutBankAmount + rentoutUPIAmount + rblAmount, // ✅ Added rbl
-      cash: rentoutCashAmount,
-      rbl: rblAmount, // ✅ Added RBL
-      bank: rentoutBankAmount,
-      upi: rentoutUPIAmount,
-      amount: rentoutCashAmount + rentoutBankAmount + rentoutUPIAmount + rblAmount, // ✅ Added rbl
-    };
-  });
-
-  // ✅ Updated return transactions with RBL prevention logic
-  const returnOutTransactions = (data2?.dataSet?.data || []).map(transaction => {
-    const returnCashAmount = -(parseInt(transaction?.returnCashAmount || 0, 10));
-    const returnRblAmount = -(parseInt(transaction?.rblRazorPay || 0, 10)); // ✅ Added RBL
-   
-    // ✅ Only process bank/UPI if no RBL value
-    const returnBankAmount = returnRblAmount !== 0 ? 0 : -(parseInt(transaction?.returnBankAmount || 0, 10));
-    const returnUPIAmount = returnRblAmount !== 0 ? 0 : -(parseInt(transaction?.returnUPIAmount || 0, 10));
-   
-    const invoiceAmount = parseInt(transaction?.invoiceAmount || 0, 10);
-    const advanceAmount = parseInt(transaction?.advanceAmount || 0, 10);
-    const RsecurityAmount = -(parseInt(transaction?.securityAmount || 0, 10));
-
-    const totalAmount = returnBankAmount + returnCashAmount + returnUPIAmount + returnRblAmount; // ✅ Added rbl
-
-    return {
-      ...transaction,
-      date: transaction?.returnedDate || null,
-      returnBankAmount,
-      returnCashAmount,
-      returnUPIAmount,
-      invoiceAmount,
-      advanceAmount,
-      billValue: invoiceAmount,
-      amount: totalAmount,
-      totalTransaction: totalAmount,
-      RsecurityAmount,
-      Category: "Return",
-      SubCategory: "Security Refund",
-      cash: returnCashAmount,
-      rbl: returnRblAmount, // ✅ Added RBL
-      bank: returnBankAmount,
-      upi: returnUPIAmount,
-    };
-  });
-
-  // ✅ Updated mongo transactions with RBL
-  const Transactionsall = (mongoTransactions || []).map(transaction => {
-    const isReturn = (transaction.type || "").toLowerCase() === "return";
-    const rawSubCat = transaction.subCategory || transaction.SubCategory || transaction.category || "";
-    const subCatLabel = isReturn && rawSubCat && !rawSubCat.toLowerCase().endsWith("return")
-      ? `${rawSubCat} Return`
-      : rawSubCat;
-    return {
-    ...transaction,
-    locCode: currentusers.locCode,
-    date: transaction.date.split("T")[0],
-    Category: transaction.type,
-    SubCategory: subCatLabel,
-    remark: subCatLabel || transaction.remark || transaction.remarks || "",
-    billValue: Number(
-      transaction.billValue ??
-      transaction.invoiceAmount ??
-      transaction.amount
-    ),
-    amount: Number(transaction.cash || 0) + Number(transaction.rbl || 0) + Number(transaction.bank || 0) + Number(transaction.upi || 0), // ✅ Added rbl
-    totalTransaction: Number(transaction.cash || 0) + Number(transaction.rbl || 0) + Number(transaction.bank || 0) + Number(transaction.upi || 0), // ✅ Added rbl
-    cash: Number(transaction.cash),
-    rbl: Number(transaction.rbl || transaction.rblRazorPay || 0), // ✅ Added RBL
-    bank: Number(transaction.bank),
-    upi: Number(transaction.upi),
-    cash1: Number(transaction.cash),
-    bank1: Number(transaction.bank),
-    Tupi: Number(transaction.upi),
-  };
-  });
-
-  // ✅ Updated cancel transactions with RBL prevention logic
-  const canCelTransactions = (data4?.dataSet?.data || []).map(transaction => {
-    const deleteCashAmount = parseInt(transaction.deleteCashAmount || 0);
-    const deleteRblAmount = parseInt(transaction.rblRazorPay || 0); // ✅ Added RBL
-   
-    // ✅ Only process bank/UPI if no RBL value
-    const deleteBankAmount = deleteRblAmount !== 0 ? 0 : parseInt(transaction.deleteBankAmount || 0);
-    const deleteUPIAmount = deleteRblAmount !== 0 ? 0 : parseInt(transaction.deleteUPIAmount || 0);
-
-    const totalAmount = deleteCashAmount + deleteBankAmount + deleteUPIAmount + deleteRblAmount; // ✅ Added rbl
-
-    return {
-      ...transaction,
-      date: transaction.cancelDate,
-      Category: "Cancel",
-      SubCategory: "cancellation Refund",
-      billValue: transaction.invoiceAmount,
-      amount: totalAmount,
-      totalTransaction: totalAmount,
-      cash: deleteCashAmount,
-      rbl: deleteRblAmount, // ✅ Added RBL
-      bank: deleteBankAmount,
-      upi: deleteUPIAmount,
-    };
-  });
-
-  const allTransactions = [...bookingTransactions, ...rentOutTransactions, ...returnOutTransactions, ...canCelTransactions, ...Transactionsall];
-  console.log(data4);
 
   const [selectedCategory, setSelectedCategory] = useState(categories[0]);
   const [selectedSubCategory, setSelectedSubCategory] = useState(subCategories[0]);
 
   const selectedCategoryValue = selectedCategory?.value?.toLowerCase() || "all";
   const selectedSubCategoryValue = selectedSubCategory?.value?.toLowerCase() || "all";
-
-  const filteredTransactions = allTransactions.filter((t) =>
-    (selectedCategoryValue === "all" ||
-      t.category?.toLowerCase() === selectedCategoryValue ||
-      t.Category?.toLowerCase() === selectedCategoryValue ||
-      t.type?.toLowerCase() === selectedCategoryValue) &&
-    (selectedSubCategoryValue === "all" ||
-      t.subCategory?.toLowerCase() === selectedSubCategoryValue ||
-      t.SubCategory?.toLowerCase() === selectedSubCategoryValue ||
-      t.type?.toLowerCase() === selectedSubCategoryValue ||
-      t.category?.toLowerCase() === selectedSubCategoryValue ||
-      (
-        (t.Category?.toLowerCase() === "rentout" || t.category?.toLowerCase() === "rentout") &&
-        (t.subCategory1?.toLowerCase() === selectedSubCategoryValue ||
-          t.SubCategory1?.toLowerCase() === selectedSubCategoryValue)
-      )
-    )
-  );
 
   const toNumber = (v) => (isNaN(+v) ? 0 : +v);
 
@@ -1090,7 +801,7 @@ const Datewisedaybook = () => {
       attachment: "",
     },
 
-    ...(mergedTransactions.length ? mergedTransactions : filteredTransactions)
+    ...(mergedTransactions)
       .filter(
         (t) =>
           (selectedCategoryValue === "all" ||
@@ -1185,7 +896,6 @@ const Datewisedaybook = () => {
         }
 
         transaction._id = result.data._id;
-        filteredTransactions[index]._id = result.data._id;
       } catch (err) {
         alert("❌ Sync error: " + err.message);
         setIsSyncing(false);
