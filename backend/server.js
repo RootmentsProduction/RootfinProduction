@@ -58,6 +58,7 @@ app.use(
       "https://rootfin-testenv-ebb5.onrender.com",
       "https://api.rootments.live",
       "https://rootfin-production.vercel.app",
+      "https://rootfin.brynex.com"
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
