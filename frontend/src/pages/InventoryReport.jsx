@@ -80,6 +80,8 @@ const InventoryReport = () => {
   useEffect(() => {
     setCurrentPage(1);
     setAgingBucketPages({});
+    setReportData(null);
+    setCsvData([]);
     // Reset category filter when changing away from stock-summary
     if (reportType !== "stock-summary") {
       setSelectedCategory("all");
