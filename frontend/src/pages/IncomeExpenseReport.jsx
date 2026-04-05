@@ -107,19 +107,27 @@ export default function IncomeExpenseReport() {
         locCode: item.locCode || locCode,
       }));
 
-      // RentOut -> Income
-      const rentoutList = (rentoutData?.dataSet?.data || []).map(item => ({
-        date: (item.rentOutDate || "").split("T")[0],
-        invoiceNo: item.invoiceNo,
-        customerName: item.customerName || "",
-        category: "RentOut",
-        subCategory: "Security + Balance Payable",
-        cash: Number(item.rentoutCashAmount || 0),
-        rbl:  Number(item.rblRazorPay || 0),
-        bank: Number(item.rentoutBankAmount || 0),
-        upi:  Number(item.rentoutUPIAmount || 0),
-        locCode: item.locCode || locCode,
-      }));
+      // RentOut -> Income: split into Security row + Balance Payable row
+      const rentoutList = [];
+      (rentoutData?.dataSet?.data || []).forEach(item => {
+        const security       = Number(item.securityAmount || 0);
+        const advance        = Number(item.advanceAmount || 0);
+        const balancePayable = Number(item.invoiceAmount || 0) - advance;
+        const cash  = Number(item.rentoutCashAmount || 0);
+        const rbl   = Number(item.rblRazorPay || 0);
+        const bank  = Number(item.rentoutBankAmount || 0);
+        const upi   = Number(item.rentoutUPIAmount || 0);
+        const base  = {
+          date: (item.rentOutDate || "").split("T")[0],
+          invoiceNo: item.invoiceNo,
+          customerName: item.customerName || "",
+          category: "RentOut",
+          locCode: item.locCode || locCode,
+          cash, rbl, bank, upi,
+        };
+        rentoutList.push({ ...base, subCategory: "Security",        amount: security });
+        rentoutList.push({ ...base, subCategory: "Balance Payable", amount: balancePayable });
+      });
 
       // Return -> Expense
       const returnList = (returnData?.dataSet?.data || []).map(item => {
@@ -196,17 +204,37 @@ export default function IncomeExpenseReport() {
     }
   }, [fromDate, toDate, locCode, twsLocCode]);
 
+  // Group: category -> subCategory -> { transactions, totals }
   const buildGrouped = (rows) => {
     const map = {};
     rows.forEach(t => {
       const cat = t.category || "Uncategorized";
+      const sub = t.subCategory || cat;
       if (filterCategory !== "All Categories" && filterCategory !== cat) return;
-      if (!map[cat]) map[cat] = { transactions: [], cash: 0, rbl: 0, bank: 0, upi: 0 };
-      map[cat].transactions.push(t);
-      map[cat].cash += t.cash || 0;
-      map[cat].rbl  += t.rbl  || 0;
-      map[cat].bank += t.bank || 0;
-      map[cat].upi  += t.upi  || 0;
+      if (!map[cat]) map[cat] = { subCategories: {}, cash: 0, rbl: 0, bank: 0, upi: 0 };
+      if (!map[cat].subCategories[sub]) map[cat].subCategories[sub] = { transactions: [], cash: 0, rbl: 0, bank: 0, upi: 0 };
+
+      // For RentOut rows, use the split `amount` field for the sub-row display
+      // but accumulate payment fields (cash/rbl/bank/upi) only once per invoice per category
+      // to avoid double-counting. We track by invoiceNo.
+      const isRentOut = cat === "RentOut";
+      const subG = map[cat].subCategories[sub];
+      subG.transactions.push(t);
+
+      if (isRentOut) {
+        // amount is the split value (security or balance payable)
+        subG.cash += t.amount || 0;
+        map[cat].cash += t.amount || 0;
+      } else {
+        subG.cash += t.cash || 0;
+        subG.rbl  += t.rbl  || 0;
+        subG.bank += t.bank || 0;
+        subG.upi  += t.upi  || 0;
+        map[cat].cash += t.cash || 0;
+        map[cat].rbl  += t.rbl  || 0;
+        map[cat].bank += t.bank || 0;
+        map[cat].upi  += t.upi  || 0;
+      }
     });
     return map;
   };
@@ -219,7 +247,6 @@ export default function IncomeExpenseReport() {
       (s, g) => ({ cash: s.cash + g.cash, rbl: s.rbl + g.rbl, bank: s.bank + g.bank, upi: s.upi + g.upi }),
       { cash: 0, rbl: 0, bank: 0, upi: 0 }
     );
-
   const incTotals = sumGroup(incomeGrouped);
   const expTotals = sumGroup(expenseGrouped);
   const incTotal  = incTotals.cash + incTotals.rbl + incTotals.bank + incTotals.upi;
@@ -238,45 +265,72 @@ export default function IncomeExpenseReport() {
     return store ? store.locName : (lc || "-");
   };
 
+  // Renders: category header row → subcategory rows (expandable) → category total
   const renderCategoryRows = (grouped, typeLabel, isIncome) =>
     Object.keys(grouped).map(cat => {
       const g = grouped[cat];
-      const rowTotal = g.cash + g.rbl + g.bank + g.upi;
-      const key = `${typeLabel}-${cat}`;
-      const isExp = !!expanded[key];
-      const branches = [...new Set(g.transactions.map(t => getBranchName(t.locCode)).filter(Boolean))];
+      const catTotal = g.cash + g.rbl + g.bank + g.upi;
+      const catKey = `${typeLabel}-${cat}`;
+      const isCatExp = !!expanded[catKey];
       const sign = (v) => isIncome ? fmt(v) : (v !== 0 ? `-${fmt(Math.abs(v))}` : "-");
 
       return [
-        <tr key={key} className="cursor-pointer hover:brightness-95" style={{ background: "#e8d5f5" }} onClick={() => toggleExpand(key)}>
+        // Category header row (clickable)
+        <tr key={catKey} className="cursor-pointer hover:brightness-95" style={{ background: "#e8d5f5" }} onClick={() => toggleExpand(catKey)}>
           <td className="px-3 py-2 text-center w-10"><TriangleDown /></td>
-          <td className="px-3 py-2 text-sm text-gray-700">{cat}</td>
-          <td className="px-3 py-2 text-sm text-gray-600">{branches.join(", ") || "-"}</td>
+          <td className="px-3 py-2 text-sm font-semibold text-gray-800" colSpan={2}>{cat}</td>
           <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.cash !== 0 ? sign(g.cash) : "-"}</td>
           <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.rbl  !== 0 ? sign(g.rbl)  : "-"}</td>
           <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.bank !== 0 ? sign(g.bank) : "-"}</td>
           <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.upi  !== 0 ? sign(g.upi)  : "-"}</td>
           <td className="px-3 py-2 text-right text-sm font-bold text-gray-900">
-            {isIncome ? fmt(rowTotal) : `-${fmt(Math.abs(rowTotal))}`}
+            {isIncome ? fmt(catTotal) : `-${fmt(Math.abs(catTotal))}`}
           </td>
         </tr>,
-        ...(isExp ? g.transactions.map((t, i) => {
-          const dateStr = t.date
-            ? new Date(t.date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
-            : "-";
-          return (
-            <tr key={`${key}-${i}`} style={{ background: "#f3e8ff" }}>
-              <td className="px-3 py-2 text-xs text-gray-500">{dateStr}</td>
-              <td className="px-3 py-2 text-xs text-gray-600">{t.invoiceNo || t.remark || t.customerName || "-"}</td>
-              <td className="px-3 py-2 text-xs text-gray-500">{getBranchName(t.locCode)}</td>
-              <td className="px-3 py-2 text-right text-xs text-gray-700">{t.cash !== 0 ? fmt(t.cash) : "-"}</td>
-              <td className="px-3 py-2 text-right text-xs text-gray-700">{t.rbl  !== 0 ? fmt(t.rbl)  : "-"}</td>
-              <td className="px-3 py-2 text-right text-xs text-gray-700">{t.bank !== 0 ? fmt(t.bank) : "-"}</td>
-              <td className="px-3 py-2 text-right text-xs text-gray-700">{t.upi  !== 0 ? fmt(t.upi)  : "-"}</td>
-              <td className="px-3 py-2"></td>
-            </tr>
-          );
-        }) : []),
+
+        // SubCategory rows (shown when category is expanded)
+        ...(isCatExp ? Object.keys(g.subCategories).map(sub => {
+          const sg = g.subCategories[sub];
+          const subTotal = sg.cash + sg.rbl + sg.bank + sg.upi;
+          const subKey = `${catKey}-${sub}`;
+          const isSubExp = !!expanded[subKey];
+
+          return [
+            // SubCategory summary row (clickable to expand transactions)
+            <tr key={subKey} className="cursor-pointer hover:brightness-95" style={{ background: "#f3e8ff" }} onClick={e => { e.stopPropagation(); toggleExpand(subKey); }}>
+              <td className="px-3 py-2 text-center w-10 pl-8"><TriangleDown /></td>
+              <td className="px-3 py-2 text-xs text-gray-600 pl-6" colSpan={2}>{sub}</td>
+              <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.cash !== 0 ? sign(sg.cash) : "-"}</td>
+              <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.rbl  !== 0 ? sign(sg.rbl)  : "-"}</td>
+              <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.bank !== 0 ? sign(sg.bank) : "-"}</td>
+              <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.upi  !== 0 ? sign(sg.upi)  : "-"}</td>
+              <td className="px-3 py-2 text-right text-xs font-semibold text-gray-800">
+                {isIncome ? fmt(subTotal) : `-${fmt(Math.abs(subTotal))}`}
+              </td>
+            </tr>,
+
+            // Individual transaction rows (shown when subcategory is expanded)
+            ...(isSubExp ? sg.transactions.map((t, i) => {
+              const dateStr = t.date
+                ? new Date(t.date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
+                : "-";
+              const isRentOut = cat === "RentOut";
+              const tCash = isRentOut ? (t.amount || 0) : (t.cash || 0);
+              return (
+                <tr key={`${subKey}-${i}`} style={{ background: "#faf5ff" }}>
+                  <td className="px-3 py-2 text-xs text-gray-400 pl-12">{dateStr}</td>
+                  <td className="px-3 py-2 text-xs text-gray-600">{t.invoiceNo || t.remark || t.customerName || "-"}</td>
+                  <td className="px-3 py-2 text-xs text-gray-500">{t.customerName || "-"}</td>
+                  <td className="px-3 py-2 text-right text-xs text-gray-700">{tCash !== 0 ? fmt(tCash) : "-"}</td>
+                  <td className="px-3 py-2 text-right text-xs text-gray-700">{!isRentOut && t.rbl  !== 0 ? fmt(t.rbl)  : "-"}</td>
+                  <td className="px-3 py-2 text-right text-xs text-gray-700">{!isRentOut && t.bank !== 0 ? fmt(t.bank) : "-"}</td>
+                  <td className="px-3 py-2 text-right text-xs text-gray-700">{!isRentOut && t.upi  !== 0 ? fmt(t.upi)  : "-"}</td>
+                  <td className="px-3 py-2"></td>
+                </tr>
+              );
+            }) : []),
+          ];
+        }).flat() : []),
       ];
     });
 
@@ -337,8 +391,8 @@ export default function IncomeExpenseReport() {
           <thead>
             <tr className="bg-[#f8fafc] border-b border-[#e6eafb]">
               <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280] w-28">Date</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Category</th>
-              <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Branch</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Category / Sub Category</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Customer</th>
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Cash</th>
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">RBL</th>
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Bank</th>
