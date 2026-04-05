@@ -132,9 +132,10 @@ const getInvoiceItems = (salesInvoice) => {
     return salesInvoice.items;
   }
   if (salesInvoice.lineItems && Array.isArray(salesInvoice.lineItems)) {
-    // Convert lineItems to items format
     return salesInvoice.lineItems.map(lineItem => ({
-      itemId: lineItem.itemData?._id || lineItem.itemId,
+      itemId: lineItem.itemData?._id || lineItem.itemId || null,
+      itemSku: lineItem.itemSku || lineItem.itemData?.sku || null,
+      itemGroupId: lineItem.itemGroupId || lineItem.itemData?.itemGroupId || null,
       quantity: lineItem.quantity,
       rate: lineItem.rate,
       amount: lineItem.amount
@@ -1482,7 +1483,7 @@ export const getStockOnHandReport = async (req, res) => {
     const [allPurchaseReceives, allTransferOrders, allSalesInvoices] = await Promise.all([
       PurchaseReceive.find({ status: 'received', createdAt: { $lte: endDateObj } }).select('items toWarehouse createdAt').lean(),
       TransferOrder.find({ status: 'completed', createdAt: { $lte: endDateObj } }).select('items sourceWarehouse destinationWarehouse createdAt').lean(),
-      SalesInvoice.find({ createdAt: { $gte: startDateObj, $lte: endDateObj } }).select('items lineItems warehouse createdAt').lean(),
+      SalesInvoice.find({ createdAt: { $gte: startDateObj, $lte: endDateObj } }).select('items lineItems warehouse branch locCode createdAt').lean(),
     ]);
 
     // Index movements by itemId for O(1) lookup
@@ -1509,14 +1510,23 @@ export const getStockOnHandReport = async (req, res) => {
         toOutByItem.get(id).push({ qty, warehouse: to.sourceWarehouse, date });
       }
     }
-    const salesByItem = new Map();
+    const salesByItem = new Map(); // keyed by itemId
+    const salesBySku = new Map();  // keyed by SKU (fallback)
     for (const si of allSalesInvoices) {
       const invoiceItems = getInvoiceItems(si);
       for (const it of invoiceItems) {
+        const qty = parseFloat(it.quantity) || 0;
+        const entry = { qty, warehouse: si.warehouse, date: new Date(si.createdAt) };
         const id = it.itemId?.toString();
-        if (!id) continue;
-        if (!salesByItem.has(id)) salesByItem.set(id, []);
-        salesByItem.get(id).push({ qty: parseFloat(it.quantity) || 0, warehouse: si.warehouse, date: new Date(si.createdAt) });
+        if (id) {
+          if (!salesByItem.has(id)) salesByItem.set(id, []);
+          salesByItem.get(id).push(entry);
+        }
+        const sku = it.itemSku?.toString().trim().toUpperCase();
+        if (sku) {
+          if (!salesBySku.has(sku)) salesBySku.set(sku, []);
+          salesBySku.get(sku).push(entry);
+        }
       }
     }
     // ──────────────────────────────────────────────────────────────────────
@@ -1551,6 +1561,13 @@ export const getStockOnHandReport = async (req, res) => {
         // Opening stock = stock before startDate
         let openingStock = itemCreationDate < startDateObj ? originalOpeningStock : 0;
 
+        const itemSku = (item.sku || "").trim().toUpperCase();
+        const getSalesEntries = (id, sku) => {
+          const byId = id ? (salesByItem.get(id) || []) : [];
+          const bySku = sku ? (salesBySku.get(sku) || []) : [];
+          return byId.length > 0 ? byId : bySku;
+        };
+
         if (startDate && itemCreationDate < startDateObj) {
           for (const r of (prByItem.get(itemId) || [])) {
             if (wsMatch(r.warehouse) && r.date >= itemCreationDate && r.date <= dayBeforeStart) openingStock += r.qty;
@@ -1561,7 +1578,7 @@ export const getStockOnHandReport = async (req, res) => {
           for (const r of (toOutByItem.get(itemId) || [])) {
             if (wsMatch(r.warehouse) && r.date >= itemCreationDate && r.date <= dayBeforeStart) openingStock -= r.qty;
           }
-          for (const r of (salesByItem.get(itemId) || [])) {
+          for (const r of getSalesEntries(itemId, itemSku)) {
             if (wsMatch(r.warehouse) && r.date >= itemCreationDate && r.date <= dayBeforeStart) openingStock -= r.qty;
           }
         }
@@ -1583,7 +1600,7 @@ export const getStockOnHandReport = async (req, res) => {
         for (const r of (toOutByItem.get(itemId) || [])) {
           if (wsMatch(r.warehouse) && r.date >= startDateObj && r.date <= endDateObj) stockOut += r.qty;
         }
-        for (const r of (salesByItem.get(itemId) || [])) {
+        for (const r of getSalesEntries(itemId, itemSku)) {
           if (wsMatch(r.warehouse) && r.date >= startDateObj && r.date <= endDateObj) stockOut += r.qty;
         }
 
