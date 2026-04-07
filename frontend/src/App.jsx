@@ -80,6 +80,16 @@ const App = () => {
 
   // Retrieve the current user from localStorage
   const currentuser = JSON.parse(localStorage.getItem("rootfinuser")); // Convert back to an object
+  const isClusterManager = (currentuser?.role || "").toLowerCase() === "cluster_manager";
+
+  // Allowed routes for cluster managers
+  const clusterAllowedRoutes = ["/datewisedaybook", "/BookingReport", "/RentOutReport", "/securityReport", "/Revenuereport", "/reports/income-expense", "/reports/inventory", "/reports/sales", "/reports/sales-by-invoice"];
+  const ClusterGuard = ({ children }) => {
+    if (isClusterManager && !clusterAllowedRoutes.includes(location.pathname)) {
+      return <Navigate to="/datewisedaybook" />;
+    }
+    return children;
+  };
 
   // Global keyboard shortcut: C then R (sequential) to open invoice creation page
   const keySequenceRef = useRef('');
@@ -153,14 +163,14 @@ const App = () => {
           <Route path="/login" element={!currentuser ? <Login /> : <Navigate to="/" />} />
 
           {/* Protected Routes (Redirect to Login if Not Authenticated) */}
-          <Route path="/" element={currentuser ? <DayBookInc /> : <Navigate to="/login" />} />
+          <Route path="/" element={currentuser ? (isClusterManager ? <Navigate to="/datewisedaybook" /> : <DayBookInc />) : <Navigate to="/login" />} />
           <Route path="/datewisedaybook" element={currentuser ? <Datewisedaybook /> : <Navigate to="/login" />} />
           <Route path="/BookingReport" element={currentuser ? <Booking /> : <Navigate to="/login" />} />
           <Route path="/RentOutReport" element={currentuser ? <DayBook /> : <Navigate to="/login" />} />
-          <Route path="/Income&Expenses" element={currentuser ? <SecurityReturn /> : <Navigate to="/login" />} />
-          <Route path="/income" element={currentuser ? <Income /> : <Navigate to="/login" />} />
-          <Route path="/expenses" element={currentuser ? <Expenses /> : <Navigate to="/login" />} />
-          <Route path="/CashBankLedger" element={currentuser ? <SecurityPending /> : <Navigate to="/login" />} />
+          <Route path="/Income&Expenses" element={currentuser ? <ClusterGuard><SecurityReturn /></ClusterGuard> : <Navigate to="/login" />} />
+          <Route path="/income" element={currentuser ? <ClusterGuard><Income /></ClusterGuard> : <Navigate to="/login" />} />
+          <Route path="/expenses" element={currentuser ? <ClusterGuard><Expenses /></ClusterGuard> : <Navigate to="/login" />} />
+          <Route path="/CashBankLedger" element={currentuser ? <ClusterGuard><SecurityPending /></ClusterGuard> : <Navigate to="/login" />} />
           <Route path="/securityReport" element={currentuser ? <Security /> : <Navigate to='/login' />} />
           <Route path="/CloseReport" element={currentuser?.power === 'admin' ? <CloseReport /> : <Navigate to='/' />} />
           <Route path="/AdminClose" element={currentuser?.power === 'admin' ? <AdminClose /> : <Navigate to='/' />} />
