@@ -68,6 +68,7 @@ const Security = () => {
   const [returnAll, setReturnAll] = useState([]);
   const [openingCash, setOpeningCash] = useState(0);
   const [allStoreOpenings, setAllStoreOpenings] = useState({}); // locCode -> opening balance
+  const [isFetching, setIsFetching] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("rootfinuser"));
   const baseAPI = "https://rentalapi.rootments.live/api/GetBooking";
@@ -127,6 +128,8 @@ const Security = () => {
 
   /* ---------- handleFetch (all-store mode) ---------- */
   const handleFetch = async () => {
+    setIsFetching(true);
+    try {
     if (selectedStore !== "all") { await calcOpeningCash(); return; }
 
     const tmpRent=[], tmpRet=[];
@@ -178,6 +181,9 @@ const Security = () => {
     setReturnAll(tmpRet.map(d => ({ ...d, _openingForStore: openingMap[d.locCode] || 0 })));
     // Store opening map for use in table building
     setAllStoreOpenings(openingMap);
+    } finally {
+      setIsFetching(false);
+    }
   };
 
   /* ---------- build rows ---------- */
@@ -313,8 +319,14 @@ const Security = () => {
             </select>
           </div>
           <button onClick={handleFetch}
-                  className="bg-blue-600 text-white px-10 h-[40px] mt-6 rounded-md">
-            Fetch
+                  disabled={isFetching}
+                  className={`h-[40px] mt-6 rounded-md text-white px-10 transition duration-150 ${isFetching ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'}`}>
+            {isFetching ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Fetching...</span>
+              </div>
+            ) : 'Fetch'}
           </button>
         </div>
 
