@@ -64,6 +64,7 @@ import VendorCredits from "./pages/VendorCredits.jsx";
 import VendorCreditDetail from "./pages/VendorCreditDetail.jsx";
 import SalesReport from "./pages/SalesReport.jsx";
 import SalesByInvoiceReport from "./pages/SalesByInvoiceReport.jsx";
+import SalesByGroupReport from "./pages/SalesByGroupReport.jsx";
 import InventoryReport from "./pages/InventoryReport.jsx";
 import ReorderAlerts from "./pages/ReorderAlerts.jsx";
 import Income from "./pages/Income.jsx";
@@ -83,7 +84,7 @@ const App = () => {
   const isClusterManager = (currentuser?.role || "").toLowerCase() === "cluster_manager";
 
   // Allowed routes for cluster managers
-  const clusterAllowedRoutes = ["/datewisedaybook", "/BookingReport", "/RentOutReport", "/securityReport", "/Revenuereport", "/reports/income-expense", "/reports/inventory", "/reports/sales", "/reports/sales-by-invoice"];
+  const clusterAllowedRoutes = ["/datewisedaybook", "/BookingReport", "/RentOutReport", "/securityReport", "/Revenuereport", "/reports/income-expense", "/reports/inventory", "/reports/sales", "/reports/sales-by-invoice", "/reports/sales-by-group"];
   const ClusterGuard = ({ children }) => {
     if (isClusterManager && !clusterAllowedRoutes.includes(location.pathname)) {
       return <Navigate to="/datewisedaybook" />;
@@ -246,6 +247,7 @@ const App = () => {
 
           {/* Reports */}
           <Route path="/reports/sales-by-invoice" element={currentuser ? <SalesByInvoiceReport /> : <Navigate to="/login" />} />
+          <Route path="/reports/sales-by-group" element={currentuser ? <SalesByGroupReport /> : <Navigate to="/login" />} />
           <Route path="/reports/sales" element={currentuser ? <SalesReport /> : <Navigate to="/login" />} />
           <Route path="/reports/inventory" element={currentuser ? <InventoryReport /> : <Navigate to="/login" />} />
           <Route path="/reports/income-expense" element={currentuser ? <IncomeExpenseReport /> : <Navigate to="/login" />} />

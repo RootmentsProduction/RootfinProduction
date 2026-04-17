@@ -178,6 +178,7 @@ const Nav = () => {
                                         <Link to="/Revenuereport" className={subLinkClasses('/Revenuereport')}><DollarSign size={16} /><span>Revenue Report</span></Link>
                                         <Link to="/reports/sales-by-invoice" className={subLinkClasses('/reports/sales-by-invoice')}><FileTextIcon size={16} /><span>Sales by Invoice</span></Link>
                                         <Link to="/reports/sales" className={subLinkClasses('/reports/sales')}><ShoppingCart size={16} /><span>Sales Report</span></Link>
+                                        <Link to="/reports/sales-by-group" className={subLinkClasses('/reports/sales-by-group')}><Box size={16} /><span>Sales by Group</span></Link>
                                         <Link to="/reports/inventory" className={subLinkClasses('/reports/inventory')}><Box size={16} /><span>Inventory Report</span></Link>
                                         <Link to="/reports/income-expense" className={subLinkClasses('/reports/income-expense')}><LineChart size={16} /><span>Income &amp; Expense</span></Link>
                                     </div>
@@ -277,6 +278,7 @@ const Nav = () => {
                                             <>
                                                 <Link to="/reports/sales-by-invoice" className={subLinkClasses('/reports/sales-by-invoice')}><FileTextIcon size={16} /><span>Sales by Invoice</span></Link>
                                                 <Link to="/reports/sales" className={subLinkClasses('/reports/sales')}><ShoppingCart size={16} /><span>Sales Report</span></Link>
+                                                <Link to="/reports/sales-by-group" className={subLinkClasses('/reports/sales-by-group')}><Box size={16} /><span>Sales by Group</span></Link>
                                                 <Link to="/reports/inventory" className={subLinkClasses('/reports/inventory')}><Box size={16} /><span>Inventory Report</span></Link>
                                             </>
                                         )}
@@ -315,6 +317,7 @@ export default Nav
 
 
 // import { IoPersonCircleOutline } from "react-icons/io5";
+
 
 
 
