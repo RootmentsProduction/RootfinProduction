@@ -14,11 +14,18 @@
 
 
 const baseUrl = {
-     baseUrl:'https://rootfinbrynextestenv-45cz.onrender.com/',
+     baseUrl:'https://backend.brynex.com/',
 }
 export default baseUrl
 
 
 // http://localhost:7000/   
-// https://rootfinbrynextestenv-45cz.onrender.com/
 
+// https://api.brynexapparels.in/
+
+
+
+
+// https://rootfinproduction-1.onrender.com/
+
+// https://rootfin-testenv-tfxx.onrender.com/
