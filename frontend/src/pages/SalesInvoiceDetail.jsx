@@ -54,6 +54,8 @@ const SalesInvoiceDetail = () => {
     "Palakkad Branch": "705",
     "Perinthalmanna Branch": "709",
     "Perumbavoor Branch": "703",
+    "GPerumbavoor": "703",
+    "GPerumbavoorStore": "703",
     "SuitorGuy MG Road": "718",
     "Thrissur Branch": "704",
     "Vadakara Branch": "708",
@@ -511,8 +513,8 @@ const SalesInvoiceDetail = () => {
         adjustmentAmount: returnAdjustmentAmount,
         finalTotal: totalReturnAmount + totalTax - (returnTdsAmount * -1) + returnAdjustmentAmount, // Include TDS + adjustment
         userId: user?.email,
-        warehouse: invoice.warehouse,
-        locCode: user?.locCode,
+        warehouse: invoice.warehouse || invoice.locCode,
+        locCode: invoice.locCode || user?.locCode,
         originalInvoiceId: invoice._id,
         originalInvoiceNumber: invoice.invoiceNumber,
       };

@@ -46,7 +46,7 @@ const fallbackLocations = [
     { value: "G.Kalpetta", locCode: "717" },
     { value: "G.Kannur", locCode: "716" },
     { value: "G.MG Road", locCode: "718" },
-    { value: "Dappr Squad", locCode: "555" }
+     { value: "Dappr Squad", locCode: "555" }
 ];
 
 const AdminClose = () => {
