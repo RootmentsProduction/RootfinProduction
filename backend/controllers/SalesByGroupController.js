@@ -18,9 +18,13 @@ export const getSalesByGroup = async (req, res) => {
     };
 
     if (locCode && locCode !== "all") query.locCode = locCode;
-    if (userId) query.userId = userId;
+    // Only filter by userId if it's provided AND not empty
+    if (userId && userId.trim()) query.userId = userId;
 
     const invoices = await SalesInvoice.find(query).lean();
+
+    console.log(`[getSalesByGroup] Query:`, JSON.stringify(query));
+    console.log(`[getSalesByGroup] Found ${invoices.length} invoices`);
 
     // pivot: { groupName -> { size -> qty } }
     const pivot = {};
@@ -55,6 +59,8 @@ export const getSalesByGroup = async (req, res) => {
         sizeSet.add(size);
       }
     }
+
+    console.log(`[getSalesByGroup] Pivot groups: ${Object.keys(pivot).length}, Sizes: ${sizeSet.size}`);
 
     // Sort sizes numerically where possible
     const sizes = [...sizeSet].sort((a, b) => {
