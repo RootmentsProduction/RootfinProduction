@@ -48,8 +48,11 @@ const SalesByGroupReport = () => {
         dateFrom: fromDate,
         dateTo: toDate,
         locCode: selectedStore,
-        userId: user.email || "",
       });
+      // Only add userId filter for non-admin users
+      if (!isAdmin && user.email) {
+        params.append('userId', user.email);
+      }
       const res = await fetch(`${baseUrl.baseUrl}api/reports/sales/by-group?${params}`);
       const json = await res.json();
       if (json.success) {
