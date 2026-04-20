@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 const userSchema = new mongoose.Schema({
     username: { type: String, required: true, },
     email: { type: String, required: true, unique: true },
-    locCode: { type: String },
+    locCode: { type: String, required: true },
     power: { type: String, enum: ["admin", "normal"], required: true, default: 'normal' },
     password: { type: String, required: true },
     address: { type: String, default: '' },

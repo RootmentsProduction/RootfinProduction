@@ -139,8 +139,8 @@ export const UpdateUser = async (req, res) => {
         const { username, email, locCode, address, phone, gst, power, password, role, allowedLocCodes } = req.body;
 
         // Validate input
-        if (!username || !email) {
-            return res.status(400).json({ message: 'Username and email are required.' });
+        if (!username || !email || !locCode) {
+            return res.status(400).json({ message: 'Username, email, and location code are required.' });
         }
 
         // Find user
