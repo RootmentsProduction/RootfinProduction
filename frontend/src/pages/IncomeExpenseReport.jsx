@@ -61,6 +61,13 @@ const TriangleDown = () => (
 export default function IncomeExpenseReport() {
   const user = JSON.parse(localStorage.getItem("rootfinuser")) || {};
   const isAdmin = (user.power || "").toLowerCase() === "admin";
+  const isClusterManager = (user.role || "").toLowerCase() === "cluster_manager";
+
+  const availableStores = isAdmin
+    ? STORE_LIST
+    : isClusterManager
+      ? STORE_LIST.filter(s => (user.allowedLocCodes || []).includes(s.locCode))
+      : STORE_LIST.filter(s => s.locCode === user.locCode);
 
   const [fromDate, setFromDate] = useState(firstOfMonth());
   const [toDate, setToDate] = useState(today());
@@ -76,7 +83,7 @@ export default function IncomeExpenseReport() {
   const twsLocCode = (locCode === "all" || !locCode) ? (user.locCode || "") : locCode;
 
   // All store locCodes for fetching TWS data when "all" is selected
-  const ALL_LOC_CODES = STORE_LIST.map(s => s.locCode);
+  const ALL_LOC_CODES = availableStores.map(s => s.locCode);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -396,8 +403,8 @@ export default function IncomeExpenseReport() {
           <label className="block text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-1">Store</label>
           <select value={selectedStore} onChange={e => setSelectedStore(e.target.value)}
             className="rounded-lg border border-[#d9def1] px-3 py-2 text-sm focus:outline-none focus:border-[#2563eb] min-w-[180px]">
-            <option value="all">All Stores</option>
-            {STORE_LIST.map(s => <option key={s.locCode} value={s.locCode}>{s.locName}</option>)}
+            {isAdmin || isClusterManager ? <option value="all">All Stores</option> : null}
+            {availableStores.map(s => <option key={s.locCode} value={s.locCode}>{s.locName}</option>)}
           </select>
         </div>
 
