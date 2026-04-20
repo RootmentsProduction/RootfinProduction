@@ -93,7 +93,7 @@ const ManageStores = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!username || !email) {
+        if (!username || !email || !locCode) {
             alert("Please fill in all required fields.");
             return;
         }
@@ -440,8 +440,8 @@ const ManageStores = () => {
                                 <button
                                     type="submit"
                                     className={`${isEditMode ? 'w-[40%]' : 'w-[50%]'} py-2 rounded-lg text-white ${loading
-                                            ? "bg-gray-400 cursor-not-allowed"
-                                            : "bg-[#016E5B] hover:bg-[#014f42]"
+                                        ? "bg-gray-400 cursor-not-allowed"
+                                        : "bg-[#016E5B] hover:bg-[#014f42]"
                                         }`}
                                     disabled={loading}
                                 >
@@ -524,8 +524,8 @@ const ManageStores = () => {
                                     <button
                                         type="submit"
                                         className={`w-[50%] py-2 rounded-lg text-white ${resetLoading
-                                                ? "bg-gray-400 cursor-not-allowed"
-                                                : "bg-[#d97706] hover:bg-[#b45309]"
+                                            ? "bg-gray-400 cursor-not-allowed"
+                                            : "bg-[#d97706] hover:bg-[#b45309]"
                                             }`}
                                         disabled={resetLoading}
                                     >
@@ -596,8 +596,8 @@ const ManageStores = () => {
                                             </td>
                                             <td className="border p-3">
                                                 <span className={`px-2 py-1 rounded text-xs ${store.power === 'admin'
-                                                        ? 'bg-purple-100 text-purple-800'
-                                                        : 'bg-blue-100 text-blue-800'
+                                                    ? 'bg-purple-100 text-purple-800'
+                                                    : 'bg-blue-100 text-blue-800'
                                                     }`}>
                                                     {store.power}
                                                 </span>
