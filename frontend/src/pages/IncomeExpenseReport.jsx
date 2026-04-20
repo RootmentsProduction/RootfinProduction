@@ -72,18 +72,18 @@ export default function IncomeExpenseReport() {
   const [fromDate, setFromDate] = useState(firstOfMonth());
   const [toDate, setToDate] = useState(today());
   const [filterCategory, setFilterCategory] = useState("All Categories");
-  const [selectedStore, setSelectedStore] = useState("all");
+  const [selectedStore, setSelectedStore] = useState(isAdmin || isClusterManager ? "all" : (user.locCode || ""));
   const [incomeRows, setIncomeRows] = useState([]);
   const [expenseRows, setExpenseRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState({});
 
-  const locCode = isAdmin ? selectedStore : (user.locCode || "");
-  // TWS API only accepts a real locCode, not "all" — fall back to user's own store
-  const twsLocCode = (locCode === "all" || !locCode) ? (user.locCode || "") : locCode;
-
   // All store locCodes for fetching TWS data when "all" is selected
   const ALL_LOC_CODES = availableStores.map(s => s.locCode);
+
+  const locCode = selectedStore;
+  // TWS API only accepts a real locCode, not "all" — fall back to user's own store
+  const twsLocCode = (locCode === "all" || !locCode) ? (user.locCode || ALL_LOC_CODES[0] || "") : locCode;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -199,6 +199,9 @@ export default function IncomeExpenseReport() {
       const mongoExpense = [];
 
       mongoTxns.forEach(t => {
+        // Enforce store visibility for MongoDB results when 'all' is chosen
+        if (locCode === "all" && t.locCode && !ALL_LOC_CODES.includes(t.locCode)) return;
+
         const tp = (t.type || "").toLowerCase();
         const sub = (t.subCategory || "").toLowerCase().trim();
         const cat = (t.category || "").toLowerCase().trim();
