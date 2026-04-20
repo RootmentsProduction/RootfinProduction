@@ -93,7 +93,7 @@ const ManageStores = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!username || !email) {
+        if (!username || !email || !locCode) {
             alert("Please fill in all required fields.");
             return;
         }
@@ -300,7 +300,7 @@ const ManageStores = () => {
                                     onChange={(e) => setLocCode(e.target.value)}
                                     placeholder="e.g., 718"
                                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#016E5B] focus:border-none outline-none"
-
+                                    required
                                 />
                             </div>
 
