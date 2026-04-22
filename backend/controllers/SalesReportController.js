@@ -20,6 +20,8 @@ export const getSalesByInvoice = async (req, res) => {
     const adminEmails = ['officerootments@gmail.com'];
     const isAdminEmail = userId && adminEmails.some(email => userId.toLowerCase() === email.toLowerCase());
     const isAdmin = isAdminEmail || (locCode && (locCode === '858' || locCode === '103'));
+    const isClusterManager = req.query.isClusterManager === "true";
+    const allowedLocCodes = req.query.allowedLocCodes ? req.query.allowedLocCodes.split(",") : [];
 
     let query = {
       invoiceDate: { $gte: fromDate, $lte: toDate },
@@ -27,7 +29,13 @@ export const getSalesByInvoice = async (req, res) => {
     };
 
     // Store filtering logic
-    if (!isAdmin && locCode && locCode !== '858' && locCode !== '103' && locCode !== 'all') {
+    if (isClusterManager) {
+      if (locCode && locCode !== "all") {
+        query.$or = [{ warehouse: locCode }, { branch: locCode }, { locCode: locCode }];
+      } else if (allowedLocCodes.length > 0) {
+        query.locCode = { $in: allowedLocCodes };
+      }
+    } else if (!isAdmin && locCode && locCode !== '858' && locCode !== '103' && locCode !== 'all') {
       // For store users, filter by their locCode
       query.$or = [
         { warehouse: locCode },

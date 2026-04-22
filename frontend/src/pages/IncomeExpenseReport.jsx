@@ -59,6 +59,9 @@ const TriangleDown = () => (
 export default function IncomeExpenseReport() {
   const user = JSON.parse(localStorage.getItem("rootfinuser")) || {};
   const isAdmin = (user.power || "").toLowerCase() === "admin";
+  const isClusterManager = (user.role || "").toLowerCase() === "cluster_manager";
+  const clusterAllowedLocCodes = user.allowedLocCodes || [];
+  const canSelectStore = isAdmin || isClusterManager;
 
   const [fromDate, setFromDate] = useState(firstOfMonth());
   const [toDate, setToDate] = useState(today());
@@ -69,7 +72,7 @@ export default function IncomeExpenseReport() {
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState({});
 
-  const locCode = isAdmin ? selectedStore : (user.locCode || "");
+  const locCode = canSelectStore ? selectedStore : (user.locCode || "");
   // TWS API only accepts a real locCode, not "all" — fall back to user's own store
   const twsLocCode = (locCode === "all" || !locCode) ? (user.locCode || "") : locCode;
 
@@ -389,13 +392,16 @@ export default function IncomeExpenseReport() {
             {allCategories.map(c => <option key={c}>{c}</option>)}
           </select>
         </div>
-        {isAdmin && (
+        {canSelectStore && (
           <div>
             <label className="block text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-1">Store</label>
             <select value={selectedStore} onChange={e => setSelectedStore(e.target.value)}
               className="rounded-lg border border-[#d9def1] px-3 py-2 text-sm focus:outline-none focus:border-[#2563eb] min-w-[180px]">
-              <option value="all">All Stores</option>
-              {STORE_LIST.map(s => <option key={s.locCode} value={s.locCode}>{s.locName}</option>)}
+              <option value="all">{isClusterManager ? "All My Stores" : "All Stores"}</option>
+              {(isClusterManager
+                ? STORE_LIST.filter(s => clusterAllowedLocCodes.includes(s.locCode))
+                : STORE_LIST
+              ).map(s => <option key={s.locCode} value={s.locCode}>{s.locName}</option>)}
             </select>
           </div>
         )}

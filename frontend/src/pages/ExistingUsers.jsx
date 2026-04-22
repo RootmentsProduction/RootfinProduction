@@ -22,6 +22,8 @@ const ExistingUsers = () => {
     const [editRole, setEditRole] = useState("");
     const [editAllowedLocCodes, setEditAllowedLocCodes] = useState([]);
     const [editLoading, setEditLoading] = useState(false);
+    const [editStoreSearch, setEditStoreSearch] = useState("");
+    const [showEditStoreDropdown, setShowEditStoreDropdown] = useState(false);
 
     const navigate = useNavigate();
 
@@ -50,6 +52,11 @@ const ExistingUsers = () => {
         { locName: "G.MG Road", locCode: "718" },
         { locName: "WAREHOUSE", locCode: "103" },
     ];
+
+    const editFilteredStores = availableStores.filter(store =>
+        store.locName.toLowerCase().includes(editStoreSearch.toLowerCase()) &&
+        !editAllowedLocCodes.includes(store.locCode)
+    );
 
     const getStoreName = (code) => {
         const s = availableStores.find(s => s.locCode === code);
@@ -394,6 +401,61 @@ const ExistingUsers = () => {
                                         className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
                                 </div>
                             </div>
+
+                            {/* Assign Stores — only for cluster manager */}
+                            {editRole === "cluster_manager" && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 uppercase mb-2">Assign Stores *</label>
+                                    <div className="relative mb-2">
+                                        <input
+                                            type="text"
+                                            value={editStoreSearch}
+                                            onChange={(e) => { setEditStoreSearch(e.target.value); setShowEditStoreDropdown(true); }}
+                                            onFocus={() => setShowEditStoreDropdown(true)}
+                                            placeholder="Search and add stores..."
+                                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        {showEditStoreDropdown && editFilteredStores.length > 0 && (
+                                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                                                {editFilteredStores.map((store) => (
+                                                    <div
+                                                        key={store.locCode}
+                                                        onMouseDown={(e) => {
+                                                            e.preventDefault();
+                                                            if (!editAllowedLocCodes.includes(store.locCode)) {
+                                                                setEditAllowedLocCodes([...editAllowedLocCodes, store.locCode]);
+                                                            }
+                                                            setEditStoreSearch("");
+                                                            setShowEditStoreDropdown(false);
+                                                        }}
+                                                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm text-gray-700"
+                                                    >
+                                                        {store.locName} ({store.locCode})
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {editAllowedLocCodes.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {editAllowedLocCodes.map((code) => (
+                                                <span key={code} className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                                                    {getStoreName(code)}
+                                                    <button
+                                                        type="button"
+                                                        className="no-blue-button text-blue-500 hover:text-blue-800 leading-none"
+                                                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '14px', lineHeight: 1 }}
+                                                        onMouseDown={(e) => {
+                                                            e.preventDefault();
+                                                            setEditAllowedLocCodes(editAllowedLocCodes.filter(c => c !== code));
+                                                        }}
+                                                    >×</button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         <div className="flex justify-between mt-8">
                             <button onClick={() => setShowEditModal(false)}

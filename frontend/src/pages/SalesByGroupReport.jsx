@@ -32,10 +32,15 @@ const SalesByGroupReport = () => {
   const today = new Date().toISOString().split("T")[0];
   const user = JSON.parse(localStorage.getItem("rootfinuser")) || {};
   const isAdmin = (user.power || "").toLowerCase() === "admin";
+  const isClusterManager = (user.role || "").toLowerCase() === "cluster_manager";
+  const clusterAllowedLocCodes = user.allowedLocCodes || [];
+  const canSelectStore = isAdmin || isClusterManager;
 
   const [fromDate, setFromDate] = useState(today);
   const [toDate, setToDate] = useState(today);
-  const [selectedStore, setSelectedStore] = useState(isAdmin ? "all" : user.locCode || "all");
+  const [selectedStore, setSelectedStore] = useState(
+    isAdmin ? "all" : isClusterManager ? (clusterAllowedLocCodes[0] || "all") : user.locCode || "all"
+  );
   const [loading, setLoading] = useState(false);
   const [sizes, setSizes] = useState([]);
   const [rows, setRows] = useState([]);
@@ -49,6 +54,11 @@ const SalesByGroupReport = () => {
         dateTo: toDate,
         locCode: selectedStore,
         userId: user.email || "",
+        isAdmin: isAdmin ? "true" : "false",
+        isClusterManager: isClusterManager ? "true" : "false",
+        ...(isClusterManager && clusterAllowedLocCodes.length > 0
+          ? { allowedLocCodes: clusterAllowedLocCodes.join(",") }
+          : {}),
       });
       const res = await fetch(`${baseUrl.baseUrl}api/reports/sales/by-group?${params}`);
       const json = await res.json();
@@ -122,12 +132,15 @@ const SalesByGroupReport = () => {
           <div className="w-px self-stretch bg-slate-200 mx-1" />
 
           <div className="flex items-end gap-3">
-            {isAdmin && (
+            {canSelectStore && (
               <div className="flex flex-col">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Store</label>
                 <select value={selectedStore} onChange={e => setSelectedStore(e.target.value)}
                   style={{ height: 36 }} className={`${inputCls} w-44`}>
-                  {STORES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  {isClusterManager
+                    ? [{ value: "all", label: "All My Stores" }, ...STORES.filter(s => clusterAllowedLocCodes.includes(s.value))].map(s => <option key={s.value} value={s.value}>{s.label}</option>)
+                    : STORES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)
+                  }
                 </select>
               </div>
             )}

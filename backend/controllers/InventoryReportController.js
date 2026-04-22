@@ -279,7 +279,7 @@ const getWarehouseNameVariations = (warehouseName) => {
 // Get Inventory Summary Report
 export const getInventorySummary = async (req, res) => {
   try {
-    const { locCode, warehouse } = req.query;
+    const { locCode, warehouse, allowedLocCodes } = req.query;
     const userId = req.query.userId || req.body.userId;
 
     // Check if user is admin
@@ -287,6 +287,13 @@ export const getInventorySummary = async (req, res) => {
     const isAdminEmail = userId && adminEmails.some(email => userId.toLowerCase() === email.toLowerCase());
     const isAdmin = isAdminEmail || (locCode && (locCode === '858' || locCode === '103'));
     const isMainAdmin = isAdmin;
+
+    // Cluster manager: has allowedLocCodes and is not a main admin
+    const clusterStoreLabels = allowedLocCodes ? allowedLocCodes.split(',').map(s => s.trim()) : [];
+    const isClusterManager = !isMainAdmin && clusterStoreLabels.length > 0;
+    const clusterNormalizedStores = clusterStoreLabels.map(label => normalizeWarehouseName(label)).filter(Boolean);
+    // All warehouse name variations for cluster's allowed stores
+    const clusterWarehouseVariations = clusterStoreLabels.flatMap(label => getWarehouseNameVariations(label));
 
     let query = {};
 
@@ -336,7 +343,18 @@ export const getInventorySummary = async (req, res) => {
     
     // Fetch standalone items - Use multiple strategies to find items
     let standaloneItems = [];
-    if (!isMainAdmin && locCode && locCode !== '858' && locCode !== '103') {
+    if (isClusterManager && warehouse === "All Stores") {
+      // Cluster manager viewing all their stores: fetch all items, filter by any of their allowed warehouses
+      standaloneItems = await ShoeItem.find({});
+      standaloneItems = standaloneItems.filter(item =>
+        (item.warehouseStocks || []).some(ws => {
+          if (!ws || !ws.warehouse) return false;
+          const norm = normalizeWarehouseName(ws.warehouse.toString().trim());
+          return clusterNormalizedStores.includes(norm);
+        })
+      );
+      console.log(`🔒 Cluster manager: ${standaloneItems.length} items across allowed stores`);
+    } else if (!isMainAdmin && locCode && locCode !== '858' && locCode !== '103') {
       // For store users, get ALL items first, then filter by warehouseStocks in memory
       // This ensures we only show items that have stock entries for their specific warehouse
       standaloneItems = await ShoeItem.find({});
@@ -403,7 +421,16 @@ export const getInventorySummary = async (req, res) => {
           groupItemsChecked++;
           let shouldInclude = true;
           
-          if (!isMainAdmin && locCode && locCode !== '858' && locCode !== '103') {
+          if (isClusterManager && warehouse === "All Stores") {
+            // Cluster manager: include items that have stock in any of their allowed stores
+            const hasStock = item.warehouseStocks && Array.isArray(item.warehouseStocks) &&
+              item.warehouseStocks.some(ws => {
+                if (!ws || !ws.warehouse) return false;
+                const norm = normalizeWarehouseName(ws.warehouse.toString().trim());
+                return clusterNormalizedStores.includes(norm);
+              });
+            shouldInclude = hasStock;
+          } else if (!isMainAdmin && locCode && locCode !== '858' && locCode !== '103') {
             const hasStock = item.warehouseStocks && Array.isArray(item.warehouseStocks) &&
               item.warehouseStocks.some(ws => {
                 if (!ws || !ws.warehouse) return false;
@@ -469,6 +496,13 @@ export const getInventorySummary = async (req, res) => {
         warehouseStocksToShow = (item.warehouseStocks || []).filter(ws => {
           if (!ws || !ws.warehouse) return false;
           return warehouseMatches(ws.warehouse);
+        });
+      } else if (isClusterManager) {
+        // Cluster manager viewing all their stores: only show stock for their allowed warehouses
+        warehouseStocksToShow = (item.warehouseStocks || []).filter(ws => {
+          if (!ws || !ws.warehouse) return false;
+          const norm = normalizeWarehouseName(ws.warehouse.toString().trim());
+          return clusterNormalizedStores.includes(norm);
         });
       } else if (!isMainAdmin && locCode && locCode !== '858' && locCode !== '103') {
         // Store user - only show their warehouse stock
@@ -644,7 +678,7 @@ export const getInventorySummary = async (req, res) => {
 // Get Stock Summary Report
 export const getStockSummary = async (req, res) => {
   try {
-    const { locCode, warehouse, category } = req.query;
+    const { locCode, warehouse, category, allowedLocCodes } = req.query;
     const userId = req.query.userId || req.body.userId;
 
     // Check if user is admin
@@ -652,6 +686,14 @@ export const getStockSummary = async (req, res) => {
     const isAdminEmail = userId && adminEmails.some(email => userId.toLowerCase() === email.toLowerCase());
     const isAdmin = isAdminEmail || (locCode && (locCode === '858' || locCode === '103'));
     const isMainAdmin = isAdmin;
+    
+    // Parse allowedLocCodes if provided (for cluster managers) — these are store labels
+    const clusterAllowedLocCodes = allowedLocCodes ? allowedLocCodes.split(',').map(code => code.trim()) : [];
+    // Normalize cluster store labels to canonical warehouse names
+    const clusterNormalizedStores = clusterAllowedLocCodes
+      .map(label => normalizeWarehouseName(label))
+      .filter(Boolean);
+    const isClusterManager = !isMainAdmin && clusterNormalizedStores.length > 0;
 
     // Normalize warehouse name
     const normalizedWarehouse = warehouse ? normalizeWarehouseName(warehouse) : null;
@@ -671,7 +713,18 @@ export const getStockSummary = async (req, res) => {
     
     // Fetch standalone items
     let standaloneItems = [];
-    if (!isMainAdmin && locCode && locCode !== '858' && locCode !== '103') {
+    if (isClusterManager && warehouse === "All Stores") {
+      // Cluster manager: fetch all items, filter by their allowed stores
+      standaloneItems = await ShoeItem.find({});
+      standaloneItems = standaloneItems.filter(item =>
+        (item.warehouseStocks || []).some(ws => {
+          if (!ws || !ws.warehouse) return false;
+          const norm = normalizeWarehouseName(ws.warehouse.toString().trim());
+          return clusterNormalizedStores.includes(norm);
+        })
+      );
+      console.log(`🔒 Cluster manager: ${standaloneItems.length} standalone items across allowed stores`);
+    } else if (!isMainAdmin && locCode && locCode !== '858' && locCode !== '103') {
       if (normalizedWarehouse && warehouseVariations.length > 0) {
         standaloneItems = await ShoeItem.find({
           "warehouseStocks.warehouse": { $in: warehouseVariations }
@@ -704,7 +757,15 @@ export const getStockSummary = async (req, res) => {
           groupItemsChecked++;
           let shouldInclude = true;
           
-          if (!isMainAdmin && locCode && locCode !== '858' && locCode !== '103') {
+          if (isClusterManager && warehouse === "All Stores") {
+            const hasStock = item.warehouseStocks && Array.isArray(item.warehouseStocks) &&
+              item.warehouseStocks.some(ws => {
+                if (!ws || !ws.warehouse) return false;
+                const norm = normalizeWarehouseName(ws.warehouse.toString().trim());
+                return clusterNormalizedStores.includes(norm);
+              });
+            shouldInclude = hasStock;
+          } else if (!isMainAdmin && locCode && locCode !== '858' && locCode !== '103') {
             const hasStock = item.warehouseStocks && Array.isArray(item.warehouseStocks) &&
               item.warehouseStocks.some(ws => {
                 if (!ws || !ws.warehouse) return false;
@@ -826,10 +887,17 @@ export const getStockSummary = async (req, res) => {
       "Head Office"
     ];
 
-    // If a specific warehouse is selected, only show that one
-    const storesToShow = (warehouse && warehouse !== "All Stores")
-      ? [normalizedWarehouse]
-      : allStoresList;
+    // If a specific warehouse is selected, only show that one.
+    // If cluster manager is viewing "All My Stores", filter to their allowed stores only.
+    let storesToShow;
+    if (warehouse && warehouse !== "All Stores") {
+      storesToShow = [normalizedWarehouse];
+    } else if (clusterNormalizedStores.length > 0) {
+      // Filter allStoresList to only include the cluster's allowed stores
+      storesToShow = allStoresList.filter(storeName => clusterNormalizedStores.includes(storeName));
+    } else {
+      storesToShow = allStoresList;
+    }
 
     // Initialize warehouseStockMap with selected stores at 0
     const warehouseStockMap = {};
@@ -842,7 +910,7 @@ export const getStockSummary = async (req, res) => {
       };
     });
 
-    const restrictToWarehouse = (!isMainAdmin && locCode && locCode !== '858' && locCode !== '103')
+    const restrictToWarehouse = (!isMainAdmin && !isClusterManager && locCode && locCode !== '858' && locCode !== '103')
       ? normalizedWarehouse
       : null;
 
