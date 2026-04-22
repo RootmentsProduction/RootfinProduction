@@ -24,7 +24,7 @@ export const SignUp = async (req, res) => {
             email,
             power,
             password: hashedPassword,
-            locCode,
+            locCode: locCode || '',
             address: address || '',
             phone: phone || '',
             gst: gst || '',
@@ -139,8 +139,8 @@ export const UpdateUser = async (req, res) => {
         const { username, email, locCode, address, phone, gst, power, password, role, allowedLocCodes } = req.body;
 
         // Validate input
-        if (!username || !email || !locCode) {
-            return res.status(400).json({ message: 'Username, email, and location code are required.' });
+        if (!username || !email) {
+            return res.status(400).json({ message: 'Username and email are required.' });
         }
 
         // Find user
@@ -160,7 +160,7 @@ export const UpdateUser = async (req, res) => {
         // Update fields
         user.username = username;
         user.email = email;
-        user.locCode = locCode;
+        user.locCode = locCode || '';
         user.address = address || '';
         user.phone = phone || '';
         user.gst = gst || '';

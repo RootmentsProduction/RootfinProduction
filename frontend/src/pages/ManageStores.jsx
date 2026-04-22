@@ -93,7 +93,7 @@ const ManageStores = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!username || !email || !locCode) {
+        if (!username || !email) {
             alert("Please fill in all required fields.");
             return;
         }
@@ -292,7 +292,7 @@ const ManageStores = () => {
 
                             <div>
                                 <label className="block mb-2 font-semibold text-gray-700">
-                                    Location Code *
+                                    Location Code
                                 </label>
                                 <input
                                     type="text"
@@ -300,7 +300,6 @@ const ManageStores = () => {
                                     onChange={(e) => setLocCode(e.target.value)}
                                     placeholder="e.g., 718"
                                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#016E5B] focus:border-none outline-none"
-                                    required
                                 />
                             </div>
 
