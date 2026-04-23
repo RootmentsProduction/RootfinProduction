@@ -228,7 +228,7 @@ const TransferOrderView = () => {
   };
   
   // Handle scanned code
-  const handleScannedCode = (scannedCode) => {
+  const handleScannedCode = async (scannedCode) => {
     console.log(`📱 Scanned code: "${scannedCode}"`);
     
     // Debounce: Ignore scans within 500ms of the same code
@@ -246,11 +246,12 @@ const TransferOrderView = () => {
       return;
     }
     
-    // Find matching item by SKU or itemId
-    const matchedItem = transferOrder.items.find(item => {
+    const scannedCodeTrimmed = scannedCode.trim();
+
+    // Find matching item by SKU or itemId (direct match)
+    let matchedItem = transferOrder.items.find(item => {
       const itemSku = (item.itemSku || "").toString().trim();
       const itemId = (item.itemId || "").toString().trim();
-      const scannedCodeTrimmed = scannedCode.trim();
       
       return itemSku === scannedCodeTrimmed || 
              itemId === scannedCodeTrimmed ||
@@ -258,6 +259,36 @@ const TransferOrderView = () => {
              itemId.toLowerCase() === scannedCodeTrimmed.toLowerCase();
     });
     
+    // Fallback: look up barcode in item groups API, then match by itemName + itemGroupId
+    if (!matchedItem) {
+      console.log(`🔍 No direct SKU match, looking up barcode in item groups...`);
+      try {
+        const groupsResponse = await fetch(`${API_URL}/api/shoe-sales/item-groups`);
+        if (groupsResponse.ok) {
+          const groups = await groupsResponse.json();
+          for (const group of groups) {
+            if (group.items && Array.isArray(group.items)) {
+              const foundVariant = group.items.find(item =>
+                item.sku && item.sku.toLowerCase() === scannedCodeTrimmed.toLowerCase()
+              );
+              if (foundVariant) {
+                console.log(`✅ Found variant in group "${group.name}": ${foundVariant.name}`);
+                // Match against transfer order items by itemGroupId + itemName
+                matchedItem = transferOrder.items.find(item => {
+                  const nameMatch = (item.itemName || "").toLowerCase() === (foundVariant.name || "").toLowerCase();
+                  const groupMatch = item.itemGroupId && item.itemGroupId.toString() === group._id?.toString();
+                  return nameMatch && groupMatch;
+                });
+                if (matchedItem) break;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error looking up barcode in item groups:", err);
+      }
+    }
+
     if (!matchedItem) {
       setScanError(`Item not found in transfer order: ${scannedCode}`);
       setTimeout(() => setScanError(""), 3000);
