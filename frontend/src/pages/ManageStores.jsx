@@ -16,13 +16,13 @@ const ManageStores = () => {
     const [allowedLocCodes, setAllowedLocCodes] = useState([]);
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    
+
     // Edit mode states
     const [isEditMode, setIsEditMode] = useState(false);
     const [editingUserId, setEditingUserId] = useState(null);
     const [stores, setStores] = useState([]);
     const [loadingStores, setLoadingStores] = useState(false);
-    
+
     // Password reset states
     const [showResetForm, setShowResetForm] = useState(false);
     const [resetEmail, setResetEmail] = useState("");
@@ -31,7 +31,7 @@ const ManageStores = () => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [resetLoading, setResetLoading] = useState(false);
-    
+
     // Check if user is admin
     const userInfo = JSON.parse(localStorage.getItem("rootfinuser") || "{}");
     const isAdmin = userInfo.power === "admin";
@@ -46,7 +46,7 @@ const ManageStores = () => {
             setLoadingStores(true);
             const response = await fetch(`${baseUrl.baseUrl}user/getAllUsers`);
             const data = await response.json();
-            
+
             if (response.ok) {
                 setStores(data.users || []);
             }
@@ -70,7 +70,7 @@ const ManageStores = () => {
         setRole(store.role || "");
         setAllowedLocCodes(store.allowedLocCodes || []);
         setPassword(""); // Don't populate password for security
-        
+
         // Scroll to form
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -130,13 +130,13 @@ const ManageStores = () => {
 
         try {
             setLoading(true);
-            
-            const url = isEditMode 
+
+            const url = isEditMode
                 ? `${baseUrl.baseUrl}user/updateUser/${editingUserId}`
                 : `${baseUrl.baseUrl}user/signin`;
-            
+
             const method = isEditMode ? "PUT" : "POST";
-            
+
             const response = await fetch(url, {
                 method,
                 headers: {
@@ -163,31 +163,31 @@ const ManageStores = () => {
             setLoading(false);
         }
     };
-    
+
     const handlePasswordReset = async (e) => {
         e.preventDefault();
-        
+
         if (!resetEmail || !newPassword || !confirmPassword) {
             alert("Please fill in all fields.");
             return;
         }
-        
+
         if (newPassword !== confirmPassword) {
             alert("Passwords do not match.");
             return;
         }
-        
+
         if (newPassword.length < 6) {
             alert("Password must be at least 6 characters long.");
             return;
         }
-        
+
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(resetEmail)) {
             alert("Please enter a valid email address.");
             return;
         }
-        
+
         try {
             setResetLoading(true);
             const response = await fetch(`${baseUrl.baseUrl}user/reset-password`, {
@@ -200,9 +200,9 @@ const ManageStores = () => {
                     newPassword: newPassword,
                 }),
             });
-            
+
             const data = await response.json();
-            
+
             if (response.ok) {
                 alert(data.message || "Password reset successfully!");
                 setResetEmail("");
@@ -230,7 +230,7 @@ const ManageStores = () => {
                         <h2 className="text-2xl font-semibold text-center mb-6 text-[#016E5B]">
                             {isEditMode ? "Edit Store" : "Add New Store"}
                         </h2>
-                        
+
                         {isEditMode && (
                             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                 <p className="text-sm text-blue-800">
@@ -439,11 +439,10 @@ const ManageStores = () => {
                                 )}
                                 <button
                                     type="submit"
-                                    className={`${isEditMode ? 'w-[40%]' : 'w-[50%]'} py-2 rounded-lg text-white ${
-                                        loading
-                                            ? "bg-gray-400 cursor-not-allowed"
-                                            : "bg-[#016E5B] hover:bg-[#014f42]"
-                                    }`}
+                                    className={`${isEditMode ? 'w-[40%]' : 'w-[50%]'} py-2 rounded-lg text-white ${loading
+                                        ? "bg-gray-400 cursor-not-allowed"
+                                        : "bg-[#016E5B] hover:bg-[#014f42]"
+                                        }`}
                                     disabled={loading}
                                 >
                                     {loading ? (isEditMode ? "Updating..." : "Creating Store...") : (isEditMode ? "Update Store" : "Create Store")}
@@ -451,7 +450,7 @@ const ManageStores = () => {
                             </div>
                         </form>
                     </div>
-                    
+
                     {/* Password Reset Section - Admin Only */}
                     {isAdmin && (
                         <div className="bg-white shadow-lg rounded-lg p-8">
@@ -524,11 +523,10 @@ const ManageStores = () => {
                                 <div className="flex justify-center mt-6">
                                     <button
                                         type="submit"
-                                        className={`w-[50%] py-2 rounded-lg text-white ${
-                                            resetLoading
-                                                ? "bg-gray-400 cursor-not-allowed"
-                                                : "bg-[#d97706] hover:bg-[#b45309]"
-                                        }`}
+                                        className={`w-[50%] py-2 rounded-lg text-white ${resetLoading
+                                            ? "bg-gray-400 cursor-not-allowed"
+                                            : "bg-[#d97706] hover:bg-[#b45309]"
+                                            }`}
                                         disabled={resetLoading}
                                     >
                                         {resetLoading ? "Resetting..." : "Reset Password"}
@@ -538,13 +536,13 @@ const ManageStores = () => {
                         </div>
                     )}
                 </div>
-                
+
                 {/* Existing Stores List */}
                 <div className="mt-8 bg-white shadow-lg rounded-lg p-8">
                     <h2 className="text-2xl font-semibold mb-6 text-[#016E5B]">
                         Existing Stores
                     </h2>
-                    
+
                     {loadingStores ? (
                         <div className="text-center py-8">
                             <p className="text-gray-600">Loading stores...</p>
@@ -597,11 +595,10 @@ const ManageStores = () => {
                                                 )}
                                             </td>
                                             <td className="border p-3">
-                                                <span className={`px-2 py-1 rounded text-xs ${
-                                                    store.power === 'admin' 
-                                                        ? 'bg-purple-100 text-purple-800' 
-                                                        : 'bg-blue-100 text-blue-800'
-                                                }`}>
+                                                <span className={`px-2 py-1 rounded text-xs ${store.power === 'admin'
+                                                    ? 'bg-purple-100 text-purple-800'
+                                                    : 'bg-blue-100 text-blue-800'
+                                                    }`}>
                                                     {store.power}
                                                 </span>
                                             </td>
