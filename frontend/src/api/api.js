@@ -14,14 +14,14 @@
 
 
 const baseUrl = {
-     baseUrl:'https://api.brynexapparels.in/',
+     baseUrl:'https://backend.brynex.com/',
 }
 export default baseUrl
 
 
 // http://localhost:7000/   
 
-// https://api.brynexapparels.in/
+// 
 
 
 
