@@ -582,24 +582,50 @@ const ItemDropdown = ({ rowId, value, description, onDescriptionChange, onChange
     const fetchItems = async () => {
       setLoading(true);
       try {
-        // Fetch items with a higher limit for dropdown (100 items should be enough for most cases)
-        const response = await fetch(`${API_URL}/api/shoe-sales/items?page=1&limit=100`);
+        // Fetch standalone items
+        const response = await fetch(`${API_URL}/api/shoe-sales/items?page=1&limit=10000`);
         if (!response.ok) throw new Error("Failed to fetch items");
         const data = await response.json();
         
-        // Handle both old format (array) and new format (object with items and pagination)
         let itemsList = [];
         if (Array.isArray(data)) {
-          // Old format - direct array
           itemsList = data;
         } else if (data.items && Array.isArray(data.items)) {
-          // New format - paginated response
           itemsList = data.items;
         }
         
-        // Filter active items
         const activeItems = itemsList.filter((i) => i?.isActive !== false && String(i?.isActive).toLowerCase() !== "false");
-        setItems(activeItems);
+
+        // Fetch item group variants and flatten them
+        let groupVariants = [];
+        try {
+          const groupsResponse = await fetch(`${API_URL}/api/shoe-sales/item-groups`);
+          if (groupsResponse.ok) {
+            const groups = await groupsResponse.json();
+            for (const group of groups) {
+              if (!group.items || !Array.isArray(group.items)) continue;
+              for (const variant of group.items) {
+                if (variant.isActive === false) continue;
+                groupVariants.push({
+                  _id: variant._id || `${group._id}-${variant.name}`,
+                  itemName: variant.name,
+                  sku: variant.sku || "",
+                  costPrice: variant.costPrice || 0,
+                  sellingPrice: variant.sellingPrice || variant.costPrice || 0,
+                  warehouseStocks: variant.warehouseStocks || [],
+                  itemGroupId: group._id,
+                  groupName: group.name,
+                  isFromGroup: true,
+                  isActive: true,
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching item groups:", e);
+        }
+
+        setItems([...activeItems, ...groupVariants]);
       } catch (error) {
         console.error("Error fetching items:", error);
         setItems([]);
@@ -608,7 +634,7 @@ const ItemDropdown = ({ rowId, value, description, onDescriptionChange, onChange
       }
     };
     fetchItems();
-  }, []);
+  }, [API_URL]);
 
   useEffect(() => {
     if (value) {
