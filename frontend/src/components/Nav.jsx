@@ -143,7 +143,7 @@ const Nav = () => {
         }`;
 
     const subLinkClasses = (path) =>
-        `flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${
+        `flex items-center gap-2 rounded-md px-3 py-2 text-xs transition ${
             activePath === path
                 ? "border border-[#2563eb]/70 bg-[#1d4ed8] text-white shadow-[0_4px_14px_-8px_rgba(37,99,235,0.8)]"
                 : "border border-transparent text-[#94a3b8] hover:bg-[#111827] hover:text-white"
@@ -157,12 +157,16 @@ const Nav = () => {
         }`;
 
     // alert(location.pathname)
+    const isInvoiceCreatePage = activePath === "/sales/invoices/new" || activePath.startsWith("/sales/invoices/edit");
+    const sidebarWidth = isInvoiceCreatePage ? "w-52" : "w-64";
+    const sidebarTranslate = isInvoiceCreatePage ? "-translate-x-52" : "-translate-x-64";
+
     return (
         <div className={`flex ${location.pathname === "/login" ? "hidden" : "block"}`}>
             {/* Sidebar */}
             <div
-                className={`fixed top-0 left-0 h-full w-64 transform overflow-y-auto bg-[#0b1120] pb-10 pl-4 pr-3 pt-6 text-[#cbd5f5] transition-transform duration-300 ${
-                    isOpen ? "translate-x-0" : "-translate-x-64"
+                className={`fixed top-0 left-0 h-full ${sidebarWidth} transform overflow-y-auto bg-[#0b1120] pb-10 pl-4 pr-3 pt-6 text-[#cbd5f5] transition-transform duration-300 ${
+                    isOpen ? "translate-x-0" : sidebarTranslate
                 }`}
             >
                 <nav className="space-y-3">

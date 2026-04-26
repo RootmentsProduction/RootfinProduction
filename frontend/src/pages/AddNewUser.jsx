@@ -163,7 +163,7 @@ const AddNewUser = () => {
     };
 
     return (
-        <div className="ml-[256px] bg-white min-h-screen">
+        <div className="ml-[240px] bg-white min-h-screen">
             {/* Header Section */}
             <div className="bg-white px-8 py-6 border-b border-gray-200">
                 <div className="flex items-center gap-4">

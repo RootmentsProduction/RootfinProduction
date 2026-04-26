@@ -85,7 +85,7 @@ const ResetUserPassword = () => {
     };
 
     return (
-        <div className="ml-[256px] bg-white min-h-screen">
+        <div className="ml-[240px] bg-white min-h-screen">
             {/* Header */}
             <div className="bg-white px-10 py-7 border-b border-gray-200">
                 <div className="flex items-center gap-4">

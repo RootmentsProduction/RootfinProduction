@@ -164,7 +164,7 @@ const ExistingUsers = () => {
     };
 
     return (
-        <div className="ml-[256px] bg-[#EEF2F7] min-h-screen">
+        <div className="ml-[240px] bg-[#EEF2F7] min-h-screen">
             {/* Header */}
             <div className="bg-white px-10 py-7 border-b border-gray-200 flex items-center justify-between">
                 <div className="flex items-center gap-4">
