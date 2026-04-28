@@ -14,40 +14,40 @@ const firstOfMonth = () => {
 };
 
 const STORE_LIST = [
-  { locName: "G-Edappal", locCode: "707" },
-  { locName: "G-Edappally", locCode: "702" },
-  { locName: "G-Kalpetta", locCode: "717" },
-  { locName: "G-Kannur", locCode: "716" },
-  { locName: "G-Kottakkal", locCode: "711" },
-  { locName: "G-Kottayam", locCode: "701" },
-  { locName: "G-Manjeri", locCode: "710" },
-  { locName: "G-Mg Road", locCode: "718" },
-  { locName: "G-Palakkad", locCode: "705" },
+  { locName: "G-Edappal",        locCode: "707" },
+  { locName: "G-Edappally",      locCode: "702" },
+  { locName: "G-Kalpetta",       locCode: "717" },
+  { locName: "G-Kannur",         locCode: "716" },
+  { locName: "G-Kottakkal",      locCode: "711" },
+  { locName: "G-Kottayam",       locCode: "701" },
+  { locName: "G-Manjeri",        locCode: "710" },
+  { locName: "G-Mg Road",        locCode: "718" },
+  { locName: "G-Palakkad",       locCode: "705" },
   { locName: "G-Perinthalmanna", locCode: "709" },
-  { locName: "G-Perumbavoor", locCode: "703" },
-  { locName: "G-Thrissur", locCode: "704" },
-  { locName: "G-Vadakara", locCode: "708" },
-  { locName: "G-Chavakkad", locCode: "706" },
-  { locName: "G-Calicut", locCode: "712" },
-  { locName: "HEAD OFFICE01", locCode: "759" },
-  { locName: "Office", locCode: "102" },
-  { locName: "Production", locCode: "101" },
-  { locName: "SG-Trivandrum", locCode: "700" },
-  { locName: "Warehouse", locCode: "858" },
-  { locName: "WAREHOUSE", locCode: "103" },
-  { locName: "Z-Edappal", locCode: "100" },
-  { locName: "Z-Edapally", locCode: "144" },
-  { locName: "Z-Kottakkal", locCode: "122" },
+  { locName: "G-Perumbavoor",    locCode: "703" },
+  { locName: "G-Thrissur",       locCode: "704" },
+  { locName: "G-Vadakara",       locCode: "708" },
+  { locName: "G-Chavakkad",      locCode: "706" },
+  { locName: "G-Calicut",        locCode: "712" },
+  { locName: "HEAD OFFICE01",    locCode: "759" },
+  { locName: "Office",           locCode: "102" },
+  { locName: "Production",       locCode: "101" },
+  { locName: "SG-Trivandrum",    locCode: "700" },
+  { locName: "Warehouse",        locCode: "858" },
+  { locName: "WAREHOUSE",        locCode: "103" },
+  { locName: "Z-Edappal",        locCode: "100" },
+  { locName: "Z-Edapally",       locCode: "144" },
+  { locName: "Z-Kottakkal",      locCode: "122" },
   { locName: "Z-Perinthalmanna", locCode: "133" },
 ];
 
 const EXPENSE_CATEGORIES = new Set([
-  "petty expenses", "staff reimbursement", "maintenance expenses", "telephone internet",
-  "utility bill", "salary", "rent", "courier charges", "asset purchase", "promotion_services",
-  "spot incentive", "bulk amount transfer", "other expenses", "shoe sales return",
-  "shirt sales return", "dry cleaning", "altration", "material", "travel exp", "fuel exp",
-  "waste management", "water charges", "printing stationary", "staff welfare",
-  "staff accommodation", "incentive", "write off",
+  "petty expenses","staff reimbursement","maintenance expenses","telephone internet",
+  "utility bill","salary","rent","courier charges","asset purchase","promotion_services",
+  "spot incentive","bulk amount transfer","other expenses","shoe sales return",
+  "shirt sales return","dry cleaning","altration","material","travel exp","fuel exp",
+  "waste management","water charges","printing stationary","staff welfare",
+  "staff accommodation","incentive","write off",
 ]);
 
 // Maps raw DB category values → human-readable display labels (mirrors Expenses.jsx baseExpenseCats)
@@ -83,45 +83,10 @@ const CATEGORY_LABEL_MAP = {
 const getCategoryLabel = (cat) =>
   CATEGORY_LABEL_MAP[(cat || "").toLowerCase().trim()] || cat;
 
-// Maps raw DB category values → human-readable display labels (mirrors Expenses.jsx baseExpenseCats)
-const CATEGORY_LABEL_MAP = {
-  "dry cleaning":         "Dry Cleaning",
-  "altration":            "Altration",
-  "material":             "Material",
-  "courier charges":      "Courier Charges",
-  "maintenance expenses": "Repairs & Maintenance",
-  "travel exp":           "Travel Exp",
-  "fuel exp":             "Fuel Exp",
-  "petty expenses":       "Office Expense",
-  "telephone internet":   "Internet Expense",
-  "utility bill":         "Electricity Charges",
-  "waste management":     "Waste Management",
-  "water charges":        "Water Charges",
-  "salary":               "Salary / Salary Advance",
-  "printing stationary":  "Printing & Stationary",
-  "staff welfare":        "Staff Welfare",
-  "staff reimbursement":  "Staff Accommodation",
-  "rent":                 "Rent",
-  "asset purchase":       "Asset Purchase",
-  "incentive":            "Incentive",
-  "spot incentive":       "Incentive",
-  "other expenses":       "Refund",
-  "bulk amount transfer": "Cash to Bank",
-  "write off":            "Write Off",
-  "promotion_services":   "Promotion / Services",
-  "shoe sales return":    "Shoe Sales Return",
-  "shirt sales return":   "Shirt Sales Return",
-};
-
-const getCategoryLabel = (cat) =>
-  CATEGORY_LABEL_MAP[(cat || "").toLowerCase().trim()] || cat;
-
 const TriangleDown = () => (
-  <span style={{
-    display: "inline-block", width: 0, height: 0,
-    borderLeft: "7px solid transparent", borderRight: "7px solid transparent",
-    borderTop: "12px solid #2d6a8f"
-  }} />
+  <span style={{ display:"inline-block", width:0, height:0,
+    borderLeft:"7px solid transparent", borderRight:"7px solid transparent",
+    borderTop:"12px solid #2d6a8f" }} />
 );
 
 export default function IncomeExpenseReport() {
@@ -134,7 +99,7 @@ export default function IncomeExpenseReport() {
   const [fromDate, setFromDate] = useState(firstOfMonth());
   const [toDate, setToDate] = useState(today());
   const [filterCategory, setFilterCategory] = useState("All Categories");
-  const [selectedStore, setSelectedStore] = useState(isAdmin || isClusterManager ? "all" : (user.locCode || ""));
+  const [selectedStore, setSelectedStore] = useState("all");
   const [incomeRows, setIncomeRows] = useState([]);
   const [expenseRows, setExpenseRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -182,8 +147,8 @@ export default function IncomeExpenseReport() {
       // Merge all store results into single arrays
       const bookingData = { dataSet: { data: twsResults.flatMap(r => r[0]?.dataSet?.data || []) } };
       const rentoutData = { dataSet: { data: twsResults.flatMap(r => r[1]?.dataSet?.data || []) } };
-      const returnData = { dataSet: { data: twsResults.flatMap(r => r[2]?.dataSet?.data || []) } };
-      const cancelData = { dataSet: { data: twsResults.flatMap(r => r[3]?.dataSet?.data || []) } };
+      const returnData  = { dataSet: { data: twsResults.flatMap(r => r[2]?.dataSet?.data || []) } };
+      const cancelData  = { dataSet: { data: twsResults.flatMap(r => r[3]?.dataSet?.data || []) } };
 
       const mongoRes  = await fetch(`${API}/user/Getpayment?LocCode=${locCode}&DateFrom=${fromDate}&DateTo=${toDate}`);
       let mongoJson = mongoRes.ok ? await mongoRes.json() : {};
@@ -209,23 +174,23 @@ export default function IncomeExpenseReport() {
         category: "Booking",
         subCategory: "Advance",
         cash: Number(item.bookingCashAmount || 0),
-        rbl: Number(item.rblRazorPay || 0),
+        rbl:  Number(item.rblRazorPay || 0),
         bank: Number(item.bookingBankAmount || 0),
-        upi: Number(item.bookingUPIAmount || 0),
+        upi:  Number(item.bookingUPIAmount || 0),
         locCode: item.locCode || locCode,
       }));
 
       // RentOut -> Income: split into Security row + Balance Payable row
       const rentoutList = [];
       (rentoutData?.dataSet?.data || []).forEach(item => {
-        const security = Number(item.securityAmount || 0);
-        const advance = Number(item.advanceAmount || 0);
+        const security       = Number(item.securityAmount || 0);
+        const advance        = Number(item.advanceAmount || 0);
         const balancePayable = Number(item.invoiceAmount || 0) - advance;
-        const cash = Number(item.rentoutCashAmount || 0);
-        const rbl = Number(item.rblRazorPay || 0);
-        const bank = Number(item.rentoutBankAmount || 0);
-        const upi = Number(item.rentoutUPIAmount || 0);
-        const base = {
+        const cash  = Number(item.rentoutCashAmount || 0);
+        const rbl   = Number(item.rblRazorPay || 0);
+        const bank  = Number(item.rentoutBankAmount || 0);
+        const upi   = Number(item.rentoutUPIAmount || 0);
+        const base  = {
           date: (item.rentOutDate || "").split("T")[0],
           invoiceNo: item.invoiceNo,
           customerName: item.customerName || "",
@@ -233,7 +198,7 @@ export default function IncomeExpenseReport() {
           locCode: item.locCode || locCode,
           cash, rbl, bank, upi,
         };
-        rentoutList.push({ ...base, subCategory: "Security", amount: security });
+        rentoutList.push({ ...base, subCategory: "Security",        amount: security });
         rentoutList.push({ ...base, subCategory: "Balance Payable", amount: balancePayable });
       });
 
@@ -249,7 +214,7 @@ export default function IncomeExpenseReport() {
           cash: -Math.abs(Number(item.returnCashAmount || 0)),
           rbl,
           bank: rbl !== 0 ? 0 : -Math.abs(Number(item.returnBankAmount || 0)),
-          upi: rbl !== 0 ? 0 : -Math.abs(Number(item.returnUPIAmount || 0)),
+          upi:  rbl !== 0 ? 0 : -Math.abs(Number(item.returnUPIAmount || 0)),
           locCode: item.locCode || locCode,
         };
       });
@@ -266,7 +231,7 @@ export default function IncomeExpenseReport() {
           cash: -Math.abs(Number(item.deleteCashAmount || 0)),
           rbl,
           bank: rbl !== 0 ? 0 : -Math.abs(Number(item.deleteBankAmount || 0)),
-          upi: rbl !== 0 ? 0 : -Math.abs(Number(item.deleteUPIAmount || 0)),
+          upi:  rbl !== 0 ? 0 : -Math.abs(Number(item.deleteUPIAmount || 0)),
           locCode: item.locCode || locCode,
         };
       });
@@ -277,10 +242,7 @@ export default function IncomeExpenseReport() {
       const mongoExpense = [];
 
       mongoTxns.forEach(t => {
-        // Enforce store visibility for MongoDB results when 'all' is chosen
-        if (locCode === "all" && t.locCode && !ALL_LOC_CODES.includes(t.locCode)) return;
-
-        const tp = (t.type || "").toLowerCase();
+        const tp  = (t.type || "").toLowerCase();
         const sub = (t.subCategory || "").toLowerCase().trim();
         const cat = (t.category || "").toLowerCase().trim();
         const inv = (t.invoiceNo || "").toUpperCase();
@@ -300,9 +262,9 @@ export default function IncomeExpenseReport() {
           subCategory: normalizedSubCategory,
           remark: t.remark || t.remarks || "",
           cash: Number(t.cash || 0),
-          rbl: Number(t.rbl || t.rblRazorPay || 0),
+          rbl:  Number(t.rbl || t.rblRazorPay || 0),
           bank: Number(t.bank || 0),
-          upi: Number(t.upi || 0),
+          upi:  Number(t.upi || 0),
           locCode: t.locCode || locCode,
         };
 
@@ -343,19 +305,19 @@ export default function IncomeExpenseReport() {
         map[cat].cash += t.amount || 0;
       } else {
         subG.cash += t.cash || 0;
-        subG.rbl += t.rbl || 0;
+        subG.rbl  += t.rbl  || 0;
         subG.bank += t.bank || 0;
-        subG.upi += t.upi || 0;
+        subG.upi  += t.upi  || 0;
         map[cat].cash += t.cash || 0;
-        map[cat].rbl += t.rbl || 0;
+        map[cat].rbl  += t.rbl  || 0;
         map[cat].bank += t.bank || 0;
-        map[cat].upi += t.upi || 0;
+        map[cat].upi  += t.upi  || 0;
       }
     });
     return map;
   };
 
-  const incomeGrouped = buildGrouped(incomeRows);
+  const incomeGrouped  = buildGrouped(incomeRows);
   const expenseGrouped = buildGrouped(expenseRows);
 
   const sumGroup = (grouped) =>
@@ -365,16 +327,16 @@ export default function IncomeExpenseReport() {
     );
   const incTotals = sumGroup(incomeGrouped);
   const expTotals = sumGroup(expenseGrouped);
-  const incTotal = incTotals.cash + incTotals.rbl + incTotals.bank + incTotals.upi;
-  const expTotal = expTotals.cash + expTotals.rbl + expTotals.bank + expTotals.upi;
-  const netCash = incTotals.cash + expTotals.cash;
-  const netRbl = incTotals.rbl + expTotals.rbl;
-  const netBank = incTotals.bank + expTotals.bank;
-  const netUpi = incTotals.upi + expTotals.upi;
-  const netTotal = incTotal + expTotal;
+  const incTotal  = incTotals.cash + incTotals.rbl + incTotals.bank + incTotals.upi;
+  const expTotal  = expTotals.cash + expTotals.rbl + expTotals.bank + expTotals.upi;
+  const netCash   = incTotals.cash + expTotals.cash;
+  const netRbl    = incTotals.rbl  + expTotals.rbl;
+  const netBank   = incTotals.bank + expTotals.bank;
+  const netUpi    = incTotals.upi  + expTotals.upi;
+  const netTotal  = incTotal + expTotal;
 
   const allCategories = [...new Set([...incomeRows, ...expenseRows].map(t => t.category || "Uncategorized"))];
-  const toggleExpand = (key) => setExpanded(p => ({ ...p, [key]: !p[key] }));
+  const toggleExpand  = (key) => setExpanded(p => ({ ...p, [key]: !p[key] }));
 
   const getBranchName = (lc) => {
     const store = STORE_LIST.find(s => s.locCode === String(lc));
@@ -398,9 +360,9 @@ export default function IncomeExpenseReport() {
           <td className="px-3 py-2 text-center w-10"><TriangleDown /></td>
           <td className="px-3 py-2 text-sm font-semibold text-gray-800" colSpan={showBranch ? 4 : 3}>{getCategoryLabel(cat)}</td>
           <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.cash !== 0 ? sign(g.cash) : "-"}</td>
-          <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.rbl !== 0 ? sign(g.rbl) : "-"}</td>
+          <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.rbl  !== 0 ? sign(g.rbl)  : "-"}</td>
           <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.bank !== 0 ? sign(g.bank) : "-"}</td>
-          <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.upi !== 0 ? sign(g.upi) : "-"}</td>
+          <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.upi  !== 0 ? sign(g.upi)  : "-"}</td>
           <td className="px-3 py-2 text-right text-sm font-bold text-gray-900">
             {isIncome ? fmt(catTotal) : `-${fmt(Math.abs(catTotal))}`}
           </td>
@@ -454,9 +416,9 @@ export default function IncomeExpenseReport() {
               <td className="px-3 py-2 text-center w-10 pl-8"><TriangleDown /></td>
               <td className="px-3 py-2 text-xs text-gray-600 pl-6" colSpan={showBranch ? 4 : 3}>{getCategoryLabel(sub)}</td>
               <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.cash !== 0 ? sign(sg.cash) : "-"}</td>
-              <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.rbl !== 0 ? sign(sg.rbl) : "-"}</td>
+              <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.rbl  !== 0 ? sign(sg.rbl)  : "-"}</td>
               <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.bank !== 0 ? sign(sg.bank) : "-"}</td>
-              <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.upi !== 0 ? sign(sg.upi) : "-"}</td>
+              <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.upi  !== 0 ? sign(sg.upi)  : "-"}</td>
               <td className="px-3 py-2 text-right text-xs font-semibold text-gray-800">
                 {isIncome ? fmt(subTotal) : `-${fmt(Math.abs(subTotal))}`}
               </td>
@@ -560,9 +522,9 @@ export default function IncomeExpenseReport() {
               <tr style={{ background: "#d4edda" }}>
                 <td colSpan={showBranch ? 5 : 4} className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Income Total</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{incTotals.cash !== 0 ? fmt(incTotals.cash) : "-"}</td>
-                <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{incTotals.rbl !== 0 ? fmt(incTotals.rbl) : "-"}</td>
+                <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{incTotals.rbl  !== 0 ? fmt(incTotals.rbl)  : "-"}</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{incTotals.bank !== 0 ? fmt(incTotals.bank) : "-"}</td>
-                <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{incTotals.upi !== 0 ? fmt(incTotals.upi) : "-"}</td>
+                <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{incTotals.upi  !== 0 ? fmt(incTotals.upi)  : "-"}</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-900">{fmt(incTotal)}</td>
               </tr>
 
@@ -574,9 +536,9 @@ export default function IncomeExpenseReport() {
               <tr style={{ background: "#d4edda" }}>
                 <td colSpan={showBranch ? 5 : 4} className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Expense Total</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{expTotals.cash !== 0 ? `-${fmt(Math.abs(expTotals.cash))}` : "-"}</td>
-                <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{expTotals.rbl !== 0 ? `-${fmt(Math.abs(expTotals.rbl))}` : "-"}</td>
+                <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{expTotals.rbl  !== 0 ? `-${fmt(Math.abs(expTotals.rbl))}` : "-"}</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{expTotals.bank !== 0 ? `-${fmt(Math.abs(expTotals.bank))}` : "-"}</td>
-                <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{expTotals.upi !== 0 ? `-${fmt(Math.abs(expTotals.upi))}` : "-"}</td>
+                <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{expTotals.upi  !== 0 ? `-${fmt(Math.abs(expTotals.upi))}` : "-"}</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-900">{expTotal !== 0 ? `-${fmt(Math.abs(expTotal))}` : "-"}</td>
               </tr>
 
@@ -584,9 +546,9 @@ export default function IncomeExpenseReport() {
               <tr style={{ background: "#b8d9f0" }}>
                 <td colSpan={showBranch ? 5 : 4} className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Net Difference Total</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{netCash !== 0 ? fmt(netCash) : "-"}</td>
-                <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{netRbl !== 0 ? fmt(netRbl) : "-"}</td>
+                <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{netRbl  !== 0 ? fmt(netRbl)  : "-"}</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{netBank !== 0 ? fmt(netBank) : "-"}</td>
-                <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{netUpi !== 0 ? fmt(netUpi) : "-"}</td>
+                <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{netUpi  !== 0 ? fmt(netUpi)  : "-"}</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-900">{fmt(netTotal)}</td>
               </tr>
             </>}
