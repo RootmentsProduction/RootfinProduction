@@ -24,7 +24,10 @@ import {
     Users,
     PackageCheck,
     AlertTriangle,
-    ShoppingBasket
+    ShoppingBasket,
+    UserPlus,
+    UserCog,
+    KeyRound
 } from "lucide-react";
 import salesInventoryAccessConfig from "../config/salesInventoryAccess.json";
 
@@ -47,7 +50,7 @@ const Nav = () => {
     const [isOpen, setIsOpen] = useState(true);
 
     const getInitialSection = useMemo(() => {
-        if (activePath === "/reports/sales" || activePath === "/reports/sales-by-invoice" || activePath === "/reports/inventory" || activePath === "/reports/income-expense" || activePath === "/securityReport" || activePath === "/Revenuereport" || activePath === "/BookingReport" || activePath === "/RentOutReport") {
+        if (activePath === "/reports/sales" || activePath === "/reports/sales-by-invoice" || activePath === "/reports/inventory" || activePath === "/reports/income-expense" || activePath === "/securityReport" || activePath === "/Revenuereport" || activePath === "/BookingReport" || activePath === "/RentOutReport" || activePath === "/reports/sales-by-group") {
             return "reports";
         }
         if (activePath.startsWith("/inventory") ||
@@ -62,6 +65,9 @@ const Nav = () => {
         if (activePath.startsWith("/purchase")) {
             return "purchase";
         }
+        if (activePath.startsWith("/manage-users")) {
+            return "manageUsers";
+        }
         return null;
     }, [activePath]);
 
@@ -75,6 +81,7 @@ const Nav = () => {
     const isInventoryOpen = openSection === "inventory";
     const isSalesOpen = openSection === "sales";
     const isPurchaseOpen = openSection === "purchase";
+    const isManageUsersOpen = openSection === "manageUsers";
 
     const inventoryLinks = [
         { to: "/shoe-sales/items", label: "Items", Icon: List },
@@ -109,6 +116,14 @@ const Nav = () => {
         { to: "/purchase/vendors", label: "Vendors", Icon: Users },
     ];
     const isPurchaseActive = purchaseLinks.some((link) => link.to === activePath);
+    
+    const manageUsersLinks = [
+        { to: "/manage-users/add-store", label: "Add New Store", Icon: Store },
+        { to: "/manage-users/add-user", label: "Add New User", Icon: UserPlus },
+        { to: "/manage-users/existing-users", label: "Existing Users", Icon: UserCog },
+        { to: "/manage-users/reset-password", label: "Reset Password", Icon: KeyRound },
+    ];
+    const isManageUsersActive = manageUsersLinks.some((link) => link.to === activePath);
 
     const isReportsActive = [
         "/securityReport", 
@@ -116,6 +131,7 @@ const Nav = () => {
         "/BookingReport", 
         "/RentOutReport",
         "/reports/income-expense",
+        "/reports/sales-by-group",
         ...(hasSalesInventoryAccess ? ["/reports/sales", "/reports/sales-by-invoice", "/reports/inventory"] : [])
     ].includes(activePath);
 
@@ -127,7 +143,7 @@ const Nav = () => {
         }`;
 
     const subLinkClasses = (path) =>
-        `flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${
+        `flex items-center gap-2 rounded-md px-3 py-2 text-xs transition ${
             activePath === path
                 ? "border border-[#2563eb]/70 bg-[#1d4ed8] text-white shadow-[0_4px_14px_-8px_rgba(37,99,235,0.8)]"
                 : "border border-transparent text-[#94a3b8] hover:bg-[#111827] hover:text-white"
@@ -141,12 +157,16 @@ const Nav = () => {
         }`;
 
     // alert(location.pathname)
+    const isInvoiceCreatePage = activePath === "/sales/invoices/new" || activePath.startsWith("/sales/invoices/edit");
+    const sidebarWidth = isInvoiceCreatePage ? "w-52" : "w-64";
+    const sidebarTranslate = isInvoiceCreatePage ? "-translate-x-52" : "-translate-x-64";
+
     return (
         <div className={`flex ${location.pathname === "/login" ? "hidden" : "block"}`}>
             {/* Sidebar */}
             <div
-                className={`fixed top-0 left-0 h-full w-64 transform overflow-y-auto bg-[#0b1120] pb-10 pl-4 pr-3 pt-6 text-[#cbd5f5] transition-transform duration-300 ${
-                    isOpen ? "translate-x-0" : "-translate-x-64"
+                className={`fixed top-0 left-0 h-full ${sidebarWidth} transform overflow-y-auto bg-[#0b1120] pb-10 pl-4 pr-3 pt-6 text-[#cbd5f5] transition-transform duration-300 ${
+                    isOpen ? "translate-x-0" : sidebarTranslate
                 }`}
             >
                 <nav className="space-y-3">
@@ -299,7 +319,24 @@ const Nav = () => {
                                 <>
                                     <Link to="/CloseReport" className={singleLinkClasses("/CloseReport")}><FolderClosed size={18} /><span>Close Report</span></Link>
                                     <Link to="/AdminClose" className={singleLinkClasses("/AdminClose")}><Notebook size={18} /><span>Admin Close</span></Link>
-                                    <Link to="/ManageStores" className={singleLinkClasses("/ManageStores")}><Store size={18} /><span>Manage Stores</span></Link>
+                                    
+                                    {/* Manage Users */}
+                                    <div>
+                                        <button onClick={() => setOpenSection(isManageUsersOpen ? null : "manageUsers")} className={groupButtonClasses(isManageUsersActive || isManageUsersOpen)}>
+                                            <div className="flex w-full items-center gap-3">
+                                                <Users size={18} className="shrink-0" />
+                                                <span className="flex-1 text-left">Manage Users</span>
+                                                <ChevronDown size={16} className={`shrink-0 transition-transform ${isManageUsersOpen ? "rotate-180" : "rotate-0"}`} />
+                                            </div>
+                                        </button>
+                                        {isManageUsersOpen && (
+                                            <div className="mt-2 space-y-1 border-l border-[#1b233a]/70 pl-3">
+                                                {manageUsersLinks.map(({ to, label, Icon }) => (
+                                                    <Link key={to} to={to} className={subLinkClasses(to)}><Icon size={16} /><span>{label}</span></Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </>
                             )}
                         </>

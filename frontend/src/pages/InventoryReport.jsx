@@ -63,18 +63,23 @@ const InventoryReport = () => {
 
   const currentUser = JSON.parse(localStorage.getItem("rootfinuser"));
   const isAdmin = (currentUser?.power || "").toLowerCase() === "admin";
+  const isClusterManager = (currentUser?.role || "").toLowerCase() === "cluster_manager";
+  const clusterAllowedLocCodes = currentUser?.allowedLocCodes || [];
   const adminEmails = ['officerootments@gmail.com'];
   const isMainAdmin =
     adminEmails.some(email => (currentUser?.email || "").toLowerCase() === email.toLowerCase()) ||
     ['858', '103'].includes(currentUser?.locCode);
-  const canChooseStore = isAdmin && isMainAdmin;
+  const canChooseStore = (isAdmin && isMainAdmin) || isClusterManager;
   
   // For store users, set their store as default and disable selection
   useEffect(() => {
     if (!canChooseStore && currentUser?.locCode) {
       setSelectedStore(currentUser.locCode);
     }
-  }, [canChooseStore, currentUser?.locCode]);
+    if (isClusterManager && clusterAllowedLocCodes.length > 0 && selectedStore === "All Stores") {
+      setSelectedStore(clusterAllowedLocCodes[0]);
+    }
+  }, []);
 
   // Reset pagination when report type changes
   useEffect(() => {
@@ -140,6 +145,17 @@ const InventoryReport = () => {
         userId: currentUser?.email || currentUser?.userId,
         locCode: currentUser?.locCode
       });
+
+      // Pass allowedLocCodes for cluster managers so backend can filter stores
+      if (isClusterManager && clusterAllowedLocCodes.length > 0) {
+        // Send store labels (not locCodes) so backend can normalize them to warehouse names
+        const clusterStoreLabels = clusterAllowedLocCodes
+          .map(code => storeOptions.find(s => s.value === code)?.label)
+          .filter(Boolean);
+        if (clusterStoreLabels.length > 0) {
+          params.append('allowedLocCodes', clusterStoreLabels.join(','));
+        }
+      }
 
       // Add month parameter if it exists (for opening-stock report)
       if (selectedMonth && reportType === "opening-stock") {
@@ -744,8 +760,11 @@ const InventoryReport = () => {
                   fontSize: "14px"
                 }}>Store</label>
                 <Select
-                  options={storeOptions}
-                  value={storeOptions.find(s => s.value === selectedStore)}
+                  options={isClusterManager
+                    ? [{ value: "All Stores", label: "All My Stores" }, ...storeOptions.filter(s => clusterAllowedLocCodes.includes(s.value))]
+                    : storeOptions
+                  }
+                  value={storeOptions.find(s => s.value === selectedStore) || { value: selectedStore, label: selectedStore }}
                   onChange={(opt) => setSelectedStore(opt.value)}
                   isSearchable
                   styles={{

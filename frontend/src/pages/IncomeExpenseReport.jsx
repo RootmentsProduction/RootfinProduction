@@ -50,6 +50,72 @@ const EXPENSE_CATEGORIES = new Set([
   "staff accommodation", "incentive", "write off",
 ]);
 
+// Maps raw DB category values → human-readable display labels (mirrors Expenses.jsx baseExpenseCats)
+const CATEGORY_LABEL_MAP = {
+  "dry cleaning":         "Dry Cleaning",
+  "altration":            "Altration",
+  "material":             "Material",
+  "courier charges":      "Courier Charges",
+  "maintenance expenses": "Repairs & Maintenance",
+  "travel exp":           "Travel Exp",
+  "fuel exp":             "Fuel Exp",
+  "petty expenses":       "Office Expense",
+  "telephone internet":   "Internet Expense",
+  "utility bill":         "Electricity Charges",
+  "waste management":     "Waste Management",
+  "water charges":        "Water Charges",
+  "salary":               "Salary / Salary Advance",
+  "printing stationary":  "Printing & Stationary",
+  "staff welfare":        "Staff Welfare",
+  "staff reimbursement":  "Staff Accommodation",
+  "rent":                 "Rent",
+  "asset purchase":       "Asset Purchase",
+  "incentive":            "Incentive",
+  "spot incentive":       "Incentive",
+  "other expenses":       "Refund",
+  "bulk amount transfer": "Cash to Bank",
+  "write off":            "Write Off",
+  "promotion_services":   "Promotion / Services",
+  "shoe sales return":    "Shoe Sales Return",
+  "shirt sales return":   "Shirt Sales Return",
+};
+
+const getCategoryLabel = (cat) =>
+  CATEGORY_LABEL_MAP[(cat || "").toLowerCase().trim()] || cat;
+
+// Maps raw DB category values → human-readable display labels (mirrors Expenses.jsx baseExpenseCats)
+const CATEGORY_LABEL_MAP = {
+  "dry cleaning":         "Dry Cleaning",
+  "altration":            "Altration",
+  "material":             "Material",
+  "courier charges":      "Courier Charges",
+  "maintenance expenses": "Repairs & Maintenance",
+  "travel exp":           "Travel Exp",
+  "fuel exp":             "Fuel Exp",
+  "petty expenses":       "Office Expense",
+  "telephone internet":   "Internet Expense",
+  "utility bill":         "Electricity Charges",
+  "waste management":     "Waste Management",
+  "water charges":        "Water Charges",
+  "salary":               "Salary / Salary Advance",
+  "printing stationary":  "Printing & Stationary",
+  "staff welfare":        "Staff Welfare",
+  "staff reimbursement":  "Staff Accommodation",
+  "rent":                 "Rent",
+  "asset purchase":       "Asset Purchase",
+  "incentive":            "Incentive",
+  "spot incentive":       "Incentive",
+  "other expenses":       "Refund",
+  "bulk amount transfer": "Cash to Bank",
+  "write off":            "Write Off",
+  "promotion_services":   "Promotion / Services",
+  "shoe sales return":    "Shoe Sales Return",
+  "shirt sales return":   "Shirt Sales Return",
+};
+
+const getCategoryLabel = (cat) =>
+  CATEGORY_LABEL_MAP[(cat || "").toLowerCase().trim()] || cat;
+
 const TriangleDown = () => (
   <span style={{
     display: "inline-block", width: 0, height: 0,
@@ -62,12 +128,8 @@ export default function IncomeExpenseReport() {
   const user = JSON.parse(localStorage.getItem("rootfinuser")) || {};
   const isAdmin = (user.power || "").toLowerCase() === "admin";
   const isClusterManager = (user.role || "").toLowerCase() === "cluster_manager";
-
-  const availableStores = isAdmin
-    ? STORE_LIST
-    : isClusterManager
-      ? STORE_LIST.filter(s => (user.allowedLocCodes || []).includes(s.locCode))
-      : STORE_LIST.filter(s => s.locCode === user.locCode);
+  const clusterAllowedLocCodes = user.allowedLocCodes || [];
+  const canSelectStore = isAdmin || isClusterManager;
 
   const [fromDate, setFromDate] = useState(firstOfMonth());
   const [toDate, setToDate] = useState(today());
@@ -78,12 +140,15 @@ export default function IncomeExpenseReport() {
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState({});
 
-  // All store locCodes for fetching TWS data when "all" is selected
-  const ALL_LOC_CODES = availableStores.map(s => s.locCode);
-
-  const locCode = selectedStore;
+  const locCode = canSelectStore ? selectedStore : (user.locCode || "");
   // TWS API only accepts a real locCode, not "all" — fall back to user's own store
-  const twsLocCode = (locCode === "all" || !locCode) ? (user.locCode || ALL_LOC_CODES[0] || "") : locCode;
+  const twsLocCode = (locCode === "all" || !locCode) ? (user.locCode || "") : locCode;
+
+  // All store locCodes for fetching TWS data when "all" is selected
+  // For cluster managers, restrict to their assigned stores only
+  const ALL_LOC_CODES = isClusterManager
+    ? clusterAllowedLocCodes
+    : STORE_LIST.map(s => s.locCode);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -120,8 +185,21 @@ export default function IncomeExpenseReport() {
       const returnData = { dataSet: { data: twsResults.flatMap(r => r[2]?.dataSet?.data || []) } };
       const cancelData = { dataSet: { data: twsResults.flatMap(r => r[3]?.dataSet?.data || []) } };
 
-      const mongoRes = await fetch(`${API}/user/Getpayment?LocCode=${locCode}&DateFrom=${fromDate}&DateTo=${toDate}`);
-      const mongoJson = mongoRes.ok ? await mongoRes.json() : {};
+      const mongoRes  = await fetch(`${API}/user/Getpayment?LocCode=${locCode}&DateFrom=${fromDate}&DateTo=${toDate}`);
+      let mongoJson = mongoRes.ok ? await mongoRes.json() : {};
+
+      // For cluster managers viewing "all stores", fetch mongo data per allowed store and merge
+      if (isClusterManager && (locCode === "all" || !locCode)) {
+        const mongoResults = await Promise.all(
+          clusterAllowedLocCodes.map(lc =>
+            fetch(`${API}/user/Getpayment?LocCode=${lc}&DateFrom=${fromDate}&DateTo=${toDate}`)
+              .then(r => r.ok ? r.json() : {})
+              .catch(() => ({}))
+          )
+        );
+        const merged = mongoResults.flatMap(r => Array.isArray(r) ? r : (r?.data || []));
+        mongoJson = { data: merged };
+      }
 
       // Booking -> Income
       const bookingList = (bookingData?.dataSet?.data || []).map(item => ({
@@ -303,6 +381,8 @@ export default function IncomeExpenseReport() {
     return store ? store.locName : (lc || "-");
   };
 
+  const showBranch = selectedStore === "all" || (isClusterManager && selectedStore === "all");
+
   // Renders: category header row → subcategory rows (expandable) → category total
   const renderCategoryRows = (grouped, typeLabel, isIncome) =>
     Object.keys(grouped).map(cat => {
@@ -316,7 +396,7 @@ export default function IncomeExpenseReport() {
         // Category header row (clickable)
         <tr key={catKey} className="cursor-pointer hover:brightness-95" style={{ background: "#e8d5f5" }} onClick={() => toggleExpand(catKey)}>
           <td className="px-3 py-2 text-center w-10"><TriangleDown /></td>
-          <td className="px-3 py-2 text-sm font-semibold text-gray-800" colSpan={2}>{cat}</td>
+          <td className="px-3 py-2 text-sm font-semibold text-gray-800" colSpan={showBranch ? 4 : 3}>{getCategoryLabel(cat)}</td>
           <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.cash !== 0 ? sign(g.cash) : "-"}</td>
           <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.rbl !== 0 ? sign(g.rbl) : "-"}</td>
           <td className="px-3 py-2 text-right text-sm font-semibold text-gray-800">{g.bank !== 0 ? sign(g.bank) : "-"}</td>
@@ -333,11 +413,46 @@ export default function IncomeExpenseReport() {
           const subKey = `${catKey}-${sub}`;
           const isSubExp = !!expanded[subKey];
 
+          // Hide the sub-row when it's redundant (only one sub and it matches the category)
+          const subCats = Object.keys(g.subCategories);
+          const isRedundantSub = subCats.length === 1 &&
+            sub.toLowerCase().trim() === cat.toLowerCase().trim();
+
+          const txRows = sg.transactions.map((t, i) => {
+            const dateStr = t.date
+              ? new Date(t.date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
+              : "-";
+            const isRentOut = cat === "RentOut";
+            const isIncentiveCat = cat.toLowerCase() === "incentive";
+            const tCash = isRentOut ? (t.amount || 0) : (t.cash || 0);
+            return (
+              <tr key={`${subKey}-${i}`} style={{ background: "#faf5ff" }}>
+                <td className="px-3 py-2 text-xs text-gray-400 pl-12">{dateStr}</td>
+                <td className="px-3 py-2 text-xs text-gray-600">{t.invoiceNo || t.customerName || "-"}</td>
+                <td className="px-3 py-2 text-xs text-gray-500">
+                  {isIncentiveCat ? (t.remark || t.customerName || "-") : (t.customerName || "-")}
+                </td>
+                <td className="px-3 py-2 text-xs text-gray-400 italic max-w-[160px] truncate" title={t.remark || ""}>{t.remark || "-"}</td>
+                {showBranch && <td className="px-3 py-2 text-xs text-blue-700 font-medium">{getBranchName(t.locCode)}</td>}
+                <td className="px-3 py-2 text-right text-xs text-gray-700">{tCash !== 0 ? fmt(tCash) : "-"}</td>
+                <td className="px-3 py-2 text-right text-xs text-gray-700">{!isRentOut && t.rbl  !== 0 ? fmt(t.rbl)  : "-"}</td>
+                <td className="px-3 py-2 text-right text-xs text-gray-700">{!isRentOut && t.bank !== 0 ? fmt(t.bank) : "-"}</td>
+                <td className="px-3 py-2 text-right text-xs text-gray-700">{!isRentOut && t.upi  !== 0 ? fmt(t.upi)  : "-"}</td>
+                <td className="px-3 py-2"></td>
+              </tr>
+            );
+          });
+
+          if (isRedundantSub) {
+            // Skip the sub-row, show transactions directly under the category
+            return isCatExp ? txRows : [];
+          }
+
           return [
             // SubCategory summary row (clickable to expand transactions)
             <tr key={subKey} className="cursor-pointer hover:brightness-95" style={{ background: "#f3e8ff" }} onClick={e => { e.stopPropagation(); toggleExpand(subKey); }}>
               <td className="px-3 py-2 text-center w-10 pl-8"><TriangleDown /></td>
-              <td className="px-3 py-2 text-xs text-gray-600 pl-6" colSpan={2}>{sub}</td>
+              <td className="px-3 py-2 text-xs text-gray-600 pl-6" colSpan={showBranch ? 4 : 3}>{getCategoryLabel(sub)}</td>
               <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.cash !== 0 ? sign(sg.cash) : "-"}</td>
               <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.rbl !== 0 ? sign(sg.rbl) : "-"}</td>
               <td className="px-3 py-2 text-right text-xs text-gray-700">{sg.bank !== 0 ? sign(sg.bank) : "-"}</td>
@@ -348,25 +463,7 @@ export default function IncomeExpenseReport() {
             </tr>,
 
             // Individual transaction rows (shown when subcategory is expanded)
-            ...(isSubExp ? sg.transactions.map((t, i) => {
-              const dateStr = t.date
-                ? new Date(t.date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
-                : "-";
-              const isRentOut = cat === "RentOut";
-              const tCash = isRentOut ? (t.amount || 0) : (t.cash || 0);
-              return (
-                <tr key={`${subKey}-${i}`} style={{ background: "#faf5ff" }}>
-                  <td className="px-3 py-2 text-xs text-gray-400 pl-12">{dateStr}</td>
-                  <td className="px-3 py-2 text-xs text-gray-600">{t.invoiceNo || t.remark || t.customerName || "-"}</td>
-                  <td className="px-3 py-2 text-xs text-gray-500">{t.customerName || "-"}</td>
-                  <td className="px-3 py-2 text-right text-xs text-gray-700">{tCash !== 0 ? fmt(tCash) : "-"}</td>
-                  <td className="px-3 py-2 text-right text-xs text-gray-700">{!isRentOut && t.rbl !== 0 ? fmt(t.rbl) : "-"}</td>
-                  <td className="px-3 py-2 text-right text-xs text-gray-700">{!isRentOut && t.bank !== 0 ? fmt(t.bank) : "-"}</td>
-                  <td className="px-3 py-2 text-right text-xs text-gray-700">{!isRentOut && t.upi !== 0 ? fmt(t.upi) : "-"}</td>
-                  <td className="px-3 py-2"></td>
-                </tr>
-              );
-            }) : []),
+            ...(isSubExp ? txRows : []),
           ];
         }).flat() : []),
       ];
@@ -401,16 +498,19 @@ export default function IncomeExpenseReport() {
             {allCategories.map(c => <option key={c}>{c}</option>)}
           </select>
         </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-1">Store</label>
-          <select value={selectedStore} onChange={e => setSelectedStore(e.target.value)}
-            className="rounded-lg border border-[#d9def1] px-3 py-2 text-sm focus:outline-none focus:border-[#2563eb] min-w-[180px]">
-            {isAdmin || isClusterManager ? <option value="all">All Stores</option> : null}
-            {availableStores.map(s => <option key={s.locCode} value={s.locCode}>{s.locName}</option>)}
-          </select>
-        </div>
-
+        {canSelectStore && (
+          <div>
+            <label className="block text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-1">Store</label>
+            <select value={selectedStore} onChange={e => setSelectedStore(e.target.value)}
+              className="rounded-lg border border-[#d9def1] px-3 py-2 text-sm focus:outline-none focus:border-[#2563eb] min-w-[180px]">
+              <option value="all">{isClusterManager ? "All My Stores" : "All Stores"}</option>
+              {(isClusterManager
+                ? STORE_LIST.filter(s => clusterAllowedLocCodes.includes(s.locCode))
+                : STORE_LIST
+              ).map(s => <option key={s.locCode} value={s.locCode}>{s.locName}</option>)}
+            </select>
+          </div>
+        )}
         <button onClick={fetchData} disabled={loading}
           className="flex items-center gap-2 rounded-lg bg-[#2563eb] px-5 py-2 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-60">
           {loading && <RefreshCw size={15} className="animate-spin" />}
@@ -431,6 +531,8 @@ export default function IncomeExpenseReport() {
               <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280] w-28">Date</th>
               <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Category / Sub Category</th>
               <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Customer</th>
+              <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Remarks</th>
+              {showBranch && <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Branch</th>}
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Cash</th>
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">RBL</th>
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Bank</th>
@@ -440,23 +542,23 @@ export default function IncomeExpenseReport() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={8} className="px-4 py-10 text-center text-[#6b7280]">Loading...</td></tr>
+              <tr><td colSpan={showBranch ? 10 : 9} className="px-4 py-10 text-center text-[#6b7280]">Loading...</td></tr>
             )}
             {!loading && !hasData && incomeRows.length === 0 && expenseRows.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-10 text-center text-[#6b7280]">Apply a filter to load data.</td></tr>
+              <tr><td colSpan={showBranch ? 10 : 9} className="px-4 py-10 text-center text-[#6b7280]">Apply a filter to load data.</td></tr>
             )}
             {!loading && !hasData && (incomeRows.length > 0 || expenseRows.length > 0) && (
-              <tr><td colSpan={8} className="px-4 py-10 text-center text-[#6b7280]">No results match the selected filters.</td></tr>
+              <tr><td colSpan={showBranch ? 10 : 9} className="px-4 py-10 text-center text-[#6b7280]">No results match the selected filters.</td></tr>
             )}
 
             {hasData && <>
               {/* INCOME: Booking + RentOut + mongo income */}
               <tr style={{ background: "#f4c9b0" }}>
-                <td colSpan={8} className="px-4 py-2 text-base font-bold text-gray-800 uppercase">INCOME</td>
+                <td colSpan={showBranch ? 10 : 9} className="px-4 py-2 text-base font-bold text-gray-800 uppercase">INCOME</td>
               </tr>
               {renderCategoryRows(incomeGrouped, "INCOME", true)}
               <tr style={{ background: "#d4edda" }}>
-                <td colSpan={3} className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Income Total</td>
+                <td colSpan={showBranch ? 5 : 4} className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Income Total</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{incTotals.cash !== 0 ? fmt(incTotals.cash) : "-"}</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{incTotals.rbl !== 0 ? fmt(incTotals.rbl) : "-"}</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{incTotals.bank !== 0 ? fmt(incTotals.bank) : "-"}</td>
@@ -466,11 +568,11 @@ export default function IncomeExpenseReport() {
 
               {/* EXPENSES: Return + Cancel + mongo expense */}
               <tr style={{ background: "#f4c9b0" }}>
-                <td colSpan={8} className="px-4 py-2 text-base font-bold text-gray-800 uppercase">EXPENSES</td>
+                <td colSpan={showBranch ? 10 : 9} className="px-4 py-2 text-base font-bold text-gray-800 uppercase">EXPENSES</td>
               </tr>
               {renderCategoryRows(expenseGrouped, "EXPENSE", false)}
               <tr style={{ background: "#d4edda" }}>
-                <td colSpan={3} className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Expense Total</td>
+                <td colSpan={showBranch ? 5 : 4} className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Expense Total</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{expTotals.cash !== 0 ? `-${fmt(Math.abs(expTotals.cash))}` : "-"}</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{expTotals.rbl !== 0 ? `-${fmt(Math.abs(expTotals.rbl))}` : "-"}</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{expTotals.bank !== 0 ? `-${fmt(Math.abs(expTotals.bank))}` : "-"}</td>
@@ -480,7 +582,7 @@ export default function IncomeExpenseReport() {
 
               {/* Net Difference */}
               <tr style={{ background: "#b8d9f0" }}>
-                <td colSpan={3} className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Net Difference Total</td>
+                <td colSpan={showBranch ? 5 : 4} className="px-4 py-2 text-center text-sm font-semibold text-gray-700">Net Difference Total</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{netCash !== 0 ? fmt(netCash) : "-"}</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{netRbl !== 0 ? fmt(netRbl) : "-"}</td>
                 <td className="px-3 py-2 text-right text-sm font-bold text-gray-800">{netBank !== 0 ? fmt(netBank) : "-"}</td>
