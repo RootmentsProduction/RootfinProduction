@@ -18,8 +18,17 @@ export const getSalesByGroup = async (req, res) => {
     };
 
     if (locCode && locCode !== "all") query.locCode = locCode;
-    // Only filter by userId if it's provided AND not empty
-    if (userId && userId.trim()) query.userId = userId;
+    // Only filter by userId for non-admin, non-cluster-manager users
+    // Cluster managers and admins should see all invoices for the selected store(s)
+    const isAdminUser = req.query.isAdmin === "true";
+    const isClusterManager = req.query.isClusterManager === "true";
+    if (userId && !isAdminUser && !isClusterManager) query.userId = userId;
+
+    // For cluster manager "all" — filter by their allowed stores
+    const allowedLocCodes = req.query.allowedLocCodes ? req.query.allowedLocCodes.split(",") : [];
+    if (locCode === "all" && isClusterManager && allowedLocCodes.length > 0) {
+      query.locCode = { $in: allowedLocCodes };
+    }
 
     const invoices = await SalesInvoice.find(query).lean();
 

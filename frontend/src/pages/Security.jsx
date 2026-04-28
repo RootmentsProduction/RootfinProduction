@@ -60,17 +60,25 @@ const dayBefore = (iso) => {
 };
 
 const Security = () => {
-  const today = new Date().toISOString().split("T")[0];
-  const [fromDate, setFromDate] = useState("2025-01-01");
+  const _now = new Date();
+  const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-${String(_now.getDate()).padStart(2, "0")}`;
+  const firstOfMonth = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-01`;
+  const [fromDate, setFromDate] = useState(firstOfMonth);
   const [toDate,   setToDate]   = useState(today);
-  const [selectedStore, setSelectedStore] = useState("current"); // "current" | "all"
+  const [selectedStore, setSelectedStore] = useState("current"); // "current" | "all" | "cluster"
   const [rentAll, setRentAll]     = useState([]); // all-store mode
   const [returnAll, setReturnAll] = useState([]);
   const [openingCash, setOpeningCash] = useState(0);
   const [allStoreOpenings, setAllStoreOpenings] = useState({}); // locCode -> opening balance
 
   const user = JSON.parse(localStorage.getItem("rootfinuser"));
+  const isClusterManager = (user?.role || "").toLowerCase() === "cluster_manager";
+  const clusterStores = isClusterManager
+    ? AllLoation.filter(s => (user.allowedLocCodes || []).includes(s.locCode))
+    : [];
   const baseAPI = "https://rentalapi.rootments.live/api/GetBooking";
+
+  const [loading, setLoading] = useState(false);
 
   /* ---------- hybrid opening-balance calc ---------- */
   const calcOpeningCash = async () => {
@@ -125,59 +133,60 @@ const Security = () => {
   const { data: rentData } = useFetch(selectedStore==="current"?apiRentCur:null, fetchOpts);
   const { data: retData  } = useFetch(selectedStore==="current"?apiRetCur :null, fetchOpts);
 
-  /* ---------- handleFetch (all-store mode) ---------- */
+  /* ---------- handleFetch (all-store / cluster mode) ---------- */
   const handleFetch = async () => {
-    if (selectedStore !== "all") { await calcOpeningCash(); return; }
+    if (selectedStore !== "all" && selectedStore !== "cluster") { await calcOpeningCash(); return; }
 
+    setLoading(true);
+    const storesToFetch = selectedStore === "cluster" ? clusterStores : AllLoation;
     const tmpRent=[], tmpRet=[];
-    const openingMap = {}; // locCode -> opening security balance
+    const openingMap = {};
 
-    for (const s of AllLoation) {
-      const u1=`${baseAPI}/GetRentoutList?LocCode=${s.locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
-      const u2=`${baseAPI}/GetReturnList?LocCode=${s.locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
+    for (const store of storesToFetch) {
+      const u1=`${baseAPI}/GetRentoutList?LocCode=${store.locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
+      const u2=`${baseAPI}/GetReturnList?LocCode=${store.locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
 
       // Calculate opening balance for this store (same logic as calcOpeningCash)
-      const manualOpen = getManualOpening(s.locCode, fromDate);
+      const manualOpen = getManualOpening(store.locCode, fromDate);
       try {
         if (manualOpen !== null) {
           const monthStart = getMonthStart(fromDate);
           if (fromDate === monthStart) {
-            openingMap[s.locCode] = manualOpen;
+            openingMap[store.locCode] = manualOpen;
           } else {
             const [oR1, oR2] = await Promise.all([
-              fetch(`${baseAPI}/GetRentoutList?LocCode=${s.locCode}&DateFrom=${monthStart}&DateTo=${dayBefore(fromDate)}`),
-              fetch(`${baseAPI}/GetReturnList?LocCode=${s.locCode}&DateFrom=${monthStart}&DateTo=${dayBefore(fromDate)}`),
+              fetch(`${baseAPI}/GetRentoutList?LocCode=${store.locCode}&DateFrom=${monthStart}&DateTo=${dayBefore(fromDate)}`),
+              fetch(`${baseAPI}/GetReturnList?LocCode=${store.locCode}&DateFrom=${monthStart}&DateTo=${dayBefore(fromDate)}`),
             ]);
             const [oj1, oj2] = await Promise.all([oR1.json(), oR2.json()]);
-            const oSecIn  = (oj1?.dataSet?.data || []).reduce((s,t)=>s + +(t.securityAmount||0),0);
-            const oSecOut = (oj2?.dataSet?.data || []).reduce((s,t)=>s + +(t.securityAmount||0),0);
-            openingMap[s.locCode] = manualOpen + (oSecIn - oSecOut);
+            const oSecIn  = (oj1?.dataSet?.data || []).reduce((acc,t)=>acc + +(t.securityAmount||0),0);
+            const oSecOut = (oj2?.dataSet?.data || []).reduce((acc,t)=>acc + +(t.securityAmount||0),0);
+            openingMap[store.locCode] = manualOpen + (oSecIn - oSecOut);
           }
         } else {
           const [oR1, oR2] = await Promise.all([
-            fetch(`${baseAPI}/GetRentoutList?LocCode=${s.locCode}&DateFrom=2025-01-01&DateTo=${dayBefore(fromDate)}`),
-            fetch(`${baseAPI}/GetReturnList?LocCode=${s.locCode}&DateFrom=2025-01-01&DateTo=${dayBefore(fromDate)}`),
+            fetch(`${baseAPI}/GetRentoutList?LocCode=${store.locCode}&DateFrom=2025-01-01&DateTo=${dayBefore(fromDate)}`),
+            fetch(`${baseAPI}/GetReturnList?LocCode=${store.locCode}&DateFrom=2025-01-01&DateTo=${dayBefore(fromDate)}`),
           ]);
           const [oj1, oj2] = await Promise.all([oR1.json(), oR2.json()]);
-          const oSecIn  = (oj1?.dataSet?.data || []).reduce((s,t)=>s + +(t.securityAmount||0),0);
-          const oSecOut = (oj2?.dataSet?.data || []).reduce((s,t)=>s + +(t.securityAmount||0),0);
-          openingMap[s.locCode] = oSecIn - oSecOut;
+          const oSecIn  = (oj1?.dataSet?.data || []).reduce((acc,t)=>acc + +(t.securityAmount||0),0);
+          const oSecOut = (oj2?.dataSet?.data || []).reduce((acc,t)=>acc + +(t.securityAmount||0),0);
+          openingMap[store.locCode] = oSecIn - oSecOut;
         }
-      } catch { openingMap[s.locCode] = 0; }
+      } catch { openingMap[store.locCode] = 0; }
 
       try {
         const [r1,r2]=await Promise.all([fetch(u1),fetch(u2)]);
         const [j1,j2]=await Promise.all([r1.json(),r2.json()]);
-        if(j1?.dataSet?.data) tmpRent.push(...j1.dataSet.data.map(d=>({...d,locCode:s.locCode,Category:"RentOut"})));
-        if(j2?.dataSet?.data) tmpRet .push(...j2.dataSet.data.map(d=>({...d,locCode:s.locCode,Category:"Return" })));
+        if(j1?.dataSet?.data) tmpRent.push(...j1.dataSet.data.map(d=>({...d,locCode:store.locCode,Category:"RentOut"})));
+        if(j2?.dataSet?.data) tmpRet .push(...j2.dataSet.data.map(d=>({...d,locCode:store.locCode,Category:"Return" })));
       } catch(e){ console.error("Fetch err",e);}
     }
 
-    // Attach opening balances to the data so the table can use them
     setRentAll(tmpRent.map(d => ({ ...d, _openingForStore: openingMap[d.locCode] || 0 })));
     setReturnAll(tmpRet.map(d => ({ ...d, _openingForStore: openingMap[d.locCode] || 0 })));
-    // Store opening map for use in table building
     setAllStoreOpenings(openingMap);
+    setLoading(false);
   };
 
   /* ---------- build rows ---------- */
@@ -254,7 +263,7 @@ const Security = () => {
   const adjIn = selectedStore==="current" ? totIn + openingCash : totIn;
 
   /* ---------- CSV data ---------- */
-  const csvData = selectedStore==="all"
+  const csvData = (selectedStore==="all"||selectedStore==="cluster")
     ? tableRows.map(r=>({store:r.store,locCode:r.locCode,secIn:r.secIn,secOutCash:r.secOutCash,secOutRbl:r.secOutRbl,difference:r.diff}))
     : [
         ...(selectedStore==="current"?[{
@@ -308,13 +317,20 @@ const Security = () => {
               <option value="current">
                 Current Store ({getStoreName(user.locCode)})
               </option>
+              {isClusterManager && clusterStores.length > 0 &&
+                <option value="cluster">My Stores (All Assigned)</option>}
               {(user.power||"").toLowerCase()==="admin" &&
                 <option value="all">All Stores (Totals)</option>}
             </select>
           </div>
-          <button onClick={handleFetch}
-                  className="bg-blue-600 text-white px-10 h-[40px] mt-6 rounded-md">
-            Fetch
+          <button onClick={handleFetch} disabled={loading}
+                  className="bg-blue-600 text-white px-10 h-[40px] mt-6 rounded-md disabled:opacity-70 flex items-center gap-2">
+            {loading ? (
+              <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>Fetching...</>
+            ) : "Fetch"}
           </button>
         </div>
 
@@ -323,7 +339,7 @@ const Security = () => {
           <div className="max-h-[420px] overflow-y-auto relative">
             <table className="w-full border-collapse">
               <thead className="sticky top-0 bg-gray-500 text-white z-20">
-                {selectedStore==="all"?(
+                {(selectedStore==="all"||selectedStore==="cluster")?(
                   <tr>
                     <th className="border p-2">Store</th>
                     <th className="border p-2">LocCode</th>
@@ -360,7 +376,7 @@ const Security = () => {
                 )}
 
                 {tableRows.length ? tableRows.map((r,i)=>(
-                  selectedStore==="all"?(
+                  (selectedStore==="all"||selectedStore==="cluster")?(
                     <tr key={i}>
                       <td className="border p-2">{r.store}</td>
                       <td className="border p-2">{r.locCode}</td>
@@ -388,14 +404,14 @@ const Security = () => {
                     </tr>
                   )
                 )):(
-                  <tr><td colSpan={selectedStore==="all"?6:9}
+                  <tr><td colSpan={(selectedStore==="all"||selectedStore==="cluster")?6:9}
                           className="text-center p-4">No data found</td></tr>
                 )}
               </tbody>
 
               <tfoot className="sticky bottom-0 bg-white z-20">
                 <tr className="font-semibold">
-                  <td colSpan={selectedStore==="all"?2:5}
+                  <td colSpan={(selectedStore==="all"||selectedStore==="cluster")?2:5}
                       className="border p-2 text-left">Totals</td>
                   <td className="border p-2">{adjIn}</td>
                   <td className="border p-2">{totOutCash}</td>
@@ -412,7 +428,7 @@ const Security = () => {
                 className="mt-6 w-[200px] float-right bg-blue-600 text-white py-2 rounded-lg">
           📄 Print / PDF
         </button>
-        <CSVLink headers={selectedStore==="all"?csvHeadersAllStores:csvHeaders}
+        <CSVLink headers={(selectedStore==="all"||selectedStore==="cluster")?csvHeadersAllStores:csvHeaders}
                  data={csvData}
                  filename={`${fromDate}_to_${toDate}_security_report.csv`}>
           <button className="mt-6 me-4 w-[200px] float-right bg-green-600 text-white py-2 rounded-lg">
