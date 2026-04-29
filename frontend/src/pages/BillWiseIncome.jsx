@@ -26,8 +26,8 @@ const headers = [
     { label: "Balance Payable", key: "Balance" },
     { label: "Remark", key: "remark" },
     { label: "Cash", key: "cash" },
-    { label: "RBL", key: "rbl" },
-    { label: "Bank", key: "bank" },
+    { label: "Razorpay", key: "rbl" },
+    { label: "Card/Bank", key: "bank" },
     { label: "UPI", key: "upi" },
 ];
 
@@ -1323,8 +1323,8 @@ const DayBookInc = () => {
                                                 <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Discount</th>
                                                 <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Bill Value</th>
                                                 <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Cash</th>
-                                                <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">RBL</th>
-                                                <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Bank</th>
+                                                <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Razorpay</th>
+                                                <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Card/Bank</th>
                                                 <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">UPI</th>
                                                 {showAction && <th className="px-2 py-1 text-center whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Action</th>}
                                             </tr>
