@@ -4674,7 +4674,8 @@ const SalesPersonSelect = ({ label, placeholder, value, onChange, options = [], 
           onFocus={() => setOpen(true)}
           placeholder={placeholder}
           disabled={disabled}
-          className={`w-full rounded-lg border px-3 py-2 pr-10 text-sm transition ${
+          readOnly
+          className={`w-full rounded-lg border px-3 py-2 pr-10 text-sm transition cursor-pointer ${
             open ? "border-[#9ca3af]" : "border-[#d7dcf5]"
           } ${disabled ? "bg-[#f1f5f9] text-[#94a3b8] cursor-not-allowed" : "bg-white text-[#1f2937]"} placeholder:text-[#9ca3af] focus:outline-none`}
         />
