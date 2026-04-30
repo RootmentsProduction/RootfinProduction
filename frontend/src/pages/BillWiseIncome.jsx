@@ -1012,6 +1012,7 @@ const DayBookInc = () => {
     // Prepare CSV data to match table logic
     const csvData = filteredTransactions.map(transaction => ({
       ...transaction,
+      SubCategory: getCatLabel(transaction.SubCategory || transaction.subCategory || transaction.category || ""),
       cash:
         -(parseInt(transaction.deleteCashAmount)) ||
         parseInt(transaction.rentoutCashAmount) ||

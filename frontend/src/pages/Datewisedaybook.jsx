@@ -869,7 +869,7 @@ const Datewisedaybook = () => {
           customerName: t.customerName || "",
           quantity: t.quantity || 1,
           Category: t.Category || t.type || "",
-          SubCategory: t.SubCategory || t.category || "",
+          SubCategory: getCatLabel(t.SubCategory || t.category || ""),
           SubCategory1: t.SubCategory1 || t.subCategory1 || "",
           amount,
           totalTransaction: t.totalTransaction ?? amount,
