@@ -1199,6 +1199,13 @@ const SalesInvoiceDetail = () => {
                       <span className="text-[#000]">Sub Total</span>
                       <span className="font-medium text-[#000]">{displaySubTotal.toFixed(2)}</span>
                     </div>
+
+                    {parseFloat(invoice.discountAmount || 0) > 0 && (
+                      <div className="flex justify-between text-[#ef4444]">
+                        <span>Discount ({invoice.discount?.value || '0'}{invoice.discount?.type || '%'})</span>
+                        <span>(-) {parseFloat(invoice.discountAmount || 0).toFixed(2)}</span>
+                      </div>
+                    )}
                     
                     <div className="flex justify-between">
                       <span className="text-[#000]">CGST @ 2.5%</span>
