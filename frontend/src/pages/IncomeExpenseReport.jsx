@@ -248,7 +248,8 @@ export default function IncomeExpenseReport() {
         const inv = (t.invoiceNo || "").toUpperCase();
         const isShoeOrShirtSale = sub === "shoe sales" || sub === "shirt sales" || sub === "mixed sales"
           || cat === "shoe sales" || cat === "shirt sales" || cat === "mixed sales";
-        const isReturnInvoice = inv.startsWith("RTN-") || inv.startsWith("RET-") || tp === "return";
+        // Only treat MongoDB sales invoice returns (RTN-/RET- prefix) as "Return Invoice" — NOT TWS security refunds
+        const isReturnInvoice = inv.startsWith("RTN-") || inv.startsWith("RET-");
         if (!isShoeOrShirtSale && !isReturnInvoice && (inv.startsWith("INV-") || inv.startsWith("RTN-") || inv.startsWith("RET-"))) return;
 
         // Normalize shoe/shirt/mixed sales into a single "Sales" category
