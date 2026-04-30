@@ -248,11 +248,12 @@ export default function IncomeExpenseReport() {
         const inv = (t.invoiceNo || "").toUpperCase();
         const isShoeOrShirtSale = sub === "shoe sales" || sub === "shirt sales" || sub === "mixed sales"
           || cat === "shoe sales" || cat === "shirt sales" || cat === "mixed sales";
-        if (!isShoeOrShirtSale && (inv.startsWith("INV-") || inv.startsWith("RTN-") || inv.startsWith("RET-"))) return;
+        const isReturnInvoice = inv.startsWith("RTN-") || inv.startsWith("RET-") || tp === "return";
+        if (!isShoeOrShirtSale && !isReturnInvoice && (inv.startsWith("INV-") || inv.startsWith("RTN-") || inv.startsWith("RET-"))) return;
 
         // Normalize shoe/shirt/mixed sales into a single "Sales" category
-        const normalizedCategory = isShoeOrShirtSale ? "Sales" : (t.category || "Uncategorized");
-        const normalizedSubCategory = isShoeOrShirtSale ? (t.subCategory || t.category || "Sales") : (t.subCategory || t.category || "");
+        const normalizedCategory = isShoeOrShirtSale ? "Sales" : isReturnInvoice ? "Return Invoice" : (t.category || "Uncategorized");
+        const normalizedSubCategory = isShoeOrShirtSale ? (t.subCategory || t.category || "Sales") : isReturnInvoice ? (t.subCategory || "Sales Return") : (t.subCategory || t.category || "");
 
         const row = {
           date: (t.date || "").split("T")[0],
@@ -268,7 +269,8 @@ export default function IncomeExpenseReport() {
           locCode: t.locCode || locCode,
         };
 
-        if (tp === "income") mongoIncome.push(row);
+        if (isReturnInvoice) mongoExpense.push(row);
+        else if (tp === "income") mongoIncome.push(row);
         else if (tp === "expense") mongoExpense.push(row);
         else if (EXPENSE_CATEGORIES.has(cat)) mongoExpense.push(row);
       });
@@ -496,7 +498,7 @@ export default function IncomeExpenseReport() {
               <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Remarks</th>
               {showBranch && <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Branch</th>}
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Cash</th>
-              <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">RBL</th>
+              <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Razorpay</th>
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Bank</th>
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">UPI</th>
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Total</th>
