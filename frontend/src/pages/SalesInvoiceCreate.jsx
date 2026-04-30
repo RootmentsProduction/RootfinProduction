@@ -3506,7 +3506,6 @@ Customer Service Available`;
                       { key: "cash", label: "Cash" },
                       { key: "bank", label: "Card/Bank" },
                       { key: "upi",  label: "UPI"  },
-                      { key: "rbl",  label: "Razorpay" },
                     ].map(({ key, label }) => (
                       <div key={key}>
                         <label className="block text-xs font-semibold text-[#374151] mb-1">{label}</label>

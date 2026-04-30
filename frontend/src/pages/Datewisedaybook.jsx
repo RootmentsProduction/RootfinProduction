@@ -331,7 +331,7 @@ const Datewisedaybook = () => {
           SubCategory: subCatLabel,
           SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
           customerName: tx.customerName || "",
-          remark: tx.remark || tx.remarks || "",
+          remark: (() => { const r = tx.remark || tx.remarks || ""; return (r === "Thanks for your business." || r === "Thanks for your business") ? "" : r; })(),
           billValue: Number(tx.billValue || tx.invoiceAmount || Math.abs(Number(tx.amount) || 0)),
           cash: Number(tx.cash),
           rbl: rbl, // ✅ Added RBL
@@ -584,7 +584,7 @@ const Datewisedaybook = () => {
           SubCategory: subCatLabel,
           SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
           customerName: tx.customerName || "",
-          remark: tx.remark || tx.remarks || "",
+          remark: (() => { const r = tx.remark || tx.remarks || ""; return (r === "Thanks for your business." || r === "Thanks for your business") ? "" : r; })(),
           discountAmount: Number(tx.discountAmount || 0),
           billValue: Number(tx.billValue || tx.invoiceAmount || Math.abs(Number(tx.amount) || 0)),
           cash: Number(tx.cash),

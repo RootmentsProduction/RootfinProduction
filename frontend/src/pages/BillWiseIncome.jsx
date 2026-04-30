@@ -432,7 +432,7 @@ const DayBookInc = () => {
             upi: transaction.upi !== undefined ? transaction.upi : transaction.Tupi,
             amount: transaction.amount || 0,
             totalTransaction: transaction.totalTransaction || (parseInt(transaction.cash || 0) + parseInt(transaction.bank || 0) + parseInt(transaction.upi || 0) + parseInt(transaction.rbl || transaction.rblRazorPay || 0)),
-            remark: transaction.remark || transaction.remarks || ""
+            remark: (() => { const r = transaction.remark || transaction.remarks || ""; return (r === "Thanks for your business." || r === "Thanks for your business") ? "" : r; })()
         };});
 
         return {

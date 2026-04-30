@@ -43,7 +43,7 @@ const allocatePaymentAmounts = (invoice) => {
     if (invoice.paymentMethod === "Cash") {
       cash = isNegativeAmount ? (-Math.abs(parseFloat(amountToAllocate))).toString() : amountToAllocate;
       paymentMethodForTransaction = "cash";
-    } else if (invoice.paymentMethod === "Bank") {
+    } else if (invoice.paymentMethod === "Bank" || invoice.paymentMethod === "Card / Bank") {
       bank = isNegativeAmount ? (-Math.abs(parseFloat(amountToAllocate))).toString() : amountToAllocate;
       paymentMethodForTransaction = "bank";
     } else if (invoice.paymentMethod === "UPI") {

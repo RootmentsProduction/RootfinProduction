@@ -1315,7 +1315,7 @@ const SalesInvoiceDetail = () => {
                       onChange={(e) => setReturnPaymentMethod(e.target.value)}
                       className="w-4 h-4 text-[#2563eb] border-[#d1d5db] focus:ring-2 focus:ring-[#2563eb]/20"
                     />
-                    <span className="text-sm text-[#1f2937]">RBL</span>
+                    <span className="text-sm text-[#1f2937]">Razorpay</span>
                   </label>
                 </div>
                 <p className="text-xs text-[#6b7280] mt-2">
