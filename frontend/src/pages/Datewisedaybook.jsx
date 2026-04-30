@@ -337,8 +337,8 @@ const Datewisedaybook = () => {
           rbl: rbl, // ✅ Added RBL
           bank: Number(tx.bank),
           upi: Number(tx.upi),
-          amount: Number(tx.cash) + rbl + Number(tx.bank) + Number(tx.upi),
-          totalTransaction: Number(tx.cash) + rbl + Number(tx.bank) + Number(tx.upi),
+          amount: Number(tx.totalTransaction ?? tx.amount ?? (Number(tx.cash) + rbl + Number(tx.bank) + Number(tx.upi))),
+          totalTransaction: Number(tx.totalTransaction ?? tx.amount ?? (Number(tx.cash) + rbl + Number(tx.bank) + Number(tx.upi))),
           source: "mongo"
         };
       });
