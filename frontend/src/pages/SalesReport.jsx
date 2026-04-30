@@ -645,6 +645,7 @@ const SalesReport = () => {
                 </div>
 
                 {/* Payment Breakdown - Collapsible */}
+                {/* COMMENTED OUT - UI hidden, logic preserved
                 <div style={{ marginBottom: "40px" }}>
                   <div style={{ 
                     display: "flex", 
@@ -743,6 +744,7 @@ const SalesReport = () => {
                     </div>
                   )}
                 </div>
+                END COMMENT */}
 
                 {/* Sales by Category */}
                 <div style={{ marginBottom: "40px" }}>
