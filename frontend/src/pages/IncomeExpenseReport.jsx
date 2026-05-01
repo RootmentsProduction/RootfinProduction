@@ -460,7 +460,7 @@ export default function IncomeExpenseReport() {
           <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
             className="rounded-lg border border-[#d9def1] px-3 py-2 text-sm focus:outline-none focus:border-[#2563eb] min-w-[160px]">
             <option>All Categories</option>
-            {allCategories.map(c => <option key={c}>{c}</option>)}
+            {allCategories.map(c => <option key={c} value={c}>{getCategoryLabel(c)}</option>)}
           </select>
         </div>
         {canSelectStore && (
