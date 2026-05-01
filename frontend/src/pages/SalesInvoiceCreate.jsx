@@ -3454,61 +3454,58 @@ Customer Service Available`;
               <div>
                 <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[#374151]">Payment Method</p>
 
-                {/* Regular payment buttons */}
-                {!isSplitPayment && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { name: "Cash",  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg> },
-                      { name: "UPI",   icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/><path d="M9 7l3 4 3-4"/></svg> },
-                      { name: "Bank",  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
-                      { name: "RBL",   icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> },
-                    ].map((m) => (
-                      <button key={m.name} type="button"
-                        onClick={() => {
-                          setPaymentMethod(paymentMethod.includes(m.name) ? [] : [m.name]);
-                        }}
-                        className={`payment-card relative flex flex-col items-center gap-2 rounded-xl border py-4 text-sm font-medium transition-all duration-150 ${
-                          paymentMethod.includes(m.name)
-                            ? "border-[#2563eb] bg-[#dbeafe] text-[#1e40af] shadow-md scale-[1.03]"
-                            : "border-[#e2e8f0] bg-white text-[#374151] hover:border-[#93c5fd] hover:bg-[#f0f9ff]"
-                        }`}>
-                        {paymentMethod.includes(m.name) && (
-                          <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#2563eb] text-white">
-                            <svg viewBox="0 0 12 12" fill="none" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                          </span>
-                        )}
-                        <span className={paymentMethod.includes(m.name) ? "text-[#1e40af]" : "text-[#6b7280]"}>{m.icon}</span>
-                        <span>{m.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {/* Payment buttons grid - 2x2 */}
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { name: "Cash",  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg> },
+                    { name: "UPI",   icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/><path d="M9 7l3 4 3-4"/></svg> },
+                    { name: "Card / Bank", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
+                  ].map((m) => (
+                    <button key={m.name} type="button"
+                      onClick={() => {
+                        setPaymentMethod(paymentMethod.includes(m.name) ? [] : [m.name]);
+                        setIsSplitPayment(false);
+                      }}
+                      className={`payment-card relative flex flex-col items-center gap-2 rounded-xl border py-4 text-sm font-medium transition-all duration-150 ${
+                        !isSplitPayment && paymentMethod.includes(m.name)
+                          ? "border-[#2563eb] bg-[#dbeafe] text-[#1e40af] shadow-md scale-[1.03]"
+                          : "border-[#e2e8f0] bg-white text-[#374151] hover:border-[#93c5fd] hover:bg-[#f0f9ff]"
+                      }`}>
+                      {!isSplitPayment && paymentMethod.includes(m.name) && (
+                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#2563eb] text-white">
+                          <svg viewBox="0 0 12 12" fill="none" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </span>
+                      )}
+                      <span className={!isSplitPayment && paymentMethod.includes(m.name) ? "text-[#1e40af]" : "text-[#6b7280]"}>{m.icon}</span>
+                      <span>{m.name}</span>
+                    </button>
+                  ))}
 
-                {/* Split Payment button */}
-                <button type="button"
-                  onClick={() => { setIsSplitPayment(!isSplitPayment); if (isSplitPayment) setSplitPaymentAmounts({ cash: "", bank: "", upi: "", rbl: "" }); }}
-                  className={`relative mt-2 w-full flex flex-col items-center gap-2 rounded-xl border py-4 text-sm font-medium transition-all duration-150 ${
-                    isSplitPayment
-                      ? "border-[#2563eb] bg-[#dbeafe] text-[#1e40af] shadow-md scale-[1.02]"
-                      : "border-[#e2e8f0] bg-white text-[#374151] hover:border-[#93c5fd] hover:bg-[#f0f9ff]"
-                  }`}>
-                  {isSplitPayment && (
-                    <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#2563eb] text-white">
-                      <svg viewBox="0 0 12 12" fill="none" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    </span>
-                  )}
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={`w-6 h-6 ${isSplitPayment ? "text-[#1e40af]" : "text-[#6b7280]"}`}><path d="M21 12H3m9-9v18M3 7l4-4m14 4l-4-4M3 17l4 4m14-4l-4 4"/></svg>
-                  <span>Split Payment</span>
-                </button>
+                  {/* Split Payment as 4th grid button */}
+                  <button type="button"
+                    onClick={() => { setIsSplitPayment(!isSplitPayment); setPaymentMethod([]); if (isSplitPayment) setSplitPaymentAmounts({ cash: "", bank: "", upi: "", rbl: "" }); }}
+                    className={`payment-card relative flex flex-col items-center gap-2 rounded-xl border py-4 text-sm font-medium transition-all duration-150 ${
+                      isSplitPayment
+                        ? "border-[#2563eb] bg-[#dbeafe] text-[#1e40af] shadow-md scale-[1.03]"
+                        : "border-[#e2e8f0] bg-white text-[#374151] hover:border-[#93c5fd] hover:bg-[#f0f9ff]"
+                    }`}>
+                    {isSplitPayment && (
+                      <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#2563eb] text-white">
+                        <svg viewBox="0 0 12 12" fill="none" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </span>
+                    )}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={`w-6 h-6 ${isSplitPayment ? "text-[#1e40af]" : "text-[#6b7280]"}`}><path d="M21 12H3m9-9v18M3 7l4-4m14 4l-4-4M3 17l4 4m14-4l-4 4"/></svg>
+                    <span>Split</span>
+                  </button>
+                </div>
 
                 {/* Split amounts */}
                 {isSplitPayment && (
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     {[
                       { key: "cash", label: "Cash" },
-                      { key: "bank", label: "Bank" },
+                      { key: "bank", label: "Card/Bank" },
                       { key: "upi",  label: "UPI"  },
-                      { key: "rbl",  label: "RBL"  },
                     ].map(({ key, label }) => (
                       <div key={key}>
                         <label className="block text-xs font-semibold text-[#374151] mb-1">{label}</label>
@@ -3533,8 +3530,61 @@ Customer Service Available`;
                 <span className="text-sm font-semibold text-[#111827]">₹ {totals.subTotal}</span>
               </div>
 
-              {/* TDS / TCS */}
-              <div className="w-full overflow-hidden rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 space-y-2">
+              {/* Tax Breakdown */}
+              {totals.taxBreakdown.length > 0 && (
+                <div className="space-y-1">
+                  {totals.taxBreakdown.map((tax, idx) => {
+                    if (tax.type === 'GST') {
+                      const half = tax.amount / 2;
+                      const halfPct = tax.rate / 2;
+                      return (
+                        <div key={idx} className="space-y-0.5">
+                          <div className="flex justify-between text-[11px] text-[#6b7280]">
+                            <span>CGST {halfPct}%</span><span>₹{half.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-[#6b7280]">
+                            <span>SGST {halfPct}%</span><span>₹{half.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={idx} className="flex justify-between text-[11px] text-[#6b7280]">
+                        <span>IGST {tax.rate}%</span><span>₹{tax.amount.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Discount */}
+              <div className="rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wide">Discount</span>
+                  <div className="flex gap-1">
+                    {["₹", "%"].map(t => (
+                      <button key={t} type="button"
+                        onClick={() => setDiscount(prev => ({ ...prev, type: t }))}
+                        className={`px-2 py-0.5 text-[10px] font-semibold rounded border transition-colors ${discount.type === t ? "bg-[#1e3a8a] text-white border-[#1e3a8a]" : "bg-white text-[#374151] border-[#d1d5db] hover:bg-[#f3f4f6]"}`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={discount.value}
+                    onChange={(e) => setDiscount(prev => ({ ...prev, value: e.target.value }))}
+                    placeholder="0.00"
+                    className="flex-1 h-[28px] rounded border border-[#e5e7eb] bg-white px-2 text-[11px] text-[#111827] focus:border-[#9ca3af] focus:outline-none"
+                  />
+                  <span className="text-[11px] font-medium text-[#ef4444] whitespace-nowrap shrink-0">- ₹{totals.discountAmount}</span>
+                </div>
+              </div>
+
+              {/* TDS / TCS - temporarily disabled */}
+              {/* <div className="w-full overflow-hidden rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wide">TDS / TCS</span>
                   <div className="flex gap-1">
@@ -3556,34 +3606,7 @@ Customer Service Available`;
                   </div>
                   <span className="text-[11px] font-medium text-[#ef4444] whitespace-nowrap shrink-0">- ₹{totals.tdsTcsAmount}</span>
                 </div>
-              </div>
-
-              {/* Tax Breakdown */}
-              {totals.taxBreakdown.length > 0 && (
-                <div className="space-y-1.5">
-                  {totals.taxBreakdown.map((tax, idx) => {
-                    if (tax.type === 'GST') {
-                      const half = tax.amount / 2;
-                      const halfPct = tax.rate / 2;
-                      return (
-                        <div key={idx} className="space-y-1">
-                          <div className="flex justify-between text-xs text-[#6b7280]">
-                            <span>CGST {halfPct}%</span><span>₹{half.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between text-xs text-[#6b7280]">
-                            <span>SGST {halfPct}%</span><span>₹{half.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div key={idx} className="flex justify-between text-xs text-[#6b7280]">
-                        <span>IGST {tax.rate}%</span><span>₹{tax.amount.toFixed(2)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              </div> */}
 
               <hr className="border-[#e5e7eb]" />
 
@@ -4650,7 +4673,8 @@ const SalesPersonSelect = ({ label, placeholder, value, onChange, options = [], 
           onFocus={() => setOpen(true)}
           placeholder={placeholder}
           disabled={disabled}
-          className={`w-full rounded-lg border px-3 py-2 pr-10 text-sm transition ${
+          readOnly
+          className={`w-full rounded-lg border px-3 py-2 pr-10 text-sm transition cursor-pointer ${
             open ? "border-[#9ca3af]" : "border-[#d7dcf5]"
           } ${disabled ? "bg-[#f1f5f9] text-[#94a3b8] cursor-not-allowed" : "bg-white text-[#1f2937]"} placeholder:text-[#9ca3af] focus:outline-none`}
         />

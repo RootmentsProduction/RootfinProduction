@@ -26,8 +26,8 @@ const headers = [
     { label: "Balance Payable", key: "Balance" },
     { label: "Remark", key: "remark" },
     { label: "Cash", key: "cash" },
-    { label: "RBL", key: "rbl" },
-    { label: "Bank", key: "bank" },
+    { label: "Razorpay", key: "rbl" },
+    { label: "Card/Bank", key: "bank" },
     { label: "UPI", key: "upi" },
 ];
 
@@ -432,7 +432,7 @@ const DayBookInc = () => {
             upi: transaction.upi !== undefined ? transaction.upi : transaction.Tupi,
             amount: transaction.amount || 0,
             totalTransaction: transaction.totalTransaction || (parseInt(transaction.cash || 0) + parseInt(transaction.bank || 0) + parseInt(transaction.upi || 0) + parseInt(transaction.rbl || transaction.rblRazorPay || 0)),
-            remark: transaction.remark || transaction.remarks || ""
+            remark: (() => { const r = transaction.remark || transaction.remarks || ""; return (r === "Thanks for your business." || r === "Thanks for your business") ? "" : r; })()
         };});
 
         return {
@@ -1012,6 +1012,7 @@ const DayBookInc = () => {
     // Prepare CSV data to match table logic
     const csvData = filteredTransactions.map(transaction => ({
       ...transaction,
+      SubCategory: getCatLabel(transaction.SubCategory || transaction.subCategory || transaction.category || ""),
       cash:
         -(parseInt(transaction.deleteCashAmount)) ||
         parseInt(transaction.rentoutCashAmount) ||
@@ -1323,8 +1324,8 @@ const DayBookInc = () => {
                                                 <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Discount</th>
                                                 <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Bill Value</th>
                                                 <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Cash</th>
-                                                <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">RBL</th>
-                                                <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Bank</th>
+                                                <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Razorpay</th>
+                                                <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Card/Bank</th>
                                                 <th className="px-2 py-1 text-right whitespace-nowrap font-semibold border-r border-slate-600 text-xs">UPI</th>
                                                 {showAction && <th className="px-2 py-1 text-center whitespace-nowrap font-semibold border-r border-slate-600 text-xs">Action</th>}
                                             </tr>

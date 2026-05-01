@@ -248,11 +248,13 @@ export default function IncomeExpenseReport() {
         const inv = (t.invoiceNo || "").toUpperCase();
         const isShoeOrShirtSale = sub === "shoe sales" || sub === "shirt sales" || sub === "mixed sales"
           || cat === "shoe sales" || cat === "shirt sales" || cat === "mixed sales";
-        if (!isShoeOrShirtSale && (inv.startsWith("INV-") || inv.startsWith("RTN-") || inv.startsWith("RET-"))) return;
+        // Only treat MongoDB sales invoice returns (RTN-/RET- prefix) as "Return Invoice" — NOT TWS security refunds
+        const isReturnInvoice = inv.startsWith("RTN-") || inv.startsWith("RET-");
+        if (!isShoeOrShirtSale && !isReturnInvoice && (inv.startsWith("INV-") || inv.startsWith("RTN-") || inv.startsWith("RET-"))) return;
 
         // Normalize shoe/shirt/mixed sales into a single "Sales" category
-        const normalizedCategory = isShoeOrShirtSale ? "Sales" : (t.category || "Uncategorized");
-        const normalizedSubCategory = isShoeOrShirtSale ? (t.subCategory || t.category || "Sales") : (t.subCategory || t.category || "");
+        const normalizedCategory = isShoeOrShirtSale ? "Sales" : isReturnInvoice ? "Return Invoice" : (t.category || "Uncategorized");
+        const normalizedSubCategory = isShoeOrShirtSale ? (t.subCategory || t.category || "Sales") : isReturnInvoice ? (t.subCategory || "Sales Return") : (t.subCategory || t.category || "");
 
         const row = {
           date: (t.date || "").split("T")[0],
@@ -268,7 +270,8 @@ export default function IncomeExpenseReport() {
           locCode: t.locCode || locCode,
         };
 
-        if (tp === "income") mongoIncome.push(row);
+        if (isReturnInvoice) mongoExpense.push(row);
+        else if (tp === "income") mongoIncome.push(row);
         else if (tp === "expense") mongoExpense.push(row);
         else if (EXPENSE_CATEGORIES.has(cat)) mongoExpense.push(row);
       });
@@ -457,7 +460,7 @@ export default function IncomeExpenseReport() {
           <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
             className="rounded-lg border border-[#d9def1] px-3 py-2 text-sm focus:outline-none focus:border-[#2563eb] min-w-[160px]">
             <option>All Categories</option>
-            {allCategories.map(c => <option key={c}>{c}</option>)}
+            {allCategories.map(c => <option key={c} value={c}>{getCategoryLabel(c)}</option>)}
           </select>
         </div>
         {canSelectStore && (
@@ -496,7 +499,7 @@ export default function IncomeExpenseReport() {
               <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Remarks</th>
               {showBranch && <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Branch</th>}
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Cash</th>
-              <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">RBL</th>
+              <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Razorpay</th>
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Bank</th>
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">UPI</th>
               <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280]">Total</th>

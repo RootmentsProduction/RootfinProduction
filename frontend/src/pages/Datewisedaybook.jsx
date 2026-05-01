@@ -35,8 +35,8 @@ const headers = [
   { label: "Discount", key: "discountAmount" },
   { label: "Bill Value", key: "billValue" },
   { label: "Cash", key: "cash" },
-  { label: "RBL", key: "rbl" }, // ✅ Added RBL to headers
-  { label: "Bank", key: "bank" },
+  { label: "Razorpay", key: "rbl" }, // ✅ Added RBL to headers
+  { label: "Card/Bank", key: "bank" },
   { label: "UPI", key: "upi" },
   { label: "Attachment", key: "attachment" },
 ];
@@ -117,8 +117,8 @@ const allStoresCsvHeaders = [
   { label: "Store", key: "store" },
   { label: "LocCode", key: "locCode" },
   { label: "Cash", key: "cash" },
-  { label: "RBL", key: "rbl" }, // ✅ Added RBL to all stores CSV headers
-  { label: "Bank", key: "bank" },
+  { label: "Razorpay", key: "rbl" }, // ✅ Added RBL to all stores CSV headers
+  { label: "Card/Bank", key: "bank" },
   { label: "UPI", key: "upi" },
   { label: "Total Amount", key: "amount" },
 ];
@@ -331,14 +331,14 @@ const Datewisedaybook = () => {
           SubCategory: subCatLabel,
           SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
           customerName: tx.customerName || "",
-          remark: tx.remark || tx.remarks || "",
+          remark: (() => { const r = tx.remark || tx.remarks || ""; return (r === "Thanks for your business." || r === "Thanks for your business") ? "" : r; })(),
           billValue: Number(tx.billValue || tx.invoiceAmount || Math.abs(Number(tx.amount) || 0)),
           cash: Number(tx.cash),
           rbl: rbl, // ✅ Added RBL
           bank: Number(tx.bank),
           upi: Number(tx.upi),
-          amount: Number(tx.cash) + rbl + Number(tx.bank) + Number(tx.upi),
-          totalTransaction: Number(tx.cash) + rbl + Number(tx.bank) + Number(tx.upi),
+          amount: Number(tx.totalTransaction ?? tx.amount ?? (Number(tx.cash) + rbl + Number(tx.bank) + Number(tx.upi))),
+          totalTransaction: Number(tx.totalTransaction ?? tx.amount ?? (Number(tx.cash) + rbl + Number(tx.bank) + Number(tx.upi))),
           source: "mongo"
         };
       });
@@ -584,7 +584,7 @@ const Datewisedaybook = () => {
           SubCategory: subCatLabel,
           SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
           customerName: tx.customerName || "",
-          remark: tx.remark || tx.remarks || "",
+          remark: (() => { const r = tx.remark || tx.remarks || ""; return (r === "Thanks for your business." || r === "Thanks for your business") ? "" : r; })(),
           discountAmount: Number(tx.discountAmount || 0),
           billValue: Number(tx.billValue || tx.invoiceAmount || Math.abs(Number(tx.amount) || 0)),
           cash: Number(tx.cash),
@@ -869,7 +869,7 @@ const Datewisedaybook = () => {
           customerName: t.customerName || "",
           quantity: t.quantity || 1,
           Category: t.Category || t.type || "",
-          SubCategory: t.SubCategory || t.category || "",
+          SubCategory: getCatLabel(t.SubCategory || t.category || ""),
           SubCategory1: t.SubCategory1 || t.subCategory1 || "",
           amount,
           totalTransaction: t.totalTransaction ?? amount,
@@ -1347,8 +1347,8 @@ const Datewisedaybook = () => {
                           <th className="px-2 py-2 text-left font-semibold text-xs">Store</th>
                           <th className="px-2 py-2 text-left font-semibold text-xs">LocCode</th>
                           <th className="px-2 py-2 text-right font-semibold text-xs">Cash</th>
-                          <th className="px-2 py-2 text-right font-semibold text-xs">RBL</th>
-                          <th className="px-2 py-2 text-right font-semibold text-xs">Bank</th>
+                          <th className="px-2 py-2 text-right font-semibold text-xs">Razorpay</th>
+                          <th className="px-2 py-2 text-right font-semibold text-xs">Card/Bank</th>
                           <th className="px-2 py-2 text-right font-semibold text-xs">UPI</th>
                           <th className="px-2 py-2 text-right font-semibold text-xs">Total Amount</th>
                         </tr>
@@ -1403,8 +1403,8 @@ const Datewisedaybook = () => {
                           <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Discount</th>
                           <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Bill Value</th>
                           <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Cash</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">RBL</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Bank</th>
+                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Razorpay</th>
+                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Card/Bank</th>
                           <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">UPI</th>
                           <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Attachment</th>
                           {showAction && <th className="px-2 py-1 text-center font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Action</th>}

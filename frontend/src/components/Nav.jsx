@@ -311,8 +311,7 @@ const Nav = () => {
                             <Link to="/income" className={singleLinkClasses("/income")}><DollarSign size={18} /><span>Income</span></Link>
                             <Link to="/expenses" className={singleLinkClasses("/expenses")}><DollarSign size={18} /><span>Expenses</span></Link>
 
-                            {/* Cash / Bank Ledger */}
-                            <Link to="/CashBankLedger" className={singleLinkClasses("/CashBankLedger")}><DollarSign size={18} /><span>Cash / Bank Ledger</span></Link>
+
 
                             {/* Admin only */}
                             {currentuser.power === 'admin' && (

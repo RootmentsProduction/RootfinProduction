@@ -469,12 +469,19 @@ const SalesInvoiceDetail = () => {
         igstAmount: (item.returnQuantity * item.rate * parseFloat(item.igstPercent || 0)) / 100 * -1,
       }));
 
-      const totalReturnAmount = returnLineItems.reduce((sum, item) => sum + item.amount, 0); // Will be negative
+      const totalReturnAmount = returnLineItems.reduce((sum, item) => sum + item.amount, 0); // Will be negative (raw line items)
       const totalTax = returnLineItems.reduce((sum, item) => sum + (item.cgstAmount + item.sgstAmount + item.igstAmount), 0); // Will be negative
+
+      // Calculate the actual return finalTotal proportionally from invoice.finalTotal
+      // This ensures discount AND adjustment (positive or negative) are both accounted for
+      const originalSubTotal = parseFloat(invoice.subTotal) || 0;
+      const originalFinalTotal = parseFloat(invoice.finalTotal) || 0;
+      const returnRatio = originalSubTotal !== 0 ? Math.abs(totalReturnAmount) / originalSubTotal : 1;
+      // proportional finalTotal for the return (negative since it's a refund)
+      const proportionalFinalTotal = -(Math.abs(originalFinalTotal) * returnRatio);
 
       // Calculate TDS for return invoice (proportionate to return amount)
       const originalTdsAmount = parseFloat(invoice.tdsTcsAmount) || 0;
-      const originalSubTotal = parseFloat(invoice.subTotal) || 0;
       
       // Calculate proportionate TDS for the return amount
       let returnTdsAmount = 0;
@@ -491,6 +498,14 @@ const SalesInvoiceDetail = () => {
         returnAdjustmentAmount = (originalAdjustmentAmount * returnRatio) * -1;
       }
 
+      // Calculate proportionate discount for the return amount
+      const originalDiscountAmount = parseFloat(invoice.discountAmount) || 0;
+      let returnDiscountAmount = 0;
+      if (originalDiscountAmount > 0 && originalSubTotal > 0) {
+        const returnRatio = Math.abs(totalReturnAmount) / originalSubTotal;
+        returnDiscountAmount = originalDiscountAmount * returnRatio;
+      }
+
       const returnInvoiceData = {
         invoiceNumber: `RTN-${invoice.invoiceNumber}`,
         invoiceDate: new Date().toISOString().split('T')[0],
@@ -503,15 +518,15 @@ const SalesInvoiceDetail = () => {
         remark: `Return for: ${returnReason}`,
         lineItems: returnLineItems,
         subTotal: totalReturnAmount, // Negative
-        discount: { value: "0", type: "%" },
-        discountAmount: 0,
+        discount: invoice.discount || { value: "0", type: "%" },
+        discountAmount: -returnDiscountAmount, // Negative proportional discount
         totalTax: totalTax, // Negative
         tdsTcsType: invoice.tdsTcsType || "TDS",
         tdsTcsTax: invoice.tdsTcsTax || "",
         tdsTcsAmount: returnTdsAmount * -1, // Negative TDS amount for return
         adjustment: returnAdjustmentAmount.toFixed(2),
         adjustmentAmount: returnAdjustmentAmount,
-        finalTotal: totalReturnAmount + totalTax - (returnTdsAmount * -1) + returnAdjustmentAmount, // Include TDS + adjustment
+        finalTotal: proportionalFinalTotal, // Proportional from invoice.finalTotal — includes discount AND adjustment
         userId: user?.email,
         warehouse: invoice.warehouse || invoice.locCode,
         locCode: invoice.locCode || user?.locCode,
@@ -1199,6 +1214,13 @@ const SalesInvoiceDetail = () => {
                       <span className="text-[#000]">Sub Total</span>
                       <span className="font-medium text-[#000]">{displaySubTotal.toFixed(2)}</span>
                     </div>
+
+                    {parseFloat(invoice.discountAmount || 0) > 0 && (
+                      <div className="flex justify-between text-[#ef4444]">
+                        <span>Discount ({invoice.discount?.value || '0'}{invoice.discount?.type || '%'})</span>
+                        <span>(-) {parseFloat(invoice.discountAmount || 0).toFixed(2)}</span>
+                      </div>
+                    )}
                     
                     <div className="flex justify-between">
                       <span className="text-[#000]">CGST @ 2.5%</span>
@@ -1315,7 +1337,7 @@ const SalesInvoiceDetail = () => {
                       onChange={(e) => setReturnPaymentMethod(e.target.value)}
                       className="w-4 h-4 text-[#2563eb] border-[#d1d5db] focus:ring-2 focus:ring-[#2563eb]/20"
                     />
-                    <span className="text-sm text-[#1f2937]">RBL</span>
+                    <span className="text-sm text-[#1f2937]">Razorpay</span>
                   </label>
                 </div>
                 <p className="text-xs text-[#6b7280] mt-2">

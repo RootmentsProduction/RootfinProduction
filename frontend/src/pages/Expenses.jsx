@@ -49,6 +49,10 @@ const Expenses = () => {
   const handleCategoryChange = (val) => {
     const cat = cats.find(c => c.value === val);
     setSelectedCategory(cat);
+    if (cat.value === "bulk amount transfer") {
+      setPaymentMethod("cash");
+      setSplitPayment(false);
+    }
     setSubCategory("");
   };
 
@@ -166,8 +170,10 @@ const Expenses = () => {
               <div className="flex flex-wrap items-center gap-6">
                 {[
                   { id: "cash", label: "Cash", icon: <MdCurrencyRupee size={20} /> },
-                  { id: "bank", label: "Bank", icon: <BsBank2 size={18} /> },
-                  { id: "upi",  label: "UPI",  icon: <span className="font-black italic text-sm">UPI</span> },
+                  ...(selectedCategory.value !== "bulk amount transfer" ? [
+                    { id: "bank", label: "Bank", icon: <BsBank2 size={18} /> },
+                    { id: "upi",  label: "UPI",  icon: <span className="font-black italic text-sm">UPI</span> },
+                  ] : []),
                 ].map(({ id, label, icon }) => {
                   const active = !splitPayment && paymentMethod === id;
                   return (
@@ -186,11 +192,13 @@ const Expenses = () => {
                     </label>
                   );
                 })}
-                <label className="flex items-center gap-2.5 text-base font-medium text-[#374151] cursor-pointer ml-2">
-                  <input type="checkbox" checked={splitPayment} onChange={() => setSplitPayment(!splitPayment)}
-                    className="w-5 h-5 accent-[#1e3a8a]" />
-                  Split Payment (Cash + Bank + UPI)
-                </label>
+                {selectedCategory.value !== "bulk amount transfer" && (
+                  <label className="flex items-center gap-2.5 text-base font-medium text-[#374151] cursor-pointer ml-2">
+                    <input type="checkbox" checked={splitPayment} onChange={() => setSplitPayment(!splitPayment)}
+                      className="w-5 h-5 accent-[#1e3a8a]" />
+                    Split Payment (Cash + Bank + UPI)
+                  </label>
+                )}
               </div>
 
               {splitPayment && (
