@@ -446,8 +446,7 @@ export const getSalesSummary = async (req, res) => {
             amount: data.amount,
             store: data.branch
           }))
-          .sort((a, b) => b.amount - a.amount)
-          .slice(0, 10),
+          .sort((a, b) => b.amount - a.amount),
         invoices: invoices.map(inv => ({
           invoiceNumber: inv.invoiceNumber,
           date: inv.invoiceDate,
