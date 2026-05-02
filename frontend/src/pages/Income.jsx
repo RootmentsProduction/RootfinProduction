@@ -98,7 +98,14 @@ const Income = () => {
                 <div className="relative">
                   <select
                     value={selectedCategory.value}
-                    onChange={e => setSelectedCategory(cats.find(c => c.value === e.target.value))}
+                    onChange={e => {
+                      const cat = cats.find(c => c.value === e.target.value);
+                      setSelectedCategory(cat);
+                      if (cat.value === "bank to cash") {
+                        setPaymentMethod("cash");
+                        setSplitPayment(false);
+                      }
+                    }}
                     className="w-full appearance-none rounded-xl border border-[#d9def1] bg-white px-5 py-4 text-base text-[#101828] focus:outline-none focus:border-[#1e3a8a] pr-10"
                   >
                     {cats.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -138,8 +145,10 @@ const Income = () => {
               <div className="flex flex-wrap items-center gap-6">
                 {[
                   { id: "cash", label: "Cash", icon: <MdCurrencyRupee size={20} /> },
-                  { id: "bank", label: "Bank", icon: <BsBank2 size={18} /> },
-                  { id: "upi",  label: "UPI",  icon: <span className="font-black italic text-sm">UPI</span> },
+                  ...(selectedCategory.value !== "bank to cash" ? [
+                    { id: "bank", label: "Bank", icon: <BsBank2 size={18} /> },
+                    { id: "upi",  label: "UPI",  icon: <span className="font-black italic text-sm">UPI</span> },
+                  ] : []),
                 ].map(({ id, label, icon }) => {
                   const active = !splitPayment && paymentMethod === id;
                   return (
@@ -158,11 +167,13 @@ const Income = () => {
                     </label>
                   );
                 })}
-                <label className="flex items-center gap-2.5 text-base font-medium text-[#374151] cursor-pointer ml-2">
-                  <input type="checkbox" checked={splitPayment} onChange={() => setSplitPayment(!splitPayment)}
-                    className="w-5 h-5 accent-[#1e3a8a]" />
-                  Split Payment (Cash + Bank + UPI)
-                </label>
+                {selectedCategory.value !== "bank to cash" && (
+                  <label className="flex items-center gap-2.5 text-base font-medium text-[#374151] cursor-pointer ml-2">
+                    <input type="checkbox" checked={splitPayment} onChange={() => setSplitPayment(!splitPayment)}
+                      className="w-5 h-5 accent-[#1e3a8a]" />
+                    Split Payment (Cash + Bank + UPI)
+                  </label>
+                )}
               </div>
 
               {splitPayment && (

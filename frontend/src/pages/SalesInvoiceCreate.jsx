@@ -193,10 +193,18 @@ const ItemDropdown = ({ rowId, value, onChange, warehouse, onNewItem, isStoreUse
   const updatePos = () => {
     if (!buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
+    const dropdownWidth = 460;
+    const dropdownHeight = 420;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUpward = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+    // Align to left edge of trigger, but clamp so it doesn't go off-screen right
+    const left = Math.min(rect.left, window.innerWidth - dropdownWidth - 16);
     setDropdownPos({
-      top: rect.bottom + 6,
-      left: rect.left,
-      width: Math.max(rect.width, 500),
+      top: openUpward ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+      left: Math.max(left, 8),
+      width: dropdownWidth,
+      openUpward,
     });
   };
 
@@ -312,16 +320,17 @@ const ItemDropdown = ({ rowId, value, onChange, warehouse, onNewItem, isStoreUse
         width: dropdownPos.width,
         zIndex: 999999,
       }}
+      className={dropdownPos.openUpward ? "dropdown-animate-up" : "dropdown-animate"}
     >
-      <div className="rounded-xl shadow-xl bg-white border border-[#d7dcf5] overflow-hidden" style={{ width: '500px', maxWidth: '90vw' }}>
-        <div className="flex items-center gap-2 border-b border-[#e2e8f0] px-3 py-2.5 bg-[#fafbff]">
-          <Search size={14} className="text-[#94a3b8]" />
+      <div className="rounded-xl shadow-2xl bg-white border border-[#e2e8f0] overflow-hidden" style={{ width: '100%' }}>
+        <div className="flex items-center gap-2 border-b border-[#f1f5f9] px-3 py-2 bg-white">
+          <Search size={14} className="text-[#9ca3af] shrink-0" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search items..."
-            className="h-8 w-full border-none bg-transparent text-sm text-[#1f2937] outline-none placeholder:text-[#94a3b8]"
+            className="h-7 w-full border-none bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
             onClick={(e) => e.stopPropagation()}
             autoFocus
           />
@@ -391,31 +400,23 @@ const ItemDropdown = ({ rowId, value, onChange, warehouse, onNewItem, isStoreUse
                 <div
                   key={item._id}
                   onClick={() => !isOutOfStock && handleSelectItem(item)}
-                  className={`px-4 py-3 transition-colors border-b border-[#f1f5f9] ${
-                    isOutOfStock
-                      ? "opacity-50 cursor-not-allowed bg-[#fef2f2]"
-                      : "cursor-pointer"
-                  } ${
-                    isSelected
-                      ? "bg-[#2563eb] text-white"
-                      : "text-[#1f2937] hover:bg-[#f8fafc]"
-                  }`}
+                  className={`px-4 py-3 transition-colors border-b border-[#f1f5f9] last:border-0 ${
+                    isOutOfStock ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+                  } ${isSelected ? "bg-[#f0f4ff]" : "hover:bg-[#f8fafc]"}`}
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className={`font-medium text-sm ${isSelected ? "text-white" : "text-[#1f2937]"}`}>
+                      <div className={`text-sm font-semibold ${isSelected ? "text-[#4f46e5]" : "text-[#111827]"}`}>
                         {item.itemName || "Unnamed Item"}
-                        {isOutOfStock && <span className="ml-2 text-xs font-semibold text-[#ef4444]">(Out of Stock)</span>}
+                        {isOutOfStock && <span className="ml-2 text-xs font-normal text-[#ef4444]">(Out of Stock)</span>}
                       </div>
-                      <div className={`text-xs mt-1 ${isSelected ? "text-white/80" : "text-[#64748b]"}`}>
-                        {groupName ? `${groupName} • ` : ""}SKU: {item.sku || "N/A"} • Rate: ₹{purchaseRate.toFixed(2)}
+                      <div className="text-xs text-[#9ca3af] mt-0.5">
+                        SKU: {item.sku || "N/A"} · Purchase Rate: ₹{purchaseRate.toFixed(2)}
                       </div>
                     </div>
-                    <div className="flex flex-col items-end shrink-0">
-                      <div className={`text-xs ${isSelected ? "text-white/80" : "text-[#64748b]"}`}>
-                        Available
-                      </div>
-                      <div className={`text-sm font-medium mt-0.5 ${isSelected ? "text-white" : isOutOfStock ? "text-[#ef4444]" : "text-[#10b981]"}`}>
+                    <div className="text-right shrink-0">
+                      <div className="text-xs text-[#6b7280]">Stock on Hand</div>
+                      <div className={`text-sm font-semibold ${isOutOfStock ? "text-[#ef4444]" : "text-[#16a34a]"}`}>
                         {availableStock.toFixed(2)} pcs
                       </div>
                     </div>
@@ -432,7 +433,7 @@ const ItemDropdown = ({ rowId, value, onChange, warehouse, onNewItem, isStoreUse
                 onNewItem();
                 setIsOpen(false);
               }}
-              className="flex items-center gap-2 px-3 py-2 cursor-pointer text-sm text-[#2563eb] hover:bg-[#eef2ff] rounded-md transition-colors"
+              className="flex items-center gap-2 px-3 py-2 cursor-pointer text-sm text-[#374151] hover:bg-[#f3f4f6] rounded-md transition-colors"
             >
               <span>+</span>
               <span>New Item</span>
@@ -472,8 +473,8 @@ const ItemDropdown = ({ rowId, value, onChange, warehouse, onNewItem, isStoreUse
               updatePos();
             }
           }}
-          placeholder="Type or click to select an item."
-          className="w-full h-[36px] rounded-md border border-[#d7dcf5] bg-white px-[10px] py-[6px] text-sm text-[#1f2937] placeholder:text-[#9ca3af] focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb] transition-colors"
+          placeholder="Type or click to select an item"
+          className="w-full h-[32px] rounded border border-[#e5e7eb] bg-white px-2 py-1 text-xs text-[#111827] placeholder:text-[#9ca3af] focus:border-[#6366f1] focus:outline-none focus:ring-0 transition-colors"
         />
       </div>
       {typeof document !== "undefined" && document.body && createPortal(dropdownPortal, document.body)}
@@ -530,10 +531,15 @@ const TaxDropdown = ({ rowId, value, onChange, taxOptions, nonTaxableOptions, on
   const updatePos = () => {
     if (!buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
+    const dropdownHeight = 300;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUpward = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
     setDropdownPos({
-      top: rect.bottom + 6,
-      left: rect.left,
-      width: rect.width,
+      top: openUpward ? rect.top - dropdownHeight - 6 : rect.bottom + 6,
+      left: Math.min(rect.left, window.innerWidth - 280),
+      width: Math.max(rect.width, 260),
+      openUpward,
     });
   };
 
@@ -600,92 +606,71 @@ const TaxDropdown = ({ rowId, value, onChange, taxOptions, nonTaxableOptions, on
         position: "fixed",
         top: dropdownPos.top,
         left: dropdownPos.left,
-        width: Math.max(dropdownPos.width, 280),
+        width: Math.max(dropdownPos.width, 260),
         zIndex: 999999,
       }}
+      className={dropdownPos.openUpward ? "dropdown-animate-up" : "dropdown-animate"}
     >
-      <div className="rounded-lg shadow-lg bg-white border border-[#e5e7eb] overflow-hidden">
-        {/* Search Header */}
-        <div className="flex items-center gap-3 border-b border-[#e5e7eb] px-4 py-3 bg-gradient-to-r from-[#f9fafb] to-white">
-          <Search size={16} className="text-[#9ca3af] flex-shrink-0" />
+      <div className="rounded-xl shadow-2xl bg-white border border-[#e2e8f0] overflow-hidden">
+        {/* Search */}
+        <div className="flex items-center gap-2 border-b border-[#f1f5f9] px-3 py-2 bg-[#f8fafc]">
+          <Search size={13} className="text-[#9ca3af] shrink-0" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search taxes..."
-            className="flex-1 border-none bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#9ca3af]"
+            placeholder="Search..."
+            className="flex-1 border-none bg-transparent text-xs text-[#111827] outline-none placeholder:text-[#9ca3af]"
             onClick={(e) => e.stopPropagation()}
             autoFocus
           />
         </div>
-        
-        {/* Options List */}
-        <div className="py-2 max-h-[400px] overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: 'thin', scrollbarColor: '#d3d3d3 #f5f5f5' }}>
-          {/* Non-Taxable Section */}
+
+        <div className="max-h-[280px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+          {/* Non-Taxable */}
           {nonTaxableOptions.length > 0 && (
             <>
-              <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] bg-[#f9fafb]">
-                Non-Taxable Options
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] bg-[#f9fafb]">
+                Non-Taxable
               </div>
               {nonTaxableOptions.map((option) => (
-                <div
-                  key={option.id}
-                  onClick={() => handleSelectTax(option.id)}
-                  className={`px-4 py-3 text-sm cursor-pointer transition-all duration-150 border-l-4 ${
-                    value === option.id
-                      ? "bg-[#eff6ff] text-[#2563eb] font-semibold border-l-[#2563eb]"
-                      : "text-[#374151] hover:bg-[#f9fafb] border-l-transparent hover:border-l-[#d1d5db]"
-                  }`}
-                >
-                  <div className="font-medium">{option.name}</div>
-                  <div className="text-xs text-[#9ca3af] mt-1">{option.description}</div>
+                <div key={option.id} onClick={() => handleSelectTax(option.id)}
+                  className={`px-3 py-2 text-xs cursor-pointer transition-colors ${
+                    value === option.id ? "bg-[#1e3a8a] text-white" : "text-[#374151] hover:bg-[#f3f4f6]"
+                  }`}>
+                  {option.name}
                 </div>
               ))}
             </>
           )}
-          
-          {/* Tax Groups Section */}
+
+          {/* Tax Groups */}
           {filteredTaxOptions.length > 0 && (
             <>
-              <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] bg-[#f9fafb] mt-2">
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#9ca3af] bg-[#f9fafb]">
                 Tax Groups
               </div>
               {filteredTaxOptions.map((tax) => (
-                <div
-                  key={tax.id}
-                  onClick={() => handleSelectTax(tax.id)}
-                  className={`flex items-center justify-between px-4 py-3 text-sm cursor-pointer transition-all duration-150 border-l-4 ${
-                    value === tax.id
-                      ? "bg-[#eff6ff] text-[#2563eb] font-semibold border-l-[#2563eb]"
-                      : "text-[#374151] hover:bg-[#f9fafb] border-l-transparent hover:border-l-[#d1d5db]"
-                  }`}
-                >
+                <div key={tax.id} onClick={() => handleSelectTax(tax.id)}
+                  className={`flex items-center justify-between px-3 py-2 text-xs cursor-pointer transition-colors ${
+                    value === tax.id ? "bg-[#1e3a8a] text-white" : "text-[#374151] hover:bg-[#f3f4f6]"
+                  }`}>
                   <span>{tax.display}</span>
-                  {value === tax.id && <Check size={18} className="text-[#2563eb]" />}
+                  {value === tax.id && <Check size={12} />}
                 </div>
               ))}
             </>
           )}
-          
-          {/* No Results */}
+
           {filteredTaxOptions.length === 0 && nonTaxableOptions.length === 0 && (
-            <div className="px-4 py-8 text-center text-sm text-[#9ca3af]">
-              No taxes found
-            </div>
+            <div className="px-3 py-6 text-center text-xs text-[#9ca3af]">No taxes found</div>
           )}
         </div>
-        
-        {/* Add New Tax Button */}
+
         {onNewTax && (
-          <div
-            onClick={() => {
-              onNewTax();
-              setIsOpen(false);
-            }}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#2563eb] hover:bg-[#f8fafc] cursor-pointer transition-colors border-t border-[#e2e8f0]"
-          >
-            <Plus size={16} />
-            <span>New Tax</span>
+          <div onClick={() => { onNewTax(); setIsOpen(false); }}
+            className="flex items-center gap-2 px-3 py-2 text-xs text-[#374151] hover:bg-[#f3f4f6] cursor-pointer border-t border-[#f3f4f6]">
+            <Plus size={12} /> New Tax
           </div>
         )}
       </div>
@@ -693,23 +678,21 @@ const TaxDropdown = ({ rowId, value, onChange, taxOptions, nonTaxableOptions, on
   ) : null;
 
   return (
-    <select
-      value={value}
-      onChange={(e) => handleSelectTax(e.target.value)}
-      className="w-full h-[36px] rounded-lg border border-[#e5e7eb] bg-white text-sm text-[#111827] hover:border-[#d1d5db] focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 transition-all cursor-pointer px-3 py-2"
-    >
-      <option value="">Select Tax</option>
-      {nonTaxableOptions.map((option) => (
-        <option key={option.id} value={option.id}>
-          {option.name}
-        </option>
-      ))}
-      {taxOptions.map((tax) => (
-        <option key={tax.id} value={tax.id}>
-          {tax.display}
-        </option>
-      ))}
-    </select>
+    <>
+      <div className="relative w-full" ref={buttonRef}>
+        <button
+          type="button"
+          onClick={toggleDropdown}
+          className="no-blue-button w-full h-[28px] rounded border border-[#e5e7eb] bg-white px-2 py-1 text-[10px] text-[#111827] hover:border-[#9ca3af] focus:outline-none flex items-center justify-between gap-1 transition-colors overflow-hidden"
+        >
+          <span className="truncate text-left flex-1 text-[#374151] min-w-0 block">
+            {selectedTax ? selectedTax.display || selectedTax.name : <span className="text-[#9ca3af]">Select Tax</span>}
+          </span>
+          <ChevronDown size={12} className={`shrink-0 text-[#9ca3af] transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        </button>
+      </div>
+      {typeof document !== "undefined" && document.body && createPortal(dropdownPortal, document.body)}
+    </>
   );
 };
 
@@ -744,7 +727,7 @@ const SubCategoryDropdown = ({ value, onChange, subtleControlBase }) => {
         readOnly
         onClick={() => setIsOpen(!isOpen)}
         value={selectedLabel}
-        className="w-full rounded-lg border border-[#e5e7eb] bg-white text-sm text-[#111827] hover:border-[#d1d5db] focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 transition-all cursor-pointer px-3 py-2.5 appearance-none"
+        className="w-full rounded-lg border border-[#e5e7eb] bg-white text-sm text-[#111827] hover:border-[#9ca3af] focus:border-[#9ca3af] focus:outline-none focus:ring-0 transition-all cursor-pointer px-3 py-2.5 appearance-none"
         style={{ backgroundImage: 'none' }}
       />
 
@@ -1066,14 +1049,14 @@ const SalesInvoiceCreate = () => {
   };
 
   const controlBase =
-    "w-full rounded-lg border border-[#e5e7eb] bg-white px-3 py-2.5 text-sm text-[#111827] hover:border-[#d1d5db] focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 transition-all";
+    "w-full rounded-lg border border-[#e5e7eb] bg-white px-3 py-2.5 text-sm text-[#111827] hover:border-[#9ca3af] focus:border-[#9ca3af] focus:outline-none focus:ring-0 transition-all";
   const textareaBase = `${controlBase} resize-none`;
   const subtleControlBase =
-    "rounded-xl border border-[#d4dbf4] bg-white px-3 py-2 text-sm text-[#0f172a] focus:border-[#3a6bff] focus:outline-none focus:ring-0";
+    "rounded-xl border border-[#d4dbf4] bg-white px-3 py-2 text-sm text-[#0f172a] focus:border-[#9ca3af] focus:outline-none focus:ring-0";
 
   // Input component for consistent styling
   const Input = ({ placeholder = "", className = "", ...props }) => {
-    const baseClasses = "w-full rounded-md border border-[#d7dcf5] bg-white text-sm text-[#1f2937] placeholder:text-[#9ca3af] focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb] transition-colors px-3 py-2";
+    const baseClasses = "w-full rounded-md border border-[#d7dcf5] bg-white text-sm text-[#1f2937] placeholder:text-[#9ca3af] focus:border-[#9ca3af] focus:outline-none focus:ring-0 transition-colors px-3 py-2";
     return (
       <input
         {...props}
@@ -3073,7 +3056,7 @@ Customer Service Available`;
 
   // Improved Select component with better styling
   const Select = ({ className = "", ...props }) => {
-    const baseClasses = "w-full rounded-lg border border-[#e5e7eb] bg-white text-sm text-[#111827] hover:border-[#d1d5db] focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 transition-all cursor-pointer px-3 py-2.5 appearance-none bg-no-repeat bg-right pr-10";
+    const baseClasses = "w-full rounded-lg border border-[#e5e7eb] bg-white text-sm text-[#111827] hover:border-[#9ca3af] focus:border-[#9ca3af] focus:outline-none focus:ring-0 transition-all cursor-pointer px-3 py-2.5 appearance-none bg-no-repeat bg-right pr-10";
     return (
       <select
         {...props}
@@ -3089,7 +3072,48 @@ Customer Service Available`;
   };
 
   return (
-    <div className="min-h-screen bg-[#f6f8ff]">
+    <div className="min-h-screen invoice-page-wrapper">
+      <style dangerouslySetInnerHTML={{__html: `
+        /* MAXIMUM SPECIFICITY - Invoice page NO BLUE buttons */
+        div.invoice-page-wrapper button,
+        div.invoice-page-wrapper > * button,
+        div.invoice-page-wrapper * button,
+        .invoice-page-wrapper button {
+          background-color: white !important;
+          color: #374151 !important;
+          border: 1px solid #d1d5db !important;
+          box-shadow: none !important;
+          padding: 0.5rem 1rem !important;
+          border-radius: 0.5rem !important;
+          font-size: 0.875rem !important;
+          font-weight: 500 !important;
+          min-height: auto !important;
+          min-width: auto !important;
+          transform: none !important;
+        }
+        
+        div.invoice-page-wrapper button:hover,
+        div.invoice-page-wrapper > * button:hover,
+        div.invoice-page-wrapper * button:hover,
+        .invoice-page-wrapper button:hover {
+          background-color: #f9fafb !important;
+          border-color: #9ca3af !important;
+          transform: none !important;
+          box-shadow: none !important;
+        }
+        
+        div.invoice-page-wrapper button.keep-blue,
+        .invoice-page-wrapper button.keep-blue {
+          background-color: #1e3a8a !important;
+          color: white !important;
+          border-color: #1e3a8a !important;
+        }
+        
+        div.invoice-page-wrapper button.keep-blue:hover,
+        .invoice-page-wrapper button.keep-blue:hover {
+          background-color: #1e40af !important;
+        }
+      `}} />
       {/* Better Alert UI */}
       {alert && (
         <div className={`fixed top-4 right-4 z-[9999] max-w-md rounded-lg shadow-2xl border-l-4 p-4 animate-in fade-in slide-in-from-top-2 ${
@@ -3121,79 +3145,92 @@ Customer Service Available`;
         </div>
       )}
 
-      <Head
-        title={isEditMode ? "Edit Invoice" : "New Invoice"}
-        description={isEditMode ? "Edit an existing customer invoice." : "Create a new sales invoice."}
-        actions={
-          <Link
-            to="/sales/invoices"
-            className="inline-flex h-9 items-center gap-2 rounded-md border border-[#d7def4] px-4 text-sm font-medium text-[#1f2937] transition hover:bg-white"
-          >
-            Back to Invoices
-          </Link>
-        }
-      />
-
-      <div className="ml-64 px-6 pb-16 pt-6 bg-[#f8f9fc] min-h-screen">
-        {/* Header Section */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-2xl shadow-lg">
+      <div className="ml-52 min-h-screen flex flex-col">
+        {/* ── Top Header Bar ── */}
+        <div className="flex items-center justify-between px-6 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1e3a8a] text-white text-lg shadow-md">
               📄
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-[#111827]">{isEditMode ? "Edit Invoice" : "Create Invoice"}</h1>
-              <p className="text-sm text-[#6b7280] mt-1">{isEditMode ? "Update invoice details" : "Create a new sales invoice"}</p>
+              <h1 className="text-base font-bold text-[#111827] uppercase tracking-wide">{isEditMode ? "Edit Invoice" : "Create Invoice"}</h1>
+              <p className="text-xs text-[#6b7280]">{isEditMode ? "Update an existing invoice" : "Create a new sales invoice"}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setShowInvoiceSettingsModal(true)}
-              className="inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-4 py-2.5 text-sm font-medium text-[#4b5563] hover:bg-[#f9fafb] transition-colors"
-            >
-              <Settings size={18} />
-              Settings
-            </button>
             <button
-              onClick={() => navigate("/sales/invoices")}
-              className="inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-4 py-2.5 text-sm font-medium text-[#4b5563] hover:bg-[#f9fafb] transition-colors"
+              onClick={() => setShowInvoiceSettingsModal(true)}
+              className="no-blue-button inline-flex items-center justify-center rounded-lg border border-[#d1d5db] bg-white px-3 py-1.5 text-xs font-medium text-[#374151] hover:bg-[#f9fafb] transition-colors shadow-sm"
+              title="Settings"
             >
-              <X size={18} />
-              Close
+              <Settings size={13} className="text-[#6b7280]" />
             </button>
+            <Link
+              to="/sales/invoices"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                borderRadius: '8px',
+                border: '1px solid #fca5a5',
+                backgroundColor: '#fff5f5',
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: '500',
+                color: '#dc2626',
+                textDecoration: 'none',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                transition: 'background-color 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fee2e2'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fff5f5'}
+            >
+              <X size={13} /> Back to Invoices
+            </Link>
           </div>
         </div>
 
+        {/* ── Body: left main + right sidebar ── */}
+        <div className="flex flex-1 min-h-0 px-6 pb-6 gap-4">
+
+          {/* ── LEFT / MAIN COLUMN ── */}
+          <div className="flex-1 overflow-y-auto space-y-3">
+
         {/* Main Content */}
-        <div className="rounded-2xl border border-[#e5e7eb] bg-white shadow-sm">
-          {/* Top Section - Customer & Invoice Info */}
-          <div className="border-b border-[#e5e7eb] px-8 py-8">
-            <div className="grid gap-8 lg:grid-cols-3">
-              {/* Customer Section */}
-              <div className="lg:col-span-2">
-                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#6b7280]">Bill To</h2>
-                <div className="space-y-4">
-                  <Field label="Customer Name" required>
+        <div className="rounded-xl border border-[#e2e8f0] bg-white shadow-sm">
+          {/* Top Section - Bill To + Invoice Details */}
+          <div className="border-b border-[#e5e7eb] px-5 py-4">
+            <div className="grid grid-cols-2 gap-6">
+              {/* BILL TO */}
+              <div>
+                <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[#6b7280]">Bill To</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#374151] mb-1">Customer Name <span className="text-red-500">*</span></label>
                     <input
                       type="text"
                       value={customer}
-                      onChange={(event) => setCustomer(event.target.value)}
-                      placeholder="Enter customer name"
-                      className={`${controlBase} text-base`}
+                      onChange={(e) => setCustomer(e.target.value)}
+                      placeholder="Customer name"
+                      className="w-full rounded-md border border-[#d1d5db] px-3 py-2 text-sm text-[#111827] placeholder:text-[#9ca3af] focus:border-[#9ca3af] focus:outline-none focus:ring-0"
                     />
-                  </Field>
-                  <Field label="Phone Number">
-                    <input
-                      type="tel"
-                      value={customerPhone}
-                      onChange={(event) => setCustomerPhone(event.target.value)}
-                      placeholder="Enter customer phone"
-                      className={controlBase}
-                    />
-                  </Field>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#374151] mb-1">Phone Number <span className="text-red-500">*</span></label>
+                    <div className="flex">
+                      <span className="inline-flex items-center rounded-l-md border border-r-0 border-[#d1d5db] bg-[#f9fafb] px-3 text-sm text-[#6b7280]">+91</span>
+                      <input
+                        type="tel"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        placeholder=""
+                        className="flex-1 rounded-r-md border border-[#d1d5db] px-3 py-2 text-sm text-[#111827] focus:border-[#9ca3af] focus:outline-none focus:ring-0"
+                      />
+                    </div>
+                  </div>
                   <SalesPersonSelect
                     label="Sales Person"
-                    placeholder="Select or add sales person"
+                    placeholder="Select sales person"
                     value={salesperson}
                     onChange={(value) => setSalesperson(value)}
                     options={salesPersons}
@@ -3205,250 +3242,178 @@ Customer Service Available`;
                 </div>
               </div>
 
-              {/* Invoice Details Section */}
+              {/* INVOICE DETAILS */}
               <div>
-                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-[#6b7280]">Invoice Details</h2>
-                <div className="space-y-4">
+                <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[#6b7280]">Invoice Details</p>
+                <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-[#6b7280] mb-2">Invoice Number</label>
-                    <div className="flex items-center gap-2 rounded-lg border border-[#d4dbf4] bg-[#f9faff] px-4 py-3">
+                    <label className="block text-xs font-semibold text-[#374151] mb-1">Invoice Number <span className="text-red-500">*</span></label>
+                    <div className="flex items-center rounded-md border border-[#d1d5db] bg-white px-3 py-2">
                       <input
                         value={invoiceNumber}
-                        onChange={(event) => setInvoiceNumber(event.target.value)}
-                        className="flex-1 border-0 bg-transparent text-sm font-semibold text-[#111827] focus:outline-none focus:ring-0"
+                        onChange={(e) => setInvoiceNumber(e.target.value)}
+                        className="flex-1 border-0 bg-transparent text-sm font-medium text-[#111827] focus:outline-none"
                       />
-                      <button 
-                        onClick={() => setShowInvoiceSettingsModal(true)}
-                        className="text-[#2563eb] hover:text-[#1d4ed8] transition-colors"
-                        title="Auto-generate"
-                      >
-                        <Settings size={16} />
+                      <button onClick={() => setShowInvoiceSettingsModal(true)} className="no-blue-button text-[#6b7280] hover:text-[#374151] transition-colors">
+                        <Settings size={15} />
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-[#6b7280] mb-2">Invoice Date</label>
-                    <input
-                      type="date"
-                      value={invoiceDate}
-                      onChange={(event) => setInvoiceDate(event.target.value)}
-                      className={controlBase}
-                    />
+                    <label className="block text-xs font-semibold text-[#374151] mb-1">Invoice Date <span className="text-red-500">*</span></label>
+                    <div className="flex items-center rounded-md border border-[#d1d5db] bg-white px-3 py-2">
+                      <input
+                        type="date"
+                        value={invoiceDate}
+                        onChange={(e) => setInvoiceDate(e.target.value)}
+                        className="flex-1 border-0 bg-transparent text-sm text-[#111827] focus:outline-none"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Additional Info Section */}
-          <div className="border-b border-[#e5e7eb] px-8 py-8">
-            <div className="grid gap-6 lg:grid-cols-3">
+          {/* Classifications */}
+          <div className="border-b border-[#e5e7eb] px-5 py-4">
+            <p className="mb-2 text-xs font-bold uppercase tracking-widest text-[#6b7280]">Classifications</p>
+            <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-[#6b7280] mb-2">
-                  Branch
-                  {storeAccess.isStoreUser && <span className="text-[#ef4444] ml-1">(Store User)</span>}
-                </label>
+                <label className="block text-xs font-semibold text-[#374151] mb-1">Branch <span className="text-red-500">*</span></label>
                 {storeAccess.isStoreUser ? (
-                  <input
-                    type="text"
-                    value={branch}
-                    readOnly
-                    className="w-full rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2.5 text-sm text-[#111827] cursor-not-allowed opacity-75"
-                    title="Your branch is automatically set based on your store account"
-                  />
+                  <input type="text" value={branch} readOnly
+                    className="w-full rounded-md border border-[#d1d5db] bg-[#f9fafb] px-3 py-2 text-sm text-[#111827] cursor-not-allowed opacity-75" />
                 ) : (
-                  <Select
-                    value={branch}
-                    onChange={(event) => {
-                      const selectedBranch = event.target.value;
-                      setBranch(selectedBranch);
-                      // Map the branch name to the correct warehouse name
-                      const mappedWarehouse = mapLocNameToWarehouse(selectedBranch);
-                      setWarehouse(mappedWarehouse);
-                      console.log(`🏢 Admin branch selection: "${selectedBranch}" → warehouse: "${mappedWarehouse}"`);
-                    }}
-                  >
-                  <option value="Head Office">Head Office</option>
-                  <option value="Warehouse">Warehouse</option>
-                  <option value="Calicut">Calicut</option>
-                  <option value="Chavakkad Branch">Chavakkad Branch</option>
-                  <option value="Edapally Branch">Edapally Branch</option>
-                  <option value="Edappal Branch">Edappal Branch</option>
-                  <option value="Grooms Trivandrum">Grooms Trivandrum</option>
-                  <option value="Kalpetta Branch">Kalpetta Branch</option>
-                  <option value="Kannur Branch">Kannur Branch</option>
-                  <option value="Kottakkal Branch">Kottakkal Branch</option>
-                  <option value="Kottayam Branch">Kottayam Branch</option>
-                  <option value="Manjery Branch">Manjery Branch</option>
-                  <option value="Palakkad Branch">Palakkad Branch</option>
-                  <option value="Perinthalmanna Branch">Perinthalmanna Branch</option>
-                  <option value="Perumbavoor Branch">Perumbavoor Branch</option>
-                  <option value="SuitorGuy MG Road">SuitorGuy MG Road</option>
-                  <option value="Thrissur Branch">Thrissur Branch</option>
-                  <option value="Vadakara Branch">Vadakara Branch</option>
-                  <option value="Z-Edapally1 Branch">Z-Edapally1 Branch</option>
-                  <option value="Z-Edappal Branch">Z-Edappal Branch</option>
-                  <option value="Z-Perinthalmanna Branch">Z-Perinthalmanna Branch</option>
-                  <option value="Z-Kottakkal Branch">Z-Kottakkal Branch</option>
+                  <Select value={branch} onChange={(e) => { const b = e.target.value; setBranch(b); setWarehouse(mapLocNameToWarehouse(b)); }}>
+                    <option value="Head Office">Head Office</option>
+                    <option value="Warehouse">Warehouse</option>
+                    <option value="Calicut">Calicut</option>
+                    <option value="Chavakkad Branch">Chavakkad Branch</option>
+                    <option value="Edapally Branch">Edapally Branch</option>
+                    <option value="Edappal Branch">Edappal Branch</option>
+                    <option value="Grooms Trivandrum">Grooms Trivandrum</option>
+                    <option value="Kalpetta Branch">Kalpetta Branch</option>
+                    <option value="Kannur Branch">Kannur Branch</option>
+                    <option value="Kottakkal Branch">Kottakkal Branch</option>
+                    <option value="Kottayam Branch">Kottayam Branch</option>
+                    <option value="Manjery Branch">Manjery Branch</option>
+                    <option value="Palakkad Branch">Palakkad Branch</option>
+                    <option value="Perinthalmanna Branch">Perinthalmanna Branch</option>
+                    <option value="Perumbavoor Branch">Perumbavoor Branch</option>
+                    <option value="SuitorGuy MG Road">SuitorGuy MG Road</option>
+                    <option value="Thrissur Branch">Thrissur Branch</option>
+                    <option value="Vadakara Branch">Vadakara Branch</option>
+                    <option value="Z-Edapally1 Branch">Z-Edapally1 Branch</option>
+                    <option value="Z-Edappal Branch">Z-Edappal Branch</option>
+                    <option value="Z-Perinthalmanna Branch">Z-Perinthalmanna Branch</option>
+                    <option value="Z-Kottakkal Branch">Z-Kottakkal Branch</option>
                   </Select>
                 )}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#6b7280] mb-2">Category</label>
-                <input
-                  type="text"
-                  value="income"
-                  readOnly
-                  className="w-full rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2.5 text-sm text-[#111827] cursor-not-allowed opacity-75"
-                />
+                <label className="block text-xs font-semibold text-[#374151] mb-1">Category <span className="text-red-500">*</span></label>
+                <input type="text" value="Income" readOnly
+                  className="w-full rounded-md border border-[#d1d5db] bg-[#f9fafb] px-3 py-2 text-sm text-[#111827] cursor-not-allowed opacity-75" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-[#ef4444] mb-2">
-                  Sub Category<span className="ml-0.5">*</span>
-                </label>
-                <SubCategoryDropdown 
-                  value={subCategory}
-                  onChange={setSubCategory}
-                  subtleControlBase={subtleControlBase}
-                />
+                <label className="block text-xs font-semibold text-[#374151] mb-1">Sub Category <span className="text-red-500">*</span></label>
+                <SubCategoryDropdown value={subCategory} onChange={setSubCategory} subtleControlBase={subtleControlBase} />
                 {subCategory === "mixed sales" && (
-                  <p className="mt-1 text-xs text-[#6b7280]">
-                    💡 Mixed Sales allows you to add both shoes and shirts to the same invoice
-                  </p>
+                  <p className="mt-1 text-xs text-[#6b7280]">💡 Mixed Sales allows shoes & shirts in one invoice</p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Transaction Details Section - Removed, fields moved to top */}
-
           {/* Items Section */}
-          <div className="border-b border-[#e5e7eb] px-8 py-8">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-[#6b7280]">Line Items</h2>
-            </div>
-
+          <div className="border-b border-[#e5e7eb] px-5 py-4">
             <div className="overflow-x-auto rounded-lg border border-[#e5e7eb]">
               <table className="min-w-full divide-y divide-[#e5e7eb]">
-                <thead className="bg-[#f3f4f6]">
+                <thead className="bg-[#374151] text-white">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280] w-[40px]">
-                      <input type="checkbox" className="h-4 w-4 rounded border-[#d1d5db] text-[#2563eb]" />
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold w-[40px]">
+                      <input type="checkbox" className="h-4 w-4 rounded border-white/40" />
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280]">
-                      Item
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280] w-[80px]">
-                      Size
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-[#6b7280] w-[100px]">
-                      Qty
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280] w-[100px]">
-                      Rate
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#6b7280] w-[120px]">
-                      Tax
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#6b7280] w-[100px]">
-                      Amount
-                    </th>
-                    <th className="px-4 py-3 w-[40px]"></th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold">Item Description</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold w-[70px]">Size</th>
+                    <th className="px-3 py-2.5 text-center text-xs font-semibold w-[80px]">Qty</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-semibold w-[90px]">Rate</th>
+                    <th className="px-3 py-2.5 text-left text-xs font-semibold w-[110px]">Tax</th>
+                    <th className="px-3 py-2.5 text-right text-xs font-semibold w-[90px]">Amount</th>
+                    <th className="px-3 py-2.5 w-[36px]"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e5e7eb] bg-white">
-                  {lineItems.map((item, index) => (
+                  {lineItems.map((item) => (
                     <tr key={item.id} className="hover:bg-[#f9fafb] transition-colors">
-                      <td className="px-4 py-4 align-top">
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.has(item.id)}
-                          onChange={(e) => {
-                            const newSelected = new Set(selectedItems);
-                            if (e.target.checked) {
-                              newSelected.add(item.id);
-                            } else {
-                              newSelected.delete(item.id);
-                            }
-                            setSelectedItems(newSelected);
-                          }}
-                          className="h-4 w-4 rounded border-[#d1d5db] text-[#2563eb] focus:ring-[#2563eb] cursor-pointer"
-                        />
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f3f4f6]">
-                            <ImageIcon size={18} className="text-[#9ca3af]" />
-                          </div>
-                          <ItemDropdown
-                            rowId={item.id}
-                            value={item.itemData || item.item}
-                            onChange={(value) => handleLineItemChange(item.id, "item", value)}
-                            warehouse={warehouse}
-                            onNewItem={storeAccess.isAdmin ? () => navigate("/shoe-sales/items/new") : undefined}
-                            isStoreUser={storeAccess.isStoreUser}
+                      <td className="px-3 py-2 align-middle">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="checkbox"
+                            checked={selectedItems.has(item.id)}
+                            onChange={(e) => {
+                              const s = new Set(selectedItems);
+                              e.target.checked ? s.add(item.id) : s.delete(item.id);
+                              setSelectedItems(s);
+                            }}
+                            className="h-4 w-4 rounded border-[#d1d5db] cursor-pointer"
                           />
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[#f3f4f6]">
+                            <ImageIcon size={13} className="text-[#9ca3af]" />
+                          </div>
                         </div>
                       </td>
-                      <td className="px-4 py-4 align-top">
-                        <input
-                          value={item.size}
-                          onChange={(event) => handleLineItemChange(item.id, "size", event.target.value)}
-                          placeholder="—"
-                          className="w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-sm text-[#111827] placeholder:text-[#d1d5db] focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb] transition-colors"
-                        />
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        <input
-                          type="number"
-                          min={0}
-                          value={item.quantity}
-                          onChange={(event) => handleQuantityChange(item.id, event.target.value)}
-                          className="w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-sm text-[#111827] text-center focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb] transition-colors"
-                        />
-                      </td>
-                      <td className="px-4 py-4 align-top text-right">
-                        <input
-                          type="number"
-                          min={0}
-                          value={item.rate}
-                          onChange={(event) => handleRateChange(item.id, event.target.value)}
-                          className="w-full rounded-md border border-[#e5e7eb] bg-white px-3 py-2 text-sm text-[#111827] text-right focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb] transition-colors"
-                        />
-                      </td>
-                      <td className="px-4 py-4 align-top">
-                        <TaxDropdown
+                      <td className="px-2 py-2 align-middle">
+                        <ItemDropdown
                           rowId={item.id}
-                          value={item.tax}
-                          onChange={(value) => handleLineItemChange(item.id, "tax", value)}
-                          taxOptions={taxOptions}
-                          nonTaxableOptions={nonTaxableOptions}
-                          onNewTax={() => setShowNewTaxModal(true)}
+                          value={item.itemData || item.item}
+                          onChange={(value) => handleLineItemChange(item.id, "item", value)}
+                          warehouse={warehouse}
+                          onNewItem={storeAccess.isAdmin ? () => navigate("/shoe-sales/items/new") : undefined}
+                          isStoreUser={storeAccess.isStoreUser}
                         />
                       </td>
-                      <td className="px-4 py-4 align-top text-right">
-                        <div className="text-right">
-                          <div className="text-sm font-semibold text-[#111827]">₹{item.lineTotal}</div>
-                          {item.taxPercent > 0 && (
-                            <div className="text-xs text-[#6b7280] mt-1">
-                              {item.isInterState ? (
-                                <div>IGST {item.igstPercent}%: ₹{item.igstAmount}</div>
-                              ) : (
-                                <>
-                                  <div>CGST {item.cgstPercent}%: ₹{item.cgstAmount}</div>
-                                  <div>SGST {item.sgstPercent}%: ₹{item.sgstAmount}</div>
-                                </>
-                              )}
-                            </div>
-                          )}
+                      <td className="px-2 py-2 align-middle">
+                        <input value={item.size} onChange={(e) => handleLineItemChange(item.id, "size", e.target.value)}
+                          placeholder="—"
+                          className="w-full rounded border border-[#e5e7eb] px-2 py-1.5 text-sm text-[#111827] focus:outline-none focus:border-[#9ca3af]" />
+                      </td>
+                      <td className="px-2 py-2 align-middle">
+                        <div className="flex items-center gap-0.5">
+                          <button onClick={() => handleQuantityChange(item.id, Math.max(0, item.quantity - 1))} className="no-blue-button w-6 h-7 rounded-l border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f3f4f6] text-sm font-bold bg-white flex items-center justify-center">−</button>
+                          <input type="number" min={0} value={item.quantity}
+                            onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                            className="w-10 border-y border-[#e5e7eb] px-1 py-1.5 text-sm text-center text-[#111827] focus:outline-none bg-white" />
+                          <button onClick={() => handleQuantityChange(item.id, item.quantity + 1)} className="no-blue-button w-6 h-7 rounded-r border border-[#e5e7eb] text-[#6b7280] hover:bg-[#f3f4f6] text-sm font-bold bg-white flex items-center justify-center">+</button>
                         </div>
                       </td>
-                      <td className="px-4 py-4 align-top text-center">
-                        <button
-                          onClick={() => removeLineItem(item.id)}
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-md text-[#ef4444] hover:bg-[#fee2e2] transition-colors"
-                        >
-                          <X size={18} />
+                      <td className="px-2 py-2 align-middle text-right">
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm text-[#6b7280]">₹</span>
+                          <input type="number" min={0} value={item.rate}
+                            onChange={(e) => handleRateChange(item.id, e.target.value)}
+                            className="w-full rounded border border-[#e5e7eb] px-2 py-1.5 text-sm text-right text-[#111827] focus:outline-none" />
+                        </div>
+                      </td>
+                      <td className="px-2 py-2 align-middle">
+                        <TaxDropdown rowId={item.id} value={item.tax}
+                          onChange={(v) => handleLineItemChange(item.id, "tax", v)}
+                          taxOptions={taxOptions} nonTaxableOptions={nonTaxableOptions}
+                          onNewTax={() => setShowNewTaxModal(true)} />
+                      </td>
+                      <td className="px-2 py-2 align-middle text-right">
+                        <div className="text-sm font-semibold text-[#111827]">₹{item.lineTotal}</div>
+                        {item.taxPercent > 0 && (
+                          <div className="text-xs text-[#9ca3af] mt-0.5">
+                            {item.isInterState ? `IGST ${item.igstPercent}%` : `CGST+SGST ${item.cgstPercent}%`}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-2 py-2 align-middle text-center">
+                        <button onClick={() => removeLineItem(item.id)}
+                          className="no-blue-button inline-flex items-center justify-center h-6 w-6 rounded border border-[#fca5a5] text-[#ef4444] hover:bg-[#fee2e2] transition-colors bg-white">
+                          <X size={12} />
                         </button>
                       </td>
                     </tr>
@@ -3457,385 +3422,216 @@ Customer Service Available`;
               </table>
             </div>
 
-            <div className="mt-6 flex items-center gap-3">
-              <button
-                onClick={addLineItem}
-                className="inline-flex items-center gap-2 rounded-lg border border-[#e5e7eb] bg-white px-4 py-2.5 text-sm font-medium text-[#4b5563] hover:bg-[#f9fafb] transition-colors"
-              >
-                <Plus size={18} />
-                Add Row
-              </button>
-              <button
-                onClick={handleBulkAddOpen}
-                className="inline-flex items-center gap-2 rounded-lg border border-[#2563eb] bg-[#2563eb] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#1d4ed8] transition-colors"
-              >
-                <Plus size={18} />
-                Add Items in Bulk
-              </button>
-              {selectedItems.size > 0 && (
-                <button
-                  onClick={() => {
-                    setLineItems((prev) => {
-                      const filtered = prev.filter((item) => !selectedItems.has(item.id));
-                      // If no items left, add a blank item
-                      return filtered.length > 0 ? filtered : [blankLineItem()];
-                    });
-                    setSelectedItems(new Set());
-                  }}
-                  className="inline-flex items-center gap-2 rounded-lg border border-[#ef4444] bg-white px-4 py-2.5 text-sm font-medium text-[#ef4444] hover:bg-[#fee2e2] transition-colors"
-                >
-                  <X size={18} />
-                  Remove Selected ({selectedItems.size})
+            <div className="mt-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button onClick={addLineItem}
+                  className="no-blue-button inline-flex items-center gap-1 rounded-md border border-[#d1d5db] bg-white px-3 py-1.5 text-xs font-medium text-[#374151] hover:bg-[#f9fafb] transition-colors">
+                  <Plus size={13} /> Add Row
                 </button>
-              )}
+                <button onClick={handleBulkAddOpen}
+                  className="no-blue-button inline-flex items-center gap-1 rounded-md border border-[#d1d5db] bg-white px-3 py-1.5 text-xs font-medium text-[#374151] hover:bg-[#f9fafb] transition-colors">
+                  <Plus size={13} /> Add Bulk Items
+                </button>
+                {selectedItems.size > 0 && (
+                  <button onClick={() => { setLineItems(p => { const f = p.filter(i => !selectedItems.has(i.id)); return f.length ? f : [blankLineItem()]; }); setSelectedItems(new Set()); }}
+                    className="no-blue-button inline-flex items-center gap-1 rounded-md border border-[#fca5a5] bg-white px-3 py-1.5 text-xs font-medium text-[#ef4444] hover:bg-[#fee2e2] transition-colors">
+                    <X size={13} /> Remove ({selectedItems.size})
+                  </button>
+                )}
+              </div>
+              <span className="text-xs text-[#9ca3af]">All prices exclude local tax</span>
             </div>
           </div>
 
-          {/* Notes & Summary Section */}
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.25fr)] px-8 py-8">
-            {/* Left Column - Payment Method */}
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
-                <h3 className="text-base font-semibold text-[#111827] mb-5 flex items-center gap-2">
-                  <span className="text-xl">💳</span>
-                  Payment Method
-                </h3>
-                
-                {/* Split Payment Checkbox */}
-                <div className="mb-5">
-                  <label className="flex items-center gap-3 cursor-pointer p-4 rounded-lg border-2 border-[#e5e7eb] bg-gradient-to-r from-[#f8fafc] to-white hover:border-[#2563eb] hover:shadow-sm transition-all">
-                    <input
-                      type="checkbox"
-                      checked={isSplitPayment}
-                      onChange={(e) => {
-                        setIsSplitPayment(e.target.checked);
-                        if (!e.target.checked) {
-                          setSplitPaymentAmounts({ cash: "", bank: "", upi: "", rbl: "" });
-                        }
+          </div>{/* end main card */}
+          </div>{/* end left column */}
+
+          {/* ── RIGHT SIDEBAR ── */}
+          <div className="w-72 shrink-0 bg-white rounded-xl border border-[#e2e8f0] shadow-sm flex flex-col sticky top-0 self-start max-h-screen overflow-y-auto overflow-x-hidden">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+
+              {/* Payment Method */}
+              <div>
+                <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[#374151]">Payment Method</p>
+
+                {/* Payment buttons grid - 2x2 */}
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { name: "Cash",  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg> },
+                    { name: "UPI",   icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/><path d="M9 7l3 4 3-4"/></svg> },
+                    { name: "Card / Bank", icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-6 h-6"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
+                  ].map((m) => (
+                    <button key={m.name} type="button"
+                      onClick={() => {
+                        setPaymentMethod(paymentMethod.includes(m.name) ? [] : [m.name]);
+                        setIsSplitPayment(false);
                       }}
-                      className="h-5 w-5 rounded border-[#d1d5db] text-[#2563eb] focus:ring-2 focus:ring-[#2563eb] cursor-pointer"
-                    />
-                    <div className="flex-1">
-                      <span className="text-sm font-semibold text-[#111827] block">Split Payment</span>
-                      <span className="text-xs text-[#6b7280]">Cash + Bank + UPI + RBL</span>
-                    </div>
-                  </label>
+                      className={`payment-card relative flex flex-col items-center gap-2 rounded-xl border py-4 text-sm font-medium transition-all duration-150 ${
+                        !isSplitPayment && paymentMethod.includes(m.name)
+                          ? "border-[#2563eb] bg-[#dbeafe] text-[#1e40af] shadow-md scale-[1.03]"
+                          : "border-[#e2e8f0] bg-white text-[#374151] hover:border-[#93c5fd] hover:bg-[#f0f9ff]"
+                      }`}>
+                      {!isSplitPayment && paymentMethod.includes(m.name) && (
+                        <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#2563eb] text-white">
+                          <svg viewBox="0 0 12 12" fill="none" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </span>
+                      )}
+                      <span className={!isSplitPayment && paymentMethod.includes(m.name) ? "text-[#1e40af]" : "text-[#6b7280]"}>{m.icon}</span>
+                      <span>{m.name}</span>
+                    </button>
+                  ))}
+
+                  {/* Split Payment as 4th grid button */}
+                  <button type="button"
+                    onClick={() => { setIsSplitPayment(!isSplitPayment); setPaymentMethod([]); if (isSplitPayment) setSplitPaymentAmounts({ cash: "", bank: "", upi: "", rbl: "" }); }}
+                    className={`payment-card relative flex flex-col items-center gap-2 rounded-xl border py-4 text-sm font-medium transition-all duration-150 ${
+                      isSplitPayment
+                        ? "border-[#2563eb] bg-[#dbeafe] text-[#1e40af] shadow-md scale-[1.03]"
+                        : "border-[#e2e8f0] bg-white text-[#374151] hover:border-[#93c5fd] hover:bg-[#f0f9ff]"
+                    }`}>
+                    {isSplitPayment && (
+                      <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#2563eb] text-white">
+                        <svg viewBox="0 0 12 12" fill="none" className="w-2.5 h-2.5"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </span>
+                    )}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={`w-6 h-6 ${isSplitPayment ? "text-[#1e40af]" : "text-[#6b7280]"}`}><path d="M21 12H3m9-9v18M3 7l4-4m14 4l-4-4M3 17l4 4m14-4l-4 4"/></svg>
+                    <span>Split</span>
+                  </button>
                 </div>
 
-                {/* Split Payment Input Fields */}
+                {/* Split amounts */}
                 {isSplitPayment && (
-                  <div className="mb-5 p-5 bg-gradient-to-br from-[#f0f9ff] to-[#e0f2fe] rounded-xl border border-[#bae6fd]">
-                    <h4 className="text-sm font-semibold text-[#0369a1] mb-4 flex items-center gap-2">
-                      <span>💰</span>
-                      Enter Payment Amounts
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-[#374151] mb-2 uppercase tracking-wide">💵 Cash</label>
-                        <input
-                          type="number"
-                          value={splitPaymentAmounts.cash}
-                          onChange={(e) => setSplitPaymentAmounts(prev => ({ ...prev, cash: e.target.value }))}
-                          placeholder="0.00"
-                          className="w-full rounded-lg border-2 border-[#cbd5e1] bg-white px-4 py-2.5 text-sm text-[#111827] placeholder-[#9ca3af] focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 transition-all font-medium"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#374151] mb-2 uppercase tracking-wide">🏦 Bank</label>
-                        <input
-                          type="number"
-                          value={splitPaymentAmounts.bank}
-                          onChange={(e) => setSplitPaymentAmounts(prev => ({ ...prev, bank: e.target.value }))}
-                          placeholder="0.00"
-                          className="w-full rounded-lg border-2 border-[#cbd5e1] bg-white px-4 py-2.5 text-sm text-[#111827] placeholder-[#9ca3af] focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 transition-all font-medium"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#374151] mb-2 uppercase tracking-wide">📱 UPI</label>
-                        <input
-                          type="number"
-                          value={splitPaymentAmounts.upi}
-                          onChange={(e) => setSplitPaymentAmounts(prev => ({ ...prev, upi: e.target.value }))}
-                          placeholder="0.00"
-                          className="w-full rounded-lg border-2 border-[#cbd5e1] bg-white px-4 py-2.5 text-sm text-[#111827] placeholder-[#9ca3af] focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 transition-all font-medium"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-[#374151] mb-2 uppercase tracking-wide">💳 RBL</label>
-                        <input
-                          type="number"
-                          value={splitPaymentAmounts.rbl}
-                          onChange={(e) => setSplitPaymentAmounts(prev => ({ ...prev, rbl: e.target.value }))}
-                          placeholder="0.00"
-                          className="w-full rounded-lg border-2 border-[#cbd5e1] bg-white px-4 py-2.5 text-sm text-[#111827] placeholder-[#9ca3af] focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 transition-all font-medium"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Regular Payment Method Checkboxes - Only show if not split payment */}
-                {!isSplitPayment && (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="mt-3 grid grid-cols-2 gap-2">
                     {[
-                      { name: "Cash", icon: "💵", color: "from-green-50 to-emerald-50 border-green-200 hover:border-green-400" },
-                      { name: "UPI", icon: "📱", color: "from-blue-50 to-cyan-50 border-blue-200 hover:border-blue-400" },
-                      { name: "Bank", icon: "🏦", color: "from-purple-50 to-violet-50 border-purple-200 hover:border-purple-400" },
-                      { name: "RBL", icon: "💳", color: "from-orange-50 to-amber-50 border-orange-200 hover:border-orange-400" }
-                    ].map((method) => (
-                      <label
-                        key={method.name}
-                        className={`flex items-center gap-3 cursor-pointer p-4 rounded-xl border-2 bg-gradient-to-br ${method.color} transition-all ${
-                          paymentMethod.includes(method.name) ? 'ring-2 ring-[#2563eb] ring-offset-2 shadow-md scale-[1.02]' : 'hover:shadow-sm'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={paymentMethod.includes(method.name)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setPaymentMethod([...paymentMethod, method.name]);
-                            } else {
-                              setPaymentMethod(paymentMethod.filter((m) => m !== method.name));
-                            }
-                          }}
-                          className="h-5 w-5 rounded border-[#d1d5db] text-[#2563eb] focus:ring-2 focus:ring-[#2563eb] cursor-pointer"
-                        />
-                        <div className="flex items-center gap-2 flex-1">
-                          <span className="text-xl">{method.icon}</span>
-                          <span className="text-sm font-semibold text-[#111827]">{method.name}</span>
-                        </div>
-                      </label>
+                      { key: "cash", label: "Cash" },
+                      { key: "bank", label: "Card/Bank" },
+                      { key: "upi",  label: "UPI"  },
+                    ].map(({ key, label }) => (
+                      <div key={key}>
+                        <label className="block text-xs font-semibold text-[#374151] mb-1">{label}</label>
+                        <input type="number" value={splitPaymentAmounts[key]}
+                          onChange={(e) => setSplitPaymentAmounts(p => ({ ...p, [key]: e.target.value }))}
+                          placeholder="0.00"
+                          className="w-full rounded-md border border-[#d1d5db] px-2 py-1.5 text-sm focus:outline-none" />
+                      </div>
                     ))}
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Right Column - Summary */}
-            <div className="space-y-6">
-              {/* Sub Total - Tax Inclusive */}
-              <div className="flex items-start justify-between pb-4 border-b border-[#e5e7eb]">
+              <hr className="border-[#e5e7eb]" />
+
+              {/* Sub Total */}
+              <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-sm font-medium text-[#111827]">Sub Total</div>
-                  <div className="text-xs text-[#6b7280]">(Tax Inclusive)</div>
+                  <div className="text-sm font-semibold text-[#111827]">Sub Total</div>
+                  <div className="text-xs text-[#9ca3af]">(Tax inclusive)</div>
                 </div>
-                <span className="text-lg font-semibold text-[#111827]">₹{totals.subTotal}</span>
+                <span className="text-sm font-semibold text-[#111827]">₹ {totals.subTotal}</span>
               </div>
 
-              {/* Tax Breakdown - Show CGST/SGST or IGST */}
+              {/* Tax Breakdown */}
               {totals.taxBreakdown.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-1">
                   {totals.taxBreakdown.map((tax, idx) => {
-                    // For GST (intra-state), split into CGST and SGST
                     if (tax.type === 'GST') {
-                      const cgstAmount = tax.amount / 2;
-                      const sgstAmount = tax.amount / 2;
-                      const cgstPercent = tax.rate / 2;
-                      const sgstPercent = tax.rate / 2;
+                      const half = tax.amount / 2;
+                      const halfPct = tax.rate / 2;
                       return (
-                        <div key={idx} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-[#6b7280]">CGST{cgstPercent} [{cgstPercent}%]</span>
-                            <span className="text-sm font-medium text-[#111827]">₹{cgstAmount.toFixed(2)}</span>
+                        <div key={idx} className="space-y-0.5">
+                          <div className="flex justify-between text-[11px] text-[#6b7280]">
+                            <span>CGST {halfPct}%</span><span>₹{half.toFixed(2)}</span>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-[#6b7280]">SGST{sgstPercent} [{sgstPercent}%]</span>
-                            <span className="text-sm font-medium text-[#111827]">₹{sgstAmount.toFixed(2)}</span>
+                          <div className="flex justify-between text-[11px] text-[#6b7280]">
+                            <span>SGST {halfPct}%</span><span>₹{half.toFixed(2)}</span>
                           </div>
                         </div>
                       );
                     }
-                    // For IGST (inter-state), show as single line
                     return (
-                      <div key={idx} className="flex items-center justify-between">
-                        <span className="text-sm text-[#6b7280]">IGST{tax.rate} [{tax.rate}%]</span>
-                        <span className="text-sm font-medium text-[#111827]">₹{tax.amount.toFixed(2)}</span>
+                      <div key={idx} className="flex justify-between text-[11px] text-[#6b7280]">
+                        <span>IGST {tax.rate}%</span><span>₹{tax.amount.toFixed(2)}</span>
                       </div>
                     );
                   })}
                 </div>
               )}
 
-              {/* TDS/TCS Section */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="tdsTcsType"
-                      value="TDS"
-                      checked={tdsTcsType === "TDS"}
-                      onChange={(e) => {
-                        setTdsTcsType(e.target.value);
-                        setTdsTcsTax("");
-                      }}
-                      className="w-4 h-4 text-[#2563eb]"
-                    />
-                    <span className="text-sm text-[#6b7280]">TDS</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="tdsTcsType"
-                      value="TCS"
-                      checked={tdsTcsType === "TCS"}
-                      onChange={(e) => {
-                        setTdsTcsType(e.target.value);
-                        setTdsTcsTax("");
-                      }}
-                      className="w-4 h-4 text-[#2563eb]"
-                    />
-                    <span className="text-sm text-[#6b7280]">TCS</span>
-                  </label>
-                  <div className="flex-1">
-                    <TaxDropdown
-                      rowId="tds-tcs"
-                      value={tdsTcsTax}
-                      onChange={setTdsTcsTax}
+              {/* Discount */}
+              <div className="rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wide">Discount</span>
+                  <div className="flex gap-1">
+                    {["₹", "%"].map(t => (
+                      <button key={t} type="button"
+                        onClick={() => setDiscount(prev => ({ ...prev, type: t }))}
+                        className={`px-2 py-0.5 text-[10px] font-semibold rounded border transition-colors ${discount.type === t ? "bg-[#1e3a8a] text-white border-[#1e3a8a]" : "bg-white text-[#374151] border-[#d1d5db] hover:bg-[#f3f4f6]"}`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={discount.value}
+                    onChange={(e) => setDiscount(prev => ({ ...prev, value: e.target.value }))}
+                    placeholder="0.00"
+                    className="flex-1 h-[28px] rounded border border-[#e5e7eb] bg-white px-2 text-[11px] text-[#111827] focus:border-[#9ca3af] focus:outline-none"
+                  />
+                  <span className="text-[11px] font-medium text-[#ef4444] whitespace-nowrap shrink-0">- ₹{totals.discountAmount}</span>
+                </div>
+              </div>
+
+              {/* TDS / TCS - temporarily disabled */}
+              {/* <div className="w-full overflow-hidden rounded-lg border border-[#e5e7eb] bg-[#f9fafb] px-3 py-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wide">TDS / TCS</span>
+                  <div className="flex gap-1">
+                    {["TDS","TCS"].map(t => (
+                      <button key={t} type="button"
+                        onClick={() => { setTdsTcsType(t); setTdsTcsTax(""); }}
+                        className={`px-2.5 py-1 text-[10px] font-semibold rounded-md border transition-colors ${tdsTcsType === t ? "bg-[#1e3a8a] text-white border-[#1e3a8a]" : "bg-white text-[#374151] border-[#d1d5db] hover:bg-[#f3f4f6]"}`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <TaxDropdown rowId="tds-tcs" value={tdsTcsTax} onChange={setTdsTcsTax}
                       taxOptions={tdsTcsType === "TDS" ? tdsOptions : taxOptions}
                       nonTaxableOptions={tdsTcsType === "TDS" ? [] : nonTaxableOptions}
-                      onNewTax={() => setShowNewTaxModal(true)}
-                    />
+                      onNewTax={() => setShowNewTaxModal(true)} />
                   </div>
-                  <span className="text-sm font-medium text-[#111827] whitespace-nowrap">- {totals.tdsTcsAmount}</span>
+                  <span className="text-[11px] font-medium text-[#ef4444] whitespace-nowrap shrink-0">- ₹{totals.tdsTcsAmount}</span>
                 </div>
-              </div>
+              </div> */}
 
-              {/* Discount Section */}
-              {!showDiscountSection ? (
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowDiscountSection(true)}
-                    className="no-blue-button inline-flex items-center justify-center h-9 w-9 rounded-lg border border-[#e5e7eb] bg-white text-[#111827] hover:bg-[#f9fafb] hover:border-[#d1d5db] transition-colors"
-                    title="Add discount"
-                  >
-                    <Plus size={18} strokeWidth={2.5} />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-[#6b7280]">Discount</span>
-                  <input
-                    type="text"
-                    placeholder="-0.00"
-                    value={adjustment}
-                    onChange={(e) => {
-                      let value = e.target.value;
-                      
-                      // Remove all non-numeric characters except minus and decimal point
-                      value = value.replace(/[^\d.-]/g, '');
-                      
-                      // If user types a number without minus, add minus automatically
-                      if (value && !value.startsWith('-') && !value.startsWith('+')) {
-                        value = '-' + value;
-                      }
-                      
-                      // If user wants to make it positive, they can type + or remove the minus
-                      // Allow only one minus/plus at the start
-                      if (value.startsWith('--') || value.startsWith('++')) {
-                        value = value.substring(1);
-                      }
-                      
-                      // Allow only one decimal point
-                      const parts = value.split('.');
-                      if (parts.length > 2) {
-                        value = parts[0] + '.' + parts.slice(1).join('');
-                      }
-                      
-                      setAdjustment(value);
-                    }}
-                    onFocus={(e) => {
-                      // If empty or 0, set to minus sign for easy input
-                      if (!adjustment || adjustment === '0.00' || adjustment === '0') {
-                        setAdjustment('-');
-                      }
-                    }}
-                    onBlur={(e) => {
-                      // Clean up the value on blur
-                      let value = adjustment;
-                      if (value === '-' || value === '+' || value === '') {
-                        setAdjustment('0.00');
-                      } else {
-                        const num = parseFloat(value);
-                        if (!isNaN(num)) {
-                          setAdjustment(num.toFixed(2));
-                        } else {
-                          setAdjustment('0.00');
-                        }
-                      }
-                    }}
-                    className="flex-1 rounded-md border border-[#d1d5db] px-3 py-2 text-sm text-[#111827] placeholder:text-[#9ca3af] focus:border-[#2563eb] focus:outline-none focus:ring-1 focus:ring-[#2563eb]"
-                  />
-                  <button
-                    type="button"
-                    className="no-blue-button inline-flex items-center justify-center h-10 w-10 rounded-md border border-[#e5e7eb] bg-white text-[#111827] hover:bg-[#f9fafb] hover:border-[#d1d5db] transition-colors"
-                    title="Discount help"
-                  >
-                    <HelpCircle size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowDiscountSection(false);
-                      setAdjustment("0.00");
-                    }}
-                    className="inline-flex items-center justify-center h-10 w-10 rounded-md border border-[#d1d5db] bg-white text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#dc2626] transition-colors"
-                    title="Remove discount"
-                  >
-                    <X size={18} />
-                  </button>
-                  <span className="text-sm font-medium text-[#111827] w-16 text-right">
-                    {(() => {
-                      const v = parseFloat(totals.adjustmentAmount || 0);
-                      if (Number.isNaN(v) || v === 0) return "₹0.00";
-                      const sign = v > 0 ? "+" : "";
-                      return `₹${sign}${v.toFixed(2)}`;
-                    })()}
-                  </span>
-                </div>
-              )}
+              <hr className="border-[#e5e7eb]" />
 
-              {/* Final Total */}
-              <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb]">
-                <span className="text-base font-bold text-[#111827]">Total ( ₹ )</span>
-                <span className="text-3xl font-bold text-[#2563eb]">₹{totals.finalTotal}</span>
+              {/* Total */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-[#111827]">Total</span>
+                <span className="text-2xl font-bold text-[#1e3a8a]">₹ {totals.finalTotal}</span>
               </div>
             </div>
-          </div>
 
-          {/* Footer with Action Buttons */}
-          <div className="border-t border-[#e5e7eb] px-8 py-6 bg-[#f9fafb] flex items-center justify-between">
-            <div className="text-sm text-[#6b7280]">
-              <span className="font-medium text-[#111827]">{lineItems.length}</span> item{lineItems.length !== 1 ? 's' : ''} • 
-              <span className="font-medium text-[#111827] ml-2">₹{totals.finalTotal}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button 
+            {/* Save Button */}
+            <div className="border-t border-[#e5e7eb] p-4">
+              <button
                 onClick={() => handleSaveInvoice("sent")}
                 disabled={isSaving}
-                className="rounded-lg bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] px-6 py-2.5 text-sm font-semibold text-white hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[200px]"
+                className="keep-blue w-full flex items-center justify-center gap-2 rounded-xl bg-[#1e3a8a] py-3.5 text-sm font-bold text-white hover:bg-[#1e40af] transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide"
               >
                 <MessageCircle size={16} />
                 {isSaving ? "Saving..." : "Save & Send WhatsApp"}
               </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  navigate("/sales/invoices");
-                }}
-                disabled={isSaving}
-                className="rounded-lg border border-[#e5e7eb] bg-white px-6 py-2.5 text-sm font-semibold text-[#4b5563] hover:bg-[#f9fafb] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[200px]"
-              >
-                Cancel
-              </button>
             </div>
-          </div>
-        </div>
-      </div>
+          </div>{/* end right sidebar */}
+
+        </div>{/* end body flex */}
+      </div>{/* end ml-64 wrapper */}
 
       {/* Sales Person Modal */}
       {showSalesPersonModal && (
@@ -3893,7 +3689,7 @@ Customer Service Available`;
                         handleBulkSearch(e.target.value);
                       }}
                       placeholder="Type to search or scan the barcode of the item"
-                      className="w-full pl-14 pr-5 py-4 text-[14px] font-medium border-2 border-[#cbd5e1] rounded-2xl focus:border-[#2563eb] focus:outline-none focus:ring-4 focus:ring-[#2563eb]/20 transition-all bg-white placeholder:text-[#94a3b8]"
+                      className="w-full pl-14 pr-5 py-4 text-[14px] font-medium border-2 border-[#cbd5e1] rounded-2xl focus:border-[#9ca3af] focus:outline-none focus:ring-4 focus:ring-[#9ca3af]/20 transition-all bg-white placeholder:text-[#94a3b8]"
                       autoFocus
                     />
                   </div>
@@ -3902,7 +3698,7 @@ Customer Service Available`;
                 <div className="flex-1 overflow-y-auto p-4">
                   {isScanning && (
                     <div className="text-center py-12">
-                      <div className="animate-spin w-8 h-8 border-2 border-[#2563eb] border-t-transparent rounded-full mx-auto mb-4"></div>
+                      <div className="animate-spin w-8 h-8 border-2 border-[#9ca3af] border-t-transparent rounded-full mx-auto mb-4"></div>
                       <div className="text-sm text-[#6b7280]">Loading items...</div>
                     </div>
                   )}
@@ -3962,14 +3758,14 @@ Customer Service Available`;
                             onClick={() => toggleBulkItemSelection(item)}
                             className={`group relative flex items-center gap-4 p-4 border-2 rounded-xl transition-all duration-200 cursor-pointer ${
                               isSelected 
-                                ? 'border-[#2563eb] bg-[#eff6ff] shadow-md' 
+                                ? 'border-[#374151] bg-[#f3f4f6] shadow-md' 
                                 : 'border-[#e5e7eb] bg-white hover:border-[#cbd5e1] hover:shadow-sm'
                             }`}
                           >
                             {/* Checkbox */}
                             <div className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                               isSelected 
-                                ? 'border-[#2563eb] bg-[#2563eb]' 
+                                ? 'border-[#374151] bg-[#374151]' 
                                 : 'border-[#d1d5db] bg-white group-hover:border-[#9ca3af]'
                             }`}>
                               {isSelected && <Check size={14} className="text-white" strokeWidth={3} />}
@@ -4029,7 +3825,7 @@ Customer Service Available`;
                 <div className="p-6 border-b border-[#e7ebf8] bg-white">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg font-semibold text-[#1f2937]">Selected Items</h3>
-                    <div className="bg-[#2563eb] text-white text-sm font-medium px-3 py-1 rounded-full">
+                    <div className="bg-[#374151] text-white text-sm font-medium px-3 py-1 rounded-full">
                       {selectedBulkItems.length}
                     </div>
                   </div>
@@ -4133,7 +3929,7 @@ Customer Service Available`;
                                     const qty = Math.min(Math.max(1, value), maxStock);
                                     updateBulkItemQuantity(item._id, qty);
                                   }}
-                                  className="w-16 text-center text-sm font-semibold border border-[#e5e7eb] rounded-md py-1.5 focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20"
+                                  className="w-16 text-center text-sm font-semibold border border-[#e5e7eb] rounded-md py-1.5 focus:border-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#9ca3af]/20"
                                   min="1"
                                   max={maxStock}
                                 />
@@ -4180,7 +3976,7 @@ Customer Service Available`;
               <button
                 onClick={handleAddBulkItems}
                 disabled={selectedBulkItems.length === 0}
-                className="rounded-md bg-[#2563eb] px-4 py-2 text-sm font-medium text-white hover:bg-[#1d4ed8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-md bg-[#374151] px-4 py-2 text-sm font-medium text-white hover:bg-[#1f2937] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add Items ({selectedBulkItems.length})
               </button>
@@ -4197,7 +3993,7 @@ Customer Service Available`;
             {/* Header */}
             <div className="flex items-center justify-between border-b border-[#e5e7eb] px-6 py-5 bg-gradient-to-r from-[#f8fafc] to-white">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] flex items-center justify-center shadow-lg">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#374151] to-[#1f2937] flex items-center justify-center shadow-lg">
                   <Settings size={20} className="text-white" />
                 </div>
                 <div>
@@ -4217,18 +4013,18 @@ Customer Service Available`;
             {/* Content */}
             <div className="px-6 py-6 space-y-6 max-h-[70vh] overflow-y-auto">
               {/* Branch Info Card */}
-              <div className="bg-gradient-to-br from-[#eff6ff] to-[#dbeafe] border border-[#bfdbfe] p-4 rounded-xl">
+              <div className="bg-gradient-to-br from-[#f3f4f6] to-[#e5e7eb] border border-[#d1d5db] p-4 rounded-xl">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#1e40af]">Branch</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#374151]">Branch</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#1e40af]">Series</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#374151]">Series</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-[#1e3a8a]">{branch}</span>
-                  <span className="text-xs font-medium text-[#3b82f6] bg-white px-3 py-1.5 rounded-full">Default Transaction Series</span>
+                  <span className="text-sm font-semibold text-[#111827]">{branch}</span>
+                  <span className="text-xs font-medium text-[#6b7280] bg-white px-3 py-1.5 rounded-full">Default Transaction Series</span>
                 </div>
               </div>
               
@@ -4248,7 +4044,7 @@ Customer Service Available`;
                 <label className="block cursor-pointer">
                   <div className={`p-5 rounded-xl border-2 transition-all ${
                     invoiceSettings.autoGenerate 
-                      ? 'border-[#2563eb] bg-[#eff6ff] shadow-md' 
+                      ? 'border-[#374151] bg-[#f3f4f6] shadow-md' 
                       : 'border-[#e5e7eb] bg-white hover:border-[#d1d5db] hover:bg-[#f9fafb]'
                   }`}>
                     <div className="flex items-start gap-3">
@@ -4257,7 +4053,7 @@ Customer Service Available`;
                         name="invoiceMode"
                         checked={invoiceSettings.autoGenerate}
                         onChange={() => setInvoiceSettings({...invoiceSettings, autoGenerate: true})}
-                        className="mt-1 w-5 h-5 text-[#2563eb] focus:ring-2 focus:ring-[#2563eb] cursor-pointer"
+                        className="mt-1 w-5 h-5 text-[#374151] focus:ring-2 focus:ring-[#9ca3af] cursor-pointer"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -4276,12 +4072,12 @@ Customer Service Available`;
                                     type="text"
                                     value={invoiceSettings.prefix}
                                     onChange={(e) => setInvoiceSettings({...invoiceSettings, prefix: e.target.value})}
-                                    className="flex-1 rounded-lg border-2 border-[#d1d5db] px-3 py-2.5 text-sm font-medium focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 transition-all"
+                                    className="flex-1 rounded-lg border-2 border-[#d1d5db] px-3 py-2.5 text-sm font-medium focus:border-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#9ca3af]/20 transition-all"
                                     placeholder="INV-"
                                   />
                                   <button 
                                     type="button"
-                                    className="no-blue-button w-9 h-9 rounded-lg bg-[#2563eb] text-white flex items-center justify-center hover:bg-[#1d4ed8] transition-colors shadow-md"
+                                    className="no-blue-button w-9 h-9 rounded-lg bg-[#374151] text-white flex items-center justify-center hover:bg-[#1f2937] transition-colors shadow-md"
                                     title="Add prefix"
                                   >
                                     <Plus size={16} strokeWidth={2.5} />
@@ -4294,7 +4090,7 @@ Customer Service Available`;
                                   type="text"
                                   value={invoiceSettings.nextNumber}
                                   onChange={(e) => setInvoiceSettings({...invoiceSettings, nextNumber: e.target.value})}
-                                  className="w-full rounded-lg border-2 border-[#d1d5db] px-3 py-2.5 text-sm font-medium focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 transition-all"
+                                  className="w-full rounded-lg border-2 border-[#d1d5db] px-3 py-2.5 text-sm font-medium focus:border-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#9ca3af]/20 transition-all"
                                   placeholder="00001"
                                 />
                               </div>
@@ -4305,7 +4101,7 @@ Customer Service Available`;
                                 type="checkbox"
                                 checked={invoiceSettings.restartYearly}
                                 onChange={(e) => setInvoiceSettings({...invoiceSettings, restartYearly: e.target.checked})}
-                                className="mt-0.5 w-5 h-5 rounded border-[#d1d5db] text-[#2563eb] focus:ring-2 focus:ring-[#2563eb] cursor-pointer"
+                                className="mt-0.5 w-5 h-5 rounded border-[#d1d5db] text-[#374151] focus:ring-2 focus:ring-[#9ca3af] cursor-pointer"
                               />
                               <div>
                                 <span className="text-sm font-medium text-[#111827] block">Restart numbering yearly</span>
@@ -4323,7 +4119,7 @@ Customer Service Available`;
                 <label className="block cursor-pointer">
                   <div className={`p-5 rounded-xl border-2 transition-all ${
                     !invoiceSettings.autoGenerate 
-                      ? 'border-[#2563eb] bg-[#eff6ff] shadow-md' 
+                      ? 'border-[#374151] bg-[#f3f4f6] shadow-md' 
                       : 'border-[#e5e7eb] bg-white hover:border-[#d1d5db] hover:bg-[#f9fafb]'
                   }`}>
                     <div className="flex items-start gap-3">
@@ -4332,7 +4128,7 @@ Customer Service Available`;
                         name="invoiceMode"
                         checked={!invoiceSettings.autoGenerate}
                         onChange={() => setInvoiceSettings({...invoiceSettings, autoGenerate: false})}
-                        className="mt-1 w-5 h-5 text-[#2563eb] focus:ring-2 focus:ring-[#2563eb] cursor-pointer"
+                        className="mt-1 w-5 h-5 text-[#374151] focus:ring-2 focus:ring-[#9ca3af] cursor-pointer"
                       />
                       <div className="flex-1">
                         <span className="text-sm font-semibold text-[#111827] block mb-1">Enter invoice numbers manually</span>
@@ -4354,7 +4150,7 @@ Customer Service Available`;
               </button>
               <button
                 onClick={handleSaveInvoiceSettings}
-                className="no-blue-button rounded-lg bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] px-6 py-2.5 text-sm font-semibold text-white hover:from-[#1d4ed8] hover:to-[#1e40af] transition-all shadow-lg hover:shadow-xl"
+                className="no-blue-button rounded-lg bg-gradient-to-r from-[#374151] to-[#1f2937] px-6 py-2.5 text-sm font-semibold text-white hover:from-[#1f2937] hover:to-[#111827] transition-all shadow-lg hover:shadow-xl"
               >
                 Save Changes
               </button>
@@ -4468,7 +4264,7 @@ Customer Service Available`;
                     onKeyDown={handleBulkScanKeyDown}
                     onChange={(e) => setBulkScanInput(e.target.value)}
                     placeholder="Type to search or scan the barcode of the item"
-                    className="w-full px-4 py-2.5 text-sm border border-[#d1d5db] rounded-md focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+                    className="w-full px-4 py-2.5 text-sm border border-[#d1d5db] rounded-md focus:border-[#9ca3af] focus:outline-none focus:ring-1 focus:ring-[#9ca3af]"
                     autoFocus
                   />
                 </div>
@@ -4706,7 +4502,7 @@ Customer Service Available`;
                                   return updated;
                                 });
                               }}
-                              className="w-16 h-8 text-center border border-[#d1d5db] rounded text-sm focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+                              className="w-16 h-8 text-center border border-[#d1d5db] rounded text-sm focus:border-[#9ca3af] focus:outline-none focus:ring-1 focus:ring-[#9ca3af]"
                               min="1"
                             />
                             <button
@@ -4779,7 +4575,7 @@ Customer Service Available`;
               <button
                 onClick={handleBulkAddItems}
                 disabled={bulkScannedItems.length === 0}
-                className="px-6 py-2 text-sm font-medium bg-[#3b82f6] text-white rounded-md hover:bg-[#2563eb] transition-colors disabled:bg-[#9ca3af] disabled:cursor-not-allowed"
+                className="px-6 py-2 text-sm font-medium bg-[#374151] text-white rounded-md hover:bg-[#1f2937] transition-colors disabled:bg-[#9ca3af] disabled:cursor-not-allowed"
               >
                 Add Items
               </button>
@@ -4877,8 +4673,9 @@ const SalesPersonSelect = ({ label, placeholder, value, onChange, options = [], 
           onFocus={() => setOpen(true)}
           placeholder={placeholder}
           disabled={disabled}
-          className={`w-full rounded-lg border px-3 py-2 pr-10 text-sm transition ${
-            open ? "border-[#2563eb] shadow-[0_0_0_3px_rgba(37,99,235,0.08)]" : "border-[#d7dcf5]"
+          readOnly
+          className={`w-full rounded-lg border px-3 py-2 pr-10 text-sm transition cursor-pointer ${
+            open ? "border-[#9ca3af]" : "border-[#d7dcf5]"
           } ${disabled ? "bg-[#f1f5f9] text-[#94a3b8] cursor-not-allowed" : "bg-white text-[#1f2937]"} placeholder:text-[#9ca3af] focus:outline-none`}
         />
         <button
@@ -4889,12 +4686,12 @@ const SalesPersonSelect = ({ label, placeholder, value, onChange, options = [], 
               inputRef.current?.focus();
             }
           }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#6b7280] transition-colors"
+          className="no-blue-button absolute right-2 top-1/2 -translate-y-1/2 p-0 border-0 bg-transparent shadow-none"
           disabled={disabled}
         >
           <ChevronDown
-            size={16}
-            className={`transition-transform ${open ? "rotate-180" : "rotate-0"}`}
+            size={15}
+            className={`transition-transform text-[#2563eb] ${open ? "rotate-180" : "rotate-0"}`}
           />
         </button>
       </div>
@@ -4992,7 +4789,7 @@ const SalesPersonModal = ({ onClose, onAdd, newSalesPerson, setNewSalesPerson })
       <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl border border-[#e5e7eb]">
         <div className="flex items-center justify-between border-b border-[#e5e7eb] px-6 py-4 bg-gradient-to-r from-[#f8fafc] to-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#374151] to-[#1f2937] flex items-center justify-center shadow-lg">
               <span className="text-white text-lg">👤</span>
             </div>
             <div>
@@ -5018,7 +4815,7 @@ const SalesPersonModal = ({ onClose, onAdd, newSalesPerson, setNewSalesPerson })
                 value={newSalesPerson.firstName}
                 onChange={(e) => setNewSalesPerson({ ...newSalesPerson, firstName: e.target.value })}
                 placeholder="Enter full name"
-                className="w-full rounded-lg border-2 border-[#d1d5db] px-4 py-3 text-sm font-medium text-[#111827] placeholder:text-[#9ca3af] focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 transition-all"
+                className="w-full rounded-lg border-2 border-[#d1d5db] px-4 py-3 text-sm font-medium text-[#111827] placeholder:text-[#9ca3af] focus:border-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#9ca3af]/20 transition-all"
                 autoFocus
                 required
               />
@@ -5032,7 +4829,7 @@ const SalesPersonModal = ({ onClose, onAdd, newSalesPerson, setNewSalesPerson })
                 value={newSalesPerson.employeeId}
                 onChange={(e) => setNewSalesPerson({ ...newSalesPerson, employeeId: e.target.value })}
                 placeholder="Enter employee ID"
-                className="w-full rounded-lg border-2 border-[#d1d5db] px-4 py-3 text-sm font-medium text-[#111827] placeholder:text-[#9ca3af] focus:border-[#2563eb] focus:outline-none focus:ring-2 focus:ring-[#2563eb]/20 transition-all"
+                className="w-full rounded-lg border-2 border-[#d1d5db] px-4 py-3 text-sm font-medium text-[#111827] placeholder:text-[#9ca3af] focus:border-[#9ca3af] focus:outline-none focus:ring-2 focus:ring-[#9ca3af]/20 transition-all"
                 required
               />
             </div>
@@ -5048,7 +4845,7 @@ const SalesPersonModal = ({ onClose, onAdd, newSalesPerson, setNewSalesPerson })
             <button
               type="submit"
               disabled={!newSalesPerson.firstName.trim() || !newSalesPerson.employeeId.trim()}
-              className="no-blue-button rounded-lg bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] px-6 py-2.5 text-sm font-semibold text-white hover:from-[#1d4ed8] hover:to-[#1e40af] transition-all shadow-lg hover:shadow-xl disabled:from-[#9ca3af] disabled:to-[#9ca3af] disabled:cursor-not-allowed disabled:shadow-none"
+              className="no-blue-button rounded-lg bg-gradient-to-r from-[#374151] to-[#1f2937] px-6 py-2.5 text-sm font-semibold text-white hover:from-[#1f2937] hover:to-[#111827] transition-all shadow-lg hover:shadow-xl disabled:from-[#9ca3af] disabled:to-[#9ca3af] disabled:cursor-not-allowed disabled:shadow-none"
               title={(!newSalesPerson.firstName.trim() || !newSalesPerson.employeeId.trim()) 
                        ? "Please fill all required fields" : ""}
             >

@@ -88,13 +88,19 @@ const SalesReport = () => {
 
   const currentUser = JSON.parse(localStorage.getItem("rootfinuser"));
   const isAdmin = (currentUser?.power || "").toLowerCase() === "admin";
+  const isClusterManager = (currentUser?.role || "").toLowerCase() === "cluster_manager";
+  const clusterAllowedLocCodes = currentUser?.allowedLocCodes || [];
+  const canSelectStore = isAdmin || isClusterManager;
   
   // For store users, set their store as default and disable selection
   useEffect(() => {
-    if (!isAdmin && currentUser?.locCode) {
+    if (!canSelectStore && currentUser?.locCode) {
       setSelectedStore(currentUser.locCode);
     }
-  }, [isAdmin, currentUser]);
+    if (isClusterManager && clusterAllowedLocCodes.length > 0 && selectedStore === "all") {
+      setSelectedStore(clusterAllowedLocCodes[0]);
+    }
+  }, []);
 
   const storeOptions = [
     { value: "all", label: "All Stores" },
@@ -141,8 +147,13 @@ const SalesReport = () => {
       const params = new URLSearchParams({
         dateFrom: fromDate,
         dateTo: toDate,
-        locCode: isAdmin ? selectedStore : currentUser?.locCode,
-        userId: currentUser?.email || currentUser?.userId
+        locCode: canSelectStore ? selectedStore : currentUser?.locCode,
+        userId: currentUser?.email || currentUser?.userId,
+        isAdmin: isAdmin ? "true" : "false",
+        isClusterManager: isClusterManager ? "true" : "false",
+        ...(isClusterManager && clusterAllowedLocCodes.length > 0
+          ? { allowedLocCodes: clusterAllowedLocCodes.join(",") }
+          : {}),
       });
 
       console.log("🔍 Fetching report - Store:", selectedStore, "ReportType:", reportType);
@@ -318,7 +329,7 @@ const SalesReport = () => {
               />
             </div>
             
-            {isAdmin ? (
+            {canSelectStore ? (
               <div>
                 <label style={{ 
                   display: "block", 
@@ -328,10 +339,12 @@ const SalesReport = () => {
                   fontSize: "14px"
                 }}>Store</label>
                 <Select
-                  options={storeOptions}
-                  value={storeOptions.find(s => s.value === selectedStore)}
+                  options={isClusterManager
+                    ? [{ value: "all", label: "All My Stores" }, ...storeOptions.filter(s => clusterAllowedLocCodes.includes(s.value))]
+                    : storeOptions
+                  }
+                  value={storeOptions.find(s => s.value === selectedStore) || { value: selectedStore, label: selectedStore }}
                   onChange={(opt) => {
-                    console.log("🏪 Store changed to:", opt.value);
                     setSelectedStore(opt.value);
                   }}
                   isSearchable
