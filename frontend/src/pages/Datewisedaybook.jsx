@@ -123,6 +123,29 @@ const allStoresCsvHeaders = [
   { label: "Total Amount", key: "amount" },
 ];
 
+const multiBranchCsvHeaders = [
+  { label: "Date", key: "date" },
+  { label: "Invoice No", key: "invoiceNo" },
+  { label: "Customer Name", key: "customerName" },
+  { label: "Quantity", key: "quantity" },
+  { label: "Category", key: "Category" },
+  { label: "Sub Category", key: "SubCategory" },
+  { label: "Balance Payable", key: "SubCategory1" },
+  { label: "Amount", key: "amount" },
+  { label: "Total Transaction", key: "totalTransaction" },
+  { label: "security", key: "securityAmount" },
+  { label: "Balance Payable", key: "Balance" },
+  { label: "Remark", key: "remark" },
+  { label: "Discount", key: "discountAmount" },
+  { label: "Bill Value", key: "billValue" },
+  { label: "Cash", key: "cash" },
+  { label: "Razorpay", key: "rbl" },
+  { label: "Card/Bank", key: "bank" },
+  { label: "UPI", key: "upi" },
+  { label: "Attachment", key: "attachment" },
+  { label: "Branch", key: "branch" },
+];
+
 const Datewisedaybook = () => {
   const todayStr = new Date().toISOString().split('T')[0];
   const [fromDate, setFromDate] = useState(todayStr);
@@ -144,6 +167,10 @@ const Datewisedaybook = () => {
   const [selectedStore, setSelectedStore] = useState("current");
   const [allStoresSummary, setAllStoresSummary] = useState([]);
   const [allStoresTotals, setAllStoresTotals] = useState({ cash: 0, rbl: 0, bank: 0, upi: 0, amount: 0 }); // ✅ Added rbl
+  const [selectedStores, setSelectedStores] = useState([]); // stores selected for multi-branch view
+  const [showStoreSelector, setShowStoreSelector] = useState(false);
+  const [multiBranchData, setMultiBranchData] = useState([]); // merged transactions from all selected stores
+  const [multiBranchFetching, setMultiBranchFetching] = useState(false);
 
   const handleFetch = async () => {
     setIsFetching(true);
@@ -442,6 +469,245 @@ const Datewisedaybook = () => {
       );
       setAllStoresSummary(results);
       setAllStoresTotals(totals);
+      setIsFetching(false);
+      return;
+    }
+
+    if (selectedStore === "multi") {
+      setMultiBranchFetching(true);
+      const storesToFetch = visibleLocations.filter(loc => selectedStores.includes(loc.locCode));
+      const allResults = await Promise.all(
+        storesToFetch.map(async ({ locCode, locName }) => {
+          const twsBase = "https://rentalapi.rootments.live/api/GetBooking";
+          const bU = `${twsBase}/GetBookingList?LocCode=${locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
+          const rU = `${twsBase}/GetRentoutList?LocCode=${locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
+          const retU = `${twsBase}/GetReturnList?LocCode=${locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
+          const dU = `${twsBase}/GetDeleteList?LocCode=${locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
+          const mU = `${baseUrl.baseUrl}user/Getpayment?LocCode=${locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
+
+          let overrideRowsMulti = [];
+          try {
+            const res = await fetch(
+              `${baseUrl.baseUrl}api/tws/getEditedTransactions?fromDate=${fromDate}&toDate=${toDate}&locCode=${locCode}`
+            );
+            const json = await res.json();
+            overrideRowsMulti = json?.data || [];
+          } catch {}
+
+          let bookingData = {}, rentoutData = {}, returnData = {}, deleteData = {}, mongoData = {};
+          try {
+            const [bRes, rRes, retRes, dRes, mRes] = await Promise.all([
+              fetch(bU), fetch(rU), fetch(retU), fetch(dU), fetch(mU)
+            ]);
+            [bookingData, rentoutData, returnData, deleteData, mongoData] = await Promise.all([
+              bRes.json(), rRes.json(), retRes.json(), dRes.json(), mRes.json()
+            ]);
+          } catch {}
+
+          const bList = (bookingData?.dataSet?.data || []).map(item => ({
+            ...item,
+            date: item.bookingDate?.split("T")[0],
+            invoiceNo: item.invoiceNo,
+            customerName: item.customerName,
+            quantity: item.quantity || 1,
+            Category: "Booking",
+            SubCategory: "Advance",
+            discountAmount: Number(item.discountAmount || 0),
+            billValue: Number(item.invoiceAmount || 0),
+            cash: Number(item.bookingCashAmount || 0),
+            rbl: Number(item.rblRazorPay || 0),
+            bank: Number(item.bookingBankAmount || 0),
+            upi: Number(item.bookingUPIAmount || 0),
+            amount: Number(item.bookingCashAmount || 0) + Number(item.rblRazorPay || 0) + Number(item.bookingBankAmount || 0) + Number(item.bookingUPIAmount || 0),
+            totalTransaction: Number(item.bookingCashAmount || 0) + Number(item.rblRazorPay || 0) + Number(item.bookingBankAmount || 0) + Number(item.bookingUPIAmount || 0),
+            remark: "",
+            source: "booking",
+            branch: locName,
+          }));
+
+          const rList = (rentoutData?.dataSet?.data || []).map(item => {
+            const advance = Number(item.advanceAmount || 0);
+            const security = Number(item.securityAmount || 0);
+            const balancePayable = Number(item.invoiceAmount || 0) - advance;
+            const totalSplit = security + balancePayable;
+            return {
+              ...item,
+              date: (item.rentOutDate || "").split("T")[0],
+              invoiceNo: item.invoiceNo,
+              customerName: item.customerName,
+              quantity: item.quantity || 1,
+              Category: "RentOut",
+              SubCategory: "Security",
+              SubCategory1: "Balance Payable",
+              securityAmount: security,
+              Balance: balancePayable,
+              discountAmount: Number(item.discountAmount || 0),
+              billValue: Number(item.invoiceAmount || 0),
+              cash: Number(item.rentoutCashAmount || 0),
+              rbl: Number(item.rblRazorPay || 0),
+              bank: Number(item.rentoutBankAmount || 0),
+              upi: Number(item.rentoutUPIAmount || 0),
+              totalTransaction: totalSplit,
+              amount: totalSplit,
+              remark: "",
+              source: "rentout",
+              branch: locName,
+            };
+          });
+
+          const retList = (returnData?.dataSet?.data || []).map(item => {
+            const returnCashAmount = -Math.abs(Number(item.returnCashAmount || 0));
+            const returnRblAmount = -Math.abs(Number(item.rblRazorPay || 0));
+            const returnBankAmount = returnRblAmount !== 0 ? 0 : -Math.abs(Number(item.returnBankAmount || 0));
+            const returnUPIAmount = returnRblAmount !== 0 ? 0 : -Math.abs(Number(item.returnUPIAmount || 0));
+            return {
+              ...item,
+              date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
+              customerName: item.customerName || item.custName || item.customer || "",
+              invoiceNo: item.invoiceNo,
+              Category: "Return",
+              SubCategory: "Security Refund",
+              discountAmount: Number(item.discountAmount || 0),
+              billValue: Number(item.invoiceAmount || 0),
+              cash: returnCashAmount,
+              rbl: returnRblAmount,
+              bank: returnBankAmount,
+              upi: returnUPIAmount,
+              amount: returnCashAmount + returnRblAmount + returnBankAmount + returnUPIAmount,
+              totalTransaction: returnCashAmount + returnRblAmount + returnBankAmount + returnUPIAmount,
+              remark: "",
+              source: "return",
+              branch: locName,
+            };
+          });
+
+          const dList = (deleteData?.dataSet?.data || []).map(item => {
+            const deleteCashAmount = -Math.abs(Number(item.deleteCashAmount || 0));
+            const deleteRblAmount = -Math.abs(Number(item.rblRazorPay || 0));
+            const deleteBankAmount = deleteRblAmount !== 0 ? 0 : -Math.abs(Number(item.deleteBankAmount || 0));
+            const deleteUPIAmount = deleteRblAmount !== 0 ? 0 : -Math.abs(Number(item.deleteUPIAmount || 0));
+            return {
+              ...item,
+              date: item.cancelDate?.split("T")[0],
+              invoiceNo: item.invoiceNo,
+              customerName: item.customerName,
+              Category: "Cancel",
+              SubCategory: "Cancellation Refund",
+              discountAmount: Number(item.discountAmount || 0),
+              billValue: Number(item.invoiceAmount || 0),
+              cash: deleteCashAmount,
+              rbl: deleteRblAmount,
+              bank: deleteBankAmount,
+              upi: deleteUPIAmount,
+              amount: deleteCashAmount + deleteRblAmount + deleteBankAmount + deleteUPIAmount,
+              totalTransaction: deleteCashAmount + deleteRblAmount + deleteBankAmount + deleteUPIAmount,
+              remark: "",
+              source: "deleted",
+              branch: locName,
+            };
+          });
+
+          const mList = (mongoData?.data || []).map(tx => {
+            const cash = Number(tx.cash || 0);
+            const rbl = Number(tx.rbl || tx.rblRazorPay || 0);
+            const bank = Number(tx.bank || 0);
+            const upi = Number(tx.upi || 0);
+            const total = cash + rbl + bank + upi;
+            const isReturn = (tx.type || "").toLowerCase() === "return";
+            const rawSubCat = tx.subCategory || tx.category || "";
+            const subCatLabel = isReturn && rawSubCat && !rawSubCat.toLowerCase().endsWith("return")
+              ? `${rawSubCat} Return`
+              : rawSubCat;
+            return {
+              ...tx,
+              date: tx.date?.split("T")[0] || "",
+              Category: tx.type,
+              SubCategory: subCatLabel,
+              SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
+              customerName: tx.customerName || "",
+              remark: (() => { const r = tx.remark || tx.remarks || ""; return (r === "Thanks for your business." || r === "Thanks for your business") ? "" : r; })(),
+              discountAmount: Number(tx.discountAmount || 0),
+              billValue: Number(tx.billValue || tx.invoiceAmount || Math.abs(Number(tx.amount) || 0)),
+              cash, rbl, bank, upi,
+              amount: total,
+              totalTransaction: total,
+              source: "mongo",
+              branch: locName,
+            };
+          });
+
+          const editedMapMulti = new Map();
+          overrideRowsMulti.forEach(row => {
+            const key = String(row.invoiceNo || row.invoice).trim();
+            const category = (row.type || row.Category || '').toLowerCase();
+            const uniqueKey = `${key}-${category}`;
+            const cash = Number(row.cash || 0);
+            const rbl = Number(row.rbl || 0);
+            const bank = Number(row.bank || 0);
+            const upi = Number(row.upi || 0);
+            const total = cash + rbl + bank + upi;
+            editedMapMulti.set(uniqueKey, {
+              ...row,
+              invoiceNo: key,
+              Category: row.type,
+              SubCategory: row.category,
+              SubCategory1: row.subCategory1 || row.SubCategory1 || "Balance Payable",
+              billValue: Number(row.billValue ?? row.invoiceAmount ?? 0),
+              cash, rbl, bank, upi,
+              amount: total,
+              totalTransaction: total,
+              source: "edited",
+              branch: locName,
+            });
+          });
+
+          const allTwsMulti = [...bList, ...rList, ...retList, ...dList];
+          const finalTwsMulti = allTwsMulti.map(t => {
+            const key = String(t.invoiceNo).trim();
+            const category = (t.Category || t.category || '').toLowerCase();
+            const uniqueKey = `${key}-${category}`;
+            const override = editedMapMulti.get(uniqueKey);
+            const isRentOutMulti = category === 'rentout';
+            return override
+              ? {
+                ...t,
+                ...override,
+                Category: override.Category || t.Category || "",
+                SubCategory: override.SubCategory || override.category || t.SubCategory || t.category || "",
+                SubCategory1: override.SubCategory1 || override.subCategory1 || t.SubCategory1 || t.subCategory1 || "",
+                customerName: override.customerName || t.customerName || "",
+                date: override.date || t.date || "",
+                securityAmount: isRentOutMulti ? Number(override.securityAmount ?? t.securityAmount ?? 0) : 0,
+                Balance: isRentOutMulti ? Number(override.Balance ?? t.Balance ?? 0) : 0,
+                amount: Number(override.amount ?? t.amount),
+                totalTransaction: isRentOutMulti
+                  ? Number(override.securityAmount ?? t.securityAmount ?? 0) + Number(override.Balance ?? t.Balance ?? 0)
+                  : Number(override.totalTransaction ?? t.totalTransaction ?? override.cash + override.rbl + override.bank + override.upi),
+                branch: locName,
+              }
+              : t;
+          });
+
+          const allTransactionsMulti = [...finalTwsMulti, ...mList];
+          const dedupedMulti = Array.from(
+            new Map(
+              allTransactionsMulti.map((tx) => {
+                const dateKey = new Date(tx.date).toISOString().split("T")[0];
+                const key = tx._id
+                  ? `${tx._id}-${locCode}`
+                  : `${tx.invoiceNo || tx.locCode}-${dateKey}-${tx.Category || tx.type || ""}-${tx.source || ""}-${locCode}`;
+                return [key, tx];
+              })
+            ).values()
+          );
+
+          return dedupedMulti;
+        })
+      );
+
+      const merged = allResults.flat();
+      setMultiBranchData(merged);
+      setMultiBranchFetching(false);
       setIsFetching(false);
       return;
     }
@@ -1153,6 +1419,19 @@ const Datewisedaybook = () => {
                 animation: shimmer 1.4s infinite;
                 border-radius: 6px;
               }
+              .branch-select-btn {
+                background-color: white !important;
+                color: #374151 !important;
+                border: 1px solid #cbd5e1 !important;
+                box-shadow: none !important;
+                transform: none !important;
+              }
+              .branch-select-btn:hover {
+                background-color: #f8fafc !important;
+                border-color: #94a3b8 !important;
+                transform: none !important;
+                box-shadow: none !important;
+              }
             `}</style>
 
             {/* Filter Bar */}
@@ -1316,8 +1595,49 @@ const Datewisedaybook = () => {
                     {((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager) && (
                       <option value="all">All Stores (Totals)</option>
                     )}
+                    {(currentusers.power || '').toLowerCase() === 'admin' && (
+                      <option value="multi">Multiple Branches</option>
+                    )}
                   </select>
                 </div>
+
+                {/* Select Branches dropdown — inline in filter bar */}
+                {selectedStore === "multi" && (
+                  <div className="flex flex-col" style={{ alignSelf: 'flex-end' }}>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Branches</label>
+                    <button
+                      onClick={() => setShowStoreSelector(prev => !prev)}
+                      className="branch-select-btn"
+                      style={{
+                        height: '36px',
+                        borderRadius: '2px',
+                        fontSize: '0.875rem',
+                        fontWeight: '400',
+                        padding: '0 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        boxSizing: 'border-box',
+                        outline: 'none',
+                        whiteSpace: 'nowrap',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#94a3b8'; }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4 text-slate-500 shrink-0"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+                      <span className="whitespace-nowrap">
+                        {selectedStores.length === 0 ? "Select Branches" : `${selectedStores.length} Branch${selectedStores.length > 1 ? "es" : ""}`}
+                      </span>
+                      {selectedStores.length > 0 && (
+                        <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-blue-600 text-white text-[9px] font-bold">
+                          {selectedStores.length}
+                        </span>
+                      )}
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`w-3.5 h-3.5 text-slate-400 transition-transform shrink-0 ${showStoreSelector ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1338,6 +1658,7 @@ const Datewisedaybook = () => {
                   ))}
                 </div>
               )}
+
               {!isFetching && selectedStore === "all" ? (
                 <div className="bg-white shadow-sm rounded border border-slate-200 overflow-hidden">
                   <div style={{ maxHeight: "500px", overflowY: "auto" }}>
@@ -1374,6 +1695,145 @@ const Datewisedaybook = () => {
                           <td className="px-3 py-2.5 text-right text-slate-800">{Number(allStoresTotals.bank).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
                           <td className="px-3 py-2.5 text-right text-slate-800">{Number(allStoresTotals.upi).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
                           <td className="px-3 py-2.5 text-right text-slate-800">{Number(allStoresTotals.amount).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              ) : !isFetching && selectedStore === "multi" ? (
+                <div className="bg-white shadow-sm rounded border border-slate-200 overflow-hidden">
+                  <div style={{ maxHeight: "600px", overflowY: "auto", overflowX: "auto" }}>
+                    <table className="w-full border-collapse text-xs" style={{ minWidth: '1300px' }}>
+                      <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
+                        <tr className="bg-slate-700 text-white text-xs uppercase tracking-wide">
+                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Date</th>
+                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Invoice No.</th>
+                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Customer Name</th>
+                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Qty</th>
+                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Category</th>
+                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Sub Category</th>
+                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Remarks</th>
+                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Amount</th>
+                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Total Txn</th>
+                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Discount</th>
+                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Bill Value</th>
+                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Cash</th>
+                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Razorpay</th>
+                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Card/Bank</th>
+                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">UPI</th>
+                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Attachment</th>
+                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Branch</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {multiBranchData
+                          .filter(t =>
+                            (selectedCategoryValue === "all" ||
+                              t.category?.toLowerCase() === selectedCategoryValue ||
+                              t.Category?.toLowerCase() === selectedCategoryValue ||
+                              t.type?.toLowerCase() === selectedCategoryValue) &&
+                            (selectedSubCategoryValue === "all" ||
+                              t.subCategory?.toLowerCase() === selectedSubCategoryValue ||
+                              t.SubCategory?.toLowerCase() === selectedSubCategoryValue ||
+                              t.type?.toLowerCase() === selectedSubCategoryValue ||
+                              t.subCategory1?.toLowerCase() === selectedSubCategoryValue ||
+                              t.SubCategory1?.toLowerCase() === selectedSubCategoryValue ||
+                              t.category?.toLowerCase() === selectedSubCategoryValue)
+                          )
+                          .map((t, index) => {
+                            if (t.Category === "RentOut") {
+                              return (
+                                <>
+                                  <tr key={`mb-${index}-sec`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.date}</td>
+                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.invoiceNo || t.locCode}</td>
+                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.customerName || "-"}</td>
+                                    <td rowSpan="2" className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.quantity}</td>
+                                    <td rowSpan="2" className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.Category}</td>
+                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.SubCategory}</td>
+                                    <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">{t.remark}</td>
+                                    <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.securityAmount}</td>
+                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.totalTransaction}</td>
+                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.discountAmount || 0}</td>
+                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.billValue}</td>
+                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.cash}</td>
+                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.rbl ?? 0}</td>
+                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.bank}</td>
+                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.upi}</td>
+                                    <td rowSpan="2" className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">
+                                      {t.hasAttachment && t._id ? (
+                                        <a href={`${baseUrl.baseUrl}user/transaction/${t._id}/attachment`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View</a>
+                                      ) : "-"}
+                                    </td>
+                                    <td rowSpan="2" className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs font-medium">{t.branch}</td>
+                                  </tr>
+                                  <tr key={`mb-${index}-bal`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.date}</td>
+                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.invoiceNo || t.locCode}</td>
+                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.customerName || "-"}</td>
+                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.SubCategory1}</td>
+                                    <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">{t.remark}</td>
+                                    <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.Balance}</td>
+                                  </tr>
+                                </>
+                              );
+                            }
+                            return (
+                              <tr key={`mb-${t.invoiceNo || t._id || t.locCode}-${index}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.date}</td>
+                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.invoiceNo || t.locCode}</td>
+                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.customerName || "-"}</td>
+                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.quantity}</td>
+                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.Category || t.type}</td>
+                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">
+                                  {[t.SubCategory].concat(t.Category === "RentOut" ? [t.SubCategory1 || t.subCategory1] : []).filter(Boolean).map(getCatLabel).join(" + ") || "-"}
+                                </td>
+                                <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">{t.remark}</td>
+                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Math.round(Number(t.amount)).toLocaleString()}</td>
+                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Math.round(Number(t.totalTransaction)).toLocaleString()}</td>
+                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Math.round(Number(t.discountAmount || 0)).toLocaleString()}</td>
+                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Math.round(Number(t.billValue)).toLocaleString()}</td>
+                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.cash}</td>
+                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.rbl ?? 0}</td>
+                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.bank}</td>
+                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.upi}</td>
+                                <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">
+                                  {t.hasAttachment && t._id ? (
+                                    <a href={`${baseUrl.baseUrl}user/transaction/${t._id}/attachment`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline text-xs">
+                                      <FiDownload size={14} />Download
+                                    </a>
+                                  ) : "-"}
+                                </td>
+                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs font-medium">{t.branch}</td>
+                              </tr>
+                            );
+                          })}
+                        {multiBranchData.length === 0 && (
+                          <tr>
+                            <td colSpan={17} className="text-center py-8 text-slate-400 text-sm">
+                              {selectedStores.length === 0 ? "Select branches above and click Fetch" : "No transactions found"}
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-slate-100 font-semibold border-t-2 border-slate-300" style={{ position: "sticky", bottom: 0, zIndex: 2 }}>
+                          <td colSpan="10" className="px-2 py-1.5 text-left text-slate-700 text-xs font-semibold">Total</td>
+                          <td className="px-2 py-1.5"></td>
+                          <td className="px-2 py-1.5 text-right text-slate-800 text-xs font-semibold">
+                            {Math.round(multiBranchData.reduce((s, r) => s + (isNaN(+r.cash) ? 0 : +r.cash), 0)).toLocaleString()}
+                          </td>
+                          <td className="px-2 py-1.5 text-right text-slate-800 text-xs font-semibold">
+                            {Math.round(multiBranchData.reduce((s, r) => s + (isNaN(+r.rbl) ? 0 : +r.rbl), 0)).toLocaleString()}
+                          </td>
+                          <td className="px-2 py-1.5 text-right text-slate-800 text-xs font-semibold">
+                            {Math.round(multiBranchData.reduce((s, r) => s + (isNaN(+r.bank) ? 0 : +r.bank), 0)).toLocaleString()}
+                          </td>
+                          <td className="px-2 py-1.5 text-right text-slate-800 text-xs font-semibold">
+                            {Math.round(multiBranchData.reduce((s, r) => s + (isNaN(+r.upi) ? 0 : +r.upi), 0)).toLocaleString()}
+                          </td>
+                          <td className="px-2 py-1.5"></td>
+                          <td className="px-2 py-1.5"></td>
                         </tr>
                       </tfoot>
                     </table>
@@ -1783,11 +2243,41 @@ const Datewisedaybook = () => {
               )}
             </div>
 
+            {/* Branch selector dropdown panel — fixed position to escape overflow */}
+            {selectedStore === "multi" && showStoreSelector && (
+              <div
+                className="fixed z-[9999] bg-white rounded-xl border border-slate-200 shadow-2xl no-print"
+                style={{ top: '160px', left: '400px', minWidth: '560px' }}
+              >
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50 rounded-t-xl">
+                  <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                    {selectedStores.length} of {visibleLocations.length} selected
+                  </span>
+                  <div className="flex gap-2">
+                    <button onClick={() => setSelectedStores(visibleLocations.map(l => l.locCode))} className="px-2.5 py-1 text-xs font-semibold rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors">All</button>
+                    <button onClick={() => setSelectedStores([])} className="px-2.5 py-1 text-xs font-semibold rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100 transition-colors">None</button>
+                    <button onClick={() => setShowStoreSelector(false)} className="px-2.5 py-1 text-xs font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">Done ✓</button>
+                  </div>
+                </div>
+                <div className="p-3 grid grid-cols-4 gap-1.5 max-h-56 overflow-y-auto">
+                  {visibleLocations.map(loc => {
+                    const isChecked = selectedStores.includes(loc.locCode);
+                    return (
+                      <label key={loc.locCode} className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 text-xs font-medium transition-all border ${isChecked ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white border-slate-200 text-slate-600 hover:border-blue-200 hover:bg-slate-50"}`}>
+                        <input type="checkbox" checked={isChecked} onChange={e => { if (e.target.checked) { setSelectedStores(prev => [...prev, loc.locCode]); } else { setSelectedStores(prev => prev.filter(c => c !== loc.locCode)); } }} className="accent-blue-600 shrink-0" />
+                        <span className="truncate">{loc.locName}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex justify-end gap-3 mt-5 no-print">
               <CSVLink
-                data={selectedStore === "all" ? allStoresSummary : exportData}
-                headers={selectedStore === "all" ? allStoresCsvHeaders : headers}
+                data={selectedStore === "all" ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
+                headers={selectedStore === "all" ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
                 filename={`${fromDate} to ${toDate} report.csv`}
               >
                 <button className="border border-blue-600 text-blue-600 py-2 px-5 rounded-sm text-sm font-medium hover:bg-blue-50 transition-colors">
