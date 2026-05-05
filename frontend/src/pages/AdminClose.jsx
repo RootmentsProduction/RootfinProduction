@@ -65,13 +65,20 @@ const AdminClose = () => {
 
     const currentUser = JSON.parse(localStorage.getItem("rootfinuser"));
     const email = currentUser?.email;
+    const isOfficeUser = currentUser?.locCode === '102';
+
+    // Office users (locCode 102) can only close Office, Production, and Warehouse
+    const officeAllowedLocCodes = ['101', '102', '103'];
 
     useEffect(() => {
         // Use fallback locations directly — these are the correct stores
-        setAllLocations(fallbackLocations.map(loc => ({
-            ...loc,
-            label: formatLocationName(loc.value),
-        })));
+        const locs = fallbackLocations
+            .filter(loc => !isOfficeUser || officeAllowedLocCodes.includes(loc.locCode))
+            .map(loc => ({
+                ...loc,
+                label: formatLocationName(loc.value),
+            }));
+        setAllLocations(locs);
     }, []);
 
     // Load existing closing data when location and date are selected
