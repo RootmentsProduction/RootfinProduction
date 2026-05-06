@@ -130,6 +130,7 @@ const transactionSchema = new mongoose.Schema(
     Balance:         { type: Number, default: 0 },
     subCategory1:    { type: String, default: "" },
     totalTransaction:{ type: Number, default: 0 },
+    discountAmount:  { type: Number, default: 0 },
 
     /* Edit tracking fields */
     editedBy:     { type: String },
