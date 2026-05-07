@@ -2553,6 +2553,7 @@ Customer Service Available`;
               item: itemData.itemName || "",
               itemData: itemData,
               rate: sellingPrice,
+              size: itemData.size || "",
             };
           } else {
             updated = {

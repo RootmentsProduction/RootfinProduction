@@ -476,12 +476,31 @@ export const getShoeItems = async (req, res) => {
     const groupItems = [];
     itemGroups.forEach(group => {
       if (group.items && Array.isArray(group.items)) {
+        // Find the index of the "size" attribute in the group's attributeRows
+        const sizeAttrIndex = (group.attributeRows || []).findIndex(
+          row => row.attribute && row.attribute.toLowerCase() === "size"
+        );
+
         group.items.forEach((item, index) => {
+          // Resolve size: prefer stored item.size, then extract from attributeCombination
+          let resolvedSize = item.size || "";
+          if (!resolvedSize && item.attributeCombination && Array.isArray(item.attributeCombination)) {
+            if (sizeAttrIndex !== -1 && item.attributeCombination[sizeAttrIndex]) {
+              // Use the value at the "size" attribute position
+              resolvedSize = item.attributeCombination[sizeAttrIndex];
+            } else {
+              // Fallback: use the last numeric-looking value in the combination
+              const numericVal = [...item.attributeCombination].reverse().find(v => /^\d+(\.\d+)?$/.test(String(v).trim()));
+              resolvedSize = numericVal || "";
+            }
+          }
+
           // Convert group item to standalone item format
           const standaloneItem = {
             _id: item._id || `${group._id}_${index}`, // Use item's _id or create composite ID
             itemName: item.name || "",
             sku: item.sku || "",
+            size: resolvedSize,
             costPrice: item.costPrice || 0,
             sellingPrice: item.sellingPrice || 0,
             upc: item.upc || "",
@@ -513,6 +532,9 @@ export const getShoeItems = async (req, res) => {
             updatedAt: group.updatedAt || group.createdAt,
           };
           groupItems.push(standaloneItem);
+          if (resolvedSize) {
+            console.log(`📏 Item "${standaloneItem.itemName}" → size: "${resolvedSize}"`);
+          }
         });
       }
     });
