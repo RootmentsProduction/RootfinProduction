@@ -482,6 +482,14 @@ const ItemDropdown = ({ rowId, value, onChange, warehouse, onNewItem, isStoreUse
   );
 };
 
+// Extract size from item name as fallback (e.g. "Test Group - Black/32" → "32")
+const extractSizeFromName = (itemName) => {
+  if (!itemName) return "";
+  // Match the last segment after "/" which is typically the size
+  const match = itemName.match(/\/([^/]+)$/);
+  return match ? match[1].trim() : "";
+};
+
 const blankLineItem = () => ({
   id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
   item: "",
@@ -1665,6 +1673,7 @@ const SalesInvoiceCreate = () => {
         ...blankLineItem(),
         item: selectedItem.itemName || "",
         itemData: selectedItem,
+        size: selectedItem.size || extractSizeFromName(selectedItem.itemName),
         rate: typeof selectedItem.sellingPrice === 'number' ? selectedItem.sellingPrice : (typeof selectedItem.costPrice === 'number' ? selectedItem.costPrice : 0),
         quantity: selectedItem.quantity,
       };
@@ -2254,13 +2263,18 @@ Customer Service Available`;
           .then(data => {
             if (data && data.salesPersons && Array.isArray(data.salesPersons)) {
               console.log(`Found ${data.salesPersons.length} sales persons for ${branch}:`, data.salesPersons.map(sp => `${sp.firstName} ${sp.lastName}`));
-              // Format sales persons for display: "FirstName LastName"
-              const formatted = data.salesPersons.map(sp => ({
-                id: sp.id,
-                name: `${sp.firstName} ${sp.lastName}`,
-                fullName: `${sp.firstName} ${sp.lastName}`,
-                ...sp
-              }));
+              // Format sales persons for display: use firstName only if lastName is a placeholder
+              const formatted = data.salesPersons.map(sp => {
+                const lastName = (sp.lastName || "").trim();
+                const isPlaceholderLastName = !lastName || lastName === "-";
+                const displayName = isPlaceholderLastName ? sp.firstName : `${sp.firstName} ${lastName}`;
+                return {
+                  id: sp.id,
+                  name: displayName,
+                  fullName: displayName,
+                  ...sp
+                };
+              });
               setSalesPersons(formatted);
               
               // Don't auto-select any sales person - user must choose manually
@@ -2452,12 +2466,17 @@ Customer Service Available`;
         if (refreshResponse.ok) {
           const refreshData = await refreshResponse.json();
           if (refreshData && refreshData.salesPersons && Array.isArray(refreshData.salesPersons)) {
-            const formatted = refreshData.salesPersons.map(sp => ({
-              id: sp.id,
-              name: sp.firstName || `${sp.firstName} ${sp.lastName}`.trim(),
-              fullName: sp.firstName || `${sp.firstName} ${sp.lastName}`.trim(),
-              ...sp
-            }));
+            const formatted = refreshData.salesPersons.map(sp => {
+              const lastName = (sp.lastName || "").trim();
+              const isPlaceholderLastName = !lastName || lastName === "-";
+              const displayName = isPlaceholderLastName ? sp.firstName : `${sp.firstName} ${lastName}`;
+              return {
+                id: sp.id,
+                name: displayName,
+                fullName: displayName,
+                ...sp
+              };
+            });
             setSalesPersons(formatted);
           }
         }
@@ -2553,7 +2572,7 @@ Customer Service Available`;
               item: itemData.itemName || "",
               itemData: itemData,
               rate: sellingPrice,
-              size: itemData.size || "",
+              size: itemData.size || extractSizeFromName(itemData.itemName),
             };
           } else {
             updated = {
@@ -2982,6 +3001,7 @@ Customer Service Available`;
         item: item.itemName || "",
         itemData: item, // Store the full item object for ItemDropdown
         itemDetails: item.itemName || "",
+        size: item.size || extractSizeFromName(item.itemName),
         quantity: quantity.toString(),
         rate: rate.toFixed(2),
         discount: "0",
