@@ -291,10 +291,11 @@ router.post('/syncTransaction', async (req, res) => {
   try {
     console.log("Incoming sync data:", req.body);
     
-    // Check if transaction with this invoiceNo already exists
+    // Check if transaction with this invoiceNo already exists (match by invoiceNo + locCode + type to avoid Booking/RentOut collision)
     const existingTransaction = await Transaction.findOne({ 
       invoiceNo: req.body.invoiceNo,
-      locCode: req.body.locCode 
+      locCode: req.body.locCode,
+      type: req.body.type,
     });
     
     if (existingTransaction) {

@@ -1404,10 +1404,10 @@ const Datewisedaybook = () => {
       };
 
       setMongoTransactions(prev =>
-        prev.map(tx => (tx._id === _id ? updatedRow : tx))
+        prev.map(tx => (tx._id === _id && (tx.Category || tx.type) === editedTransaction.Category ? updatedRow : tx))
       );
       setMergedTransactions(prev =>
-        prev.map(t => (t._id === _id ? updatedRow : t))
+        prev.map(t => (t._id === _id && (t.Category || t.type) === editedTransaction.Category ? updatedRow : t))
       );
       setEditingIndex(null);
     } catch (err) {
