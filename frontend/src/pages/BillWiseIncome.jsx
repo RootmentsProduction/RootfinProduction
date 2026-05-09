@@ -456,7 +456,8 @@ const DayBookInc = () => {
             ...mongo
         ].map(t => {
             // Check if this transaction has been edited
-            const key = String(t.invoiceNo).trim();
+            // Use invoiceNo + Category as composite key to avoid Booking/RentOut collision
+            const key = `${String(t.invoiceNo).trim()}-${(t.Category || '').toLowerCase()}`;
             const override = editedTransactionsMap[key];
             
             if (override) {
@@ -736,12 +737,14 @@ const DayBookInc = () => {
                 
                 const editedObj = {};
                 overrideRows.forEach(row => {
-                    const key = String(row.invoiceNo || row.invoice).trim();
-                    if (key) {
+                    const invoicePart = String(row.invoiceNo || row.invoice).trim();
+                    const categoryPart = (row.type || row.category || "").toLowerCase();
+                    const key = `${invoicePart}-${categoryPart}`;
+                    if (invoicePart) {
                         editedObj[key] = {
                             ...row,
                             _id: row._id,
-                            invoiceNo: key,
+                            invoiceNo: invoicePart,
                             cash: Number(row.cash || 0),
                             rbl: Number(row.rbl || 0),
                             bank: Number(row.bank || 0),
@@ -987,7 +990,7 @@ const DayBookInc = () => {
                 totalTransaction: computedTotal,
             };
             
-            const key = String(invoiceNo || invoice).trim();
+            const key = `${String(invoiceNo || invoice).trim()}-${(editedTransaction.Category || '').toLowerCase()}`;
             setEditedTransactionsMap(prev => ({
                 ...prev,
                 [key]: updatedRow

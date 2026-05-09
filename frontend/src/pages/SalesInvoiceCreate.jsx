@@ -1156,16 +1156,9 @@ const SalesInvoiceCreate = () => {
       lineTaxTotal = round2(roundedTotalAmount - baseAmount);
     }
 
-    // Apply discount if configured
-    if (!discountConfig.applyAfterTax && discountConfig.value && parseFloat(discountConfig.value) > 0) {
-      if (discountConfig.type === "%") {
-        const discountPercent = parseFloat(discountConfig.value);
-        discountedAmount = round2(roundedTotalAmount - (roundedTotalAmount * discountPercent / 100));
-      } else {
-        discountedAmount = roundedTotalAmount;
-      }
-      discountedAmount = Math.max(0, discountedAmount);
-    }
+    // Apply discount if configured - REMOVED from line item level
+    // Discount is applied at the total level in calculateTotals() to avoid double-discounting
+    // discountedAmount stays equal to roundedTotalAmount here
 
     // Calculate individual tax amounts (CGST/SGST/IGST) from the total tax
     let cgstAmount = 0;
@@ -1311,16 +1304,11 @@ const SalesInvoiceCreate = () => {
     const parsedDiscountValue = parseFloat(discount.value);
     if (discount.value !== "" && !Number.isNaN(parsedDiscountValue) && parsedDiscountValue !== 0) {
       if (discount.type === "%") {
-        // Keep percentage discount behavior unchanged
-        if (applyDiscountAfterTax) {
-          discountAmount = round2((subTotal + totalTax) * parsedDiscountValue / 100);
-        } else {
-          const totalBaseAmount = recalculatedItems.reduce((sum, item) => sum + round2(item.baseAmount || 0), 0);
-          discountAmount = round2(totalBaseAmount * parsedDiscountValue / 100);
-        }
+        // Apply % discount on the subTotal (inclusive of tax)
+        discountAmount = round2(subTotal * parsedDiscountValue / 100);
       } else {
-        // Flat amount behaves as rounding delta
-        discountAmount = round2(-parsedDiscountValue);
+        // Flat ₹ discount — subtract directly
+        discountAmount = round2(parsedDiscountValue);
       }
     }
 
@@ -3600,8 +3588,12 @@ Customer Service Available`;
                     placeholder="0.00"
                     className="flex-1 h-[28px] rounded border border-[#e5e7eb] bg-white px-2 text-[11px] text-[#111827] focus:border-[#9ca3af] focus:outline-none"
                   />
-                  <span className="text-[11px] font-medium text-[#ef4444] whitespace-nowrap shrink-0">- ₹{totals.discountAmount}</span>
                 </div>
+                {parseFloat(totals.discountAmount) > 0 && (
+                  <div className="flex justify-end mt-1">
+                    <span className="text-[11px] font-medium text-[#ef4444]">- ₹{totals.discountAmount}</span>
+                  </div>
+                )}
               </div>
 
               {/* TDS / TCS - temporarily disabled */}
