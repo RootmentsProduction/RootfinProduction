@@ -197,7 +197,8 @@ const createFinancialTransaction = async (invoice) => {
       category: invoice.category || "Sales", // Use invoice category for transaction category
       subCategory: invoice.subCategory || "General", // Use invoice subCategory for transaction subCategory
       remark: invoice.remark || invoice.customerNotes || invoice.subject || `Invoice for ${invoice.customer}`, // Use actual remarks from invoice
-      billValue: invoice.finalTotal,
+      billValue: parseFloat(invoice.subTotal || invoice.finalTotal || 0), // subTotal = before discount (bill value)
+      discountAmount: parseFloat(invoice.discountAmount || 0), // discount applied
       amount: invoice.finalTotal.toString(),
       cash: cash,
       rbl: rbl,
@@ -258,7 +259,8 @@ const updateFinancialTransaction = async (invoice) => {
       category: invoice.category || "Sales",
       subCategory: invoice.subCategory || "General",
       remark: invoice.remark || invoice.customerNotes || invoice.subject || `Invoice for ${invoice.customer}`,
-      billValue: invoice.finalTotal,
+      billValue: parseFloat(invoice.subTotal || invoice.finalTotal || 0), // subTotal = pre-discount bill value
+      discountAmount: parseFloat(invoice.discountAmount || 0),
       amount: invoice.finalTotal.toString(),
       cash: cash,
       rbl: rbl,
