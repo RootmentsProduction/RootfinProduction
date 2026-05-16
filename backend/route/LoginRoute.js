@@ -291,33 +291,44 @@ router.post('/syncTransaction', async (req, res) => {
   try {
     console.log("Incoming sync data:", req.body);
     
-    // Check if transaction with this invoiceNo already exists
-    const existingTransaction = await Transaction.findOne({ 
+    const filter = { 
       invoiceNo: req.body.invoiceNo,
-      locCode: req.body.locCode 
-    });
-    
-    if (existingTransaction) {
-      // Update existing transaction
-      const updatedTransaction = await Transaction.findByIdAndUpdate(
-        existingTransaction._id,
-        {
-          ...req.body,
-          editedBy: req.body.editedBy || "sync",
-          editedAt: new Date()
-        },
-        { new: true }
-      );
-      return res.status(200).json({ message: "Updated", data: updatedTransaction });
-    }
-    
-    // Create new transaction with editedBy set
-    const newTransaction = await Transaction.create({
+      locCode: req.body.locCode,
+      type: req.body.type,
+    };
+
+    const updateData = {
       ...req.body,
       editedBy: req.body.editedBy || "sync",
       editedAt: new Date()
-    });
-    return res.status(201).json({ message: "Synced", data: newTransaction });
+    };
+
+    // Try atomic upsert first (compound key: invoiceNo + locCode + type)
+    try {
+      const result = await Transaction.findOneAndUpdate(
+        filter,
+        { $set: updateData },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      const status = result ? 200 : 201;
+      return res.status(status).json({ message: "Synced", data: result });
+    } catch (upsertErr) {
+      // If unique index on invoiceNo blocks the upsert (duplicate key), fall back to update-only
+      if (upsertErr.code === 11000) {
+        console.warn("⚠️ Duplicate key on invoiceNo — falling back to update by invoiceNo+locCode");
+        const fallback = await Transaction.findOneAndUpdate(
+          { invoiceNo: req.body.invoiceNo, locCode: req.body.locCode },
+          { $set: updateData },
+          { new: true }
+        );
+        if (fallback) {
+          return res.status(200).json({ message: "Updated (fallback)", data: fallback });
+        }
+        // If still not found, return the error
+        return res.status(409).json({ error: "Duplicate invoiceNo — could not sync." });
+      }
+      throw upsertErr;
+    }
   } catch (err) {
     console.error("Sync error:", err);
     return res.status(500).json({ error: err.message });

@@ -100,7 +100,7 @@ const transactionSchema = new mongoose.Schema(
   {
     type:         { type: String, required: true },
 
-    invoiceNo:    { type: String, required: true, unique: true },
+    invoiceNo:    { type: String, required: true },
 
     category:     { type: String, required: true },
     subCategory:  { type: String, default: "" }, // Added missing subCategory field
@@ -130,6 +130,7 @@ const transactionSchema = new mongoose.Schema(
     Balance:         { type: Number, default: 0 },
     subCategory1:    { type: String, default: "" },
     totalTransaction:{ type: Number, default: 0 },
+    discountAmount:  { type: Number, default: 0 },
 
     /* Edit tracking fields */
     editedBy:     { type: String },
@@ -152,8 +153,8 @@ transactionSchema.index({ locCode: 1, date: -1 });
 transactionSchema.index({ date: -1 });
 // Index for getEditedTransactions query (locCode + date + editedBy exists)
 transactionSchema.index({ locCode: 1, date: -1, editedBy: 1 });
-// Index for invoice lookups
-transactionSchema.index({ invoiceNo: 1 });
+// Compound unique index: one record per invoiceNo+locCode+type (allows Booking and RentOut with same invoiceNo)
+transactionSchema.index({ invoiceNo: 1, locCode: 1, type: 1 }, { unique: true, sparse: true });
 
 const Transaction = mongoose.model("Transaction", transactionSchema);
 export default Transaction;

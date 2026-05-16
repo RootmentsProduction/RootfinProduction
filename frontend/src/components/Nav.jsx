@@ -314,12 +314,15 @@ const Nav = () => {
 
 
                             {/* Admin only */}
-                            {currentuser.power === 'admin' && (
+                            {(currentuser.power === 'admin' || currentuser.locCode === '102') && (
                                 <>
-                                    <Link to="/CloseReport" className={singleLinkClasses("/CloseReport")}><FolderClosed size={18} /><span>Close Report</span></Link>
+                                    {currentuser.power === 'admin' && (
+                                        <Link to="/CloseReport" className={singleLinkClasses("/CloseReport")}><FolderClosed size={18} /><span>Close Report</span></Link>
+                                    )}
                                     <Link to="/AdminClose" className={singleLinkClasses("/AdminClose")}><Notebook size={18} /><span>Admin Close</span></Link>
                                     
-                                    {/* Manage Users */}
+                                    {/* Manage Users — admin only */}
+                                    {currentuser.power === 'admin' && (
                                     <div>
                                         <button onClick={() => setOpenSection(isManageUsersOpen ? null : "manageUsers")} className={groupButtonClasses(isManageUsersActive || isManageUsersOpen)}>
                                             <div className="flex w-full items-center gap-3">
@@ -336,6 +339,7 @@ const Nav = () => {
                                             </div>
                                         )}
                                     </div>
+                                    )}
                                 </>
                             )}
                         </>
