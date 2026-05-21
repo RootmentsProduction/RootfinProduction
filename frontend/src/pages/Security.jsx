@@ -47,6 +47,7 @@ const AllLoation = [
   { locName: "G.Kalpetta",    locCode: "717" },
   { locName: "G.Kannur",      locCode: "716" },
   { locName: "G.Mg Road",     locCode: "718" },
+  { locName: "Dappr Squad",     locCode: "555" },
 ];
 const getStoreName = (c) => AllLoation.find((l) => l.locCode === c)?.locName || "Unknown";
 
