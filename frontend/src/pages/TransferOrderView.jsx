@@ -247,7 +247,7 @@ const TransferOrderView = () => {
     }
     
     // Find matching item by SKU or itemId — with fallback fuzzy matching
-    const matchedItem = transferOrder.items.find(item => {
+    let matchedItem = transferOrder.items.find(item => {
       const itemSku = (item.itemSku || "").toString().trim();
       const itemId = (item.itemId || "").toString().trim();
       const itemName = (item.itemName || "").toString().trim();

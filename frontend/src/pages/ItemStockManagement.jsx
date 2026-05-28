@@ -4,6 +4,27 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { X, Trash2, Plus } from "lucide-react";
 import baseUrl from "../api/api";
 
+// Normalize warehouse name variants to canonical display names
+const WAREHOUSE_NORMALIZE = {
+  "SuitorGuy MG Road": "MG Road",
+  "MG Road Branch": "MG Road",
+  "G.MG Road": "MG Road",
+  "G-MG Road": "MG Road",
+  "G.Mg Road": "MG Road",
+  "G-Mg Road": "MG Road",
+  "GMG Road": "MG Road",
+  "GMg Road": "MG Road",
+  "Grooms Trivandum": "Grooms Trivandum", // keep as-is (matches WAREHOUSES)
+  "Edapallyadmin Branch": "Edapally Branch",
+  "Edapallyadmin": "Edapally Branch",
+  "Z-Edapally1": "Edapally Branch",
+};
+
+const normalizeWarehouseName = (name) => {
+  if (!name) return name;
+  return WAREHOUSE_NORMALIZE[name.trim()] || name.trim();
+};
+
 // Warehouse names for the dropdown
 const WAREHOUSES = [
   "Palakkad Branch",
@@ -77,14 +98,14 @@ const ItemStockManagement = () => {
             // Load existing warehouse stocks if available
             if (foundItem.warehouseStocks && Array.isArray(foundItem.warehouseStocks) && foundItem.warehouseStocks.length > 0) {
               const existingRows = foundItem.warehouseStocks
-                .filter(stock => stock.warehouse && WAREHOUSES.includes(stock.warehouse))
+                .filter(stock => stock.warehouse && WAREHOUSES.includes(normalizeWarehouseName(stock.warehouse)))
                 .map(stock => {
                   // ALWAYS use stockOnHand for current stock display
                   const stockOnHandValue = parseFloat(stock.stockOnHand) || 0;
                   const physicalStockOnHandValue = parseFloat(stock.physicalStockOnHand) || 0;
                   
                   return {
-                    warehouse: stock.warehouse || "",
+                    warehouse: normalizeWarehouseName(stock.warehouse) || "",
                     openingStock: stockOnHandValue.toString(),
                     openingStockValue: stock.openingStockValue?.toString() || "0",
                     physicalOpeningStock: physicalStockOnHandValue.toString()
@@ -143,14 +164,14 @@ const ItemStockManagement = () => {
                 // Update stock rows with new data
                 if (foundItem.warehouseStocks && Array.isArray(foundItem.warehouseStocks) && foundItem.warehouseStocks.length > 0) {
                   const existingRows = foundItem.warehouseStocks
-                    .filter(stock => stock.warehouse && WAREHOUSES.includes(stock.warehouse))
+                    .filter(stock => stock.warehouse && WAREHOUSES.includes(normalizeWarehouseName(stock.warehouse)))
                     .map(stock => {
                       // ALWAYS use stockOnHand for current stock display
                       const stockOnHandValue = parseFloat(stock.stockOnHand) || 0;
                       const physicalStockOnHandValue = parseFloat(stock.physicalStockOnHand) || 0;
                       
                       return {
-                        warehouse: stock.warehouse || "",
+                        warehouse: normalizeWarehouseName(stock.warehouse) || "",
                         openingStock: stockOnHandValue.toString(),
                         openingStockValue: stock.openingStockValue?.toString() || "0",
                         physicalOpeningStock: physicalStockOnHandValue.toString()

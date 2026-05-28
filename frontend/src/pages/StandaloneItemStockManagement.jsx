@@ -7,6 +7,26 @@ import baseUrl from "../api/api";
 
 const API_ROOT = (baseUrl?.baseUrl || "").replace(/\/$/, "");
 
+// Normalize warehouse name variants to canonical display names
+const WAREHOUSE_NORMALIZE = {
+  "SuitorGuy MG Road": "MG Road",
+  "MG Road Branch": "MG Road",
+  "G.MG Road": "MG Road",
+  "G-MG Road": "MG Road",
+  "G.Mg Road": "MG Road",
+  "G-Mg Road": "MG Road",
+  "GMG Road": "MG Road",
+  "GMg Road": "MG Road",
+  "Edapallyadmin Branch": "Edapally Branch",
+  "Edapallyadmin": "Edapally Branch",
+  "Z-Edapally1": "Edapally Branch",
+};
+
+const normalizeWarehouseName = (name) => {
+  if (!name) return name;
+  return WAREHOUSE_NORMALIZE[name.trim()] || name.trim();
+};
+
 // Warehouse names for the dropdown
 const WAREHOUSES = [
   "Palakkad Branch",
@@ -77,8 +97,8 @@ const StandaloneItemStockManagement = () => {
         if (data.warehouseStocks && Array.isArray(data.warehouseStocks) && data.warehouseStocks.length > 0) {
           const existingRows = data.warehouseStocks
             .filter(stock => {
-              // Only include warehouses that are in the allowed list
-              if (!stock.warehouse || !WAREHOUSES.includes(stock.warehouse)) {
+              // Only include warehouses that are in the allowed list (normalize name first)
+              if (!stock.warehouse || !WAREHOUSES.includes(normalizeWarehouseName(stock.warehouse))) {
                 return false;
               }
               // Only include warehouses with actual stock (> 0)
@@ -107,7 +127,7 @@ const StandaloneItemStockManagement = () => {
               const physicalOpeningStockValue = parseFloat(stock.physicalOpeningStock) || 0;
               
               return {
-                warehouse: stock.warehouse || "",
+                warehouse: normalizeWarehouseName(stock.warehouse) || "",
                 openingStock: stockOnHandValue.toString(),  // Display current stock
                 openingStockValue: stock.openingStockValue?.toString() || "0",
                 physicalOpeningStock: physicalStockOnHandValue.toString()  // Display current physical stock
@@ -157,8 +177,8 @@ const StandaloneItemStockManagement = () => {
             if (data.warehouseStocks && Array.isArray(data.warehouseStocks) && data.warehouseStocks.length > 0) {
               const existingRows = data.warehouseStocks
                 .filter(stock => {
-                  // Only include warehouses that are in the allowed list
-                  if (!stock.warehouse || !WAREHOUSES.includes(stock.warehouse)) {
+                  // Only include warehouses that are in the allowed list (normalize name first)
+                  if (!stock.warehouse || !WAREHOUSES.includes(normalizeWarehouseName(stock.warehouse))) {
                     return false;
                   }
                   // Only include warehouses with actual stock (> 0)
@@ -176,7 +196,7 @@ const StandaloneItemStockManagement = () => {
                   const physicalStockOnHandValue = parseFloat(stock.physicalStockOnHand) || 0;
                   
                   return {
-                    warehouse: stock.warehouse || "",
+                    warehouse: normalizeWarehouseName(stock.warehouse) || "",
                     openingStock: stockOnHandValue.toString(),
                     openingStockValue: stock.openingStockValue?.toString() || "0",
                     physicalOpeningStock: physicalStockOnHandValue.toString()
