@@ -92,12 +92,15 @@ const WAREHOUSE_NAME_MAPPING = {
   "Kottayam Branch": "Kottayam Branch",
   
   // MG Road variations
-  "G.MG Road": "SuitorGuy MG Road",
-  "G.Mg Road": "SuitorGuy MG Road",
-  "GMG Road": "SuitorGuy MG Road",
-  "GMg Road": "SuitorGuy MG Road",
-  "MG Road": "SuitorGuy MG Road",
-  "SuitorGuy MG Road": "SuitorGuy MG Road",
+  "G.MG Road": "MG Road",
+  "G-MG Road": "MG Road",
+  "G.Mg Road": "MG Road",
+  "G-Mg Road": "MG Road",
+  "GMG Road": "MG Road",
+  "GMg Road": "MG Road",
+  "MG Road": "MG Road",
+  "SuitorGuy MG Road": "MG Road",
+  "MG Road Branch": "MG Road",
   
   // Head Office variations
   "HEAD OFFICE01": "Head Office",
@@ -262,150 +265,131 @@ const updateWarehouseStock = (warehouseStocks, quantityChange, targetWarehouse, 
   return warehouseStocks;
 };
 
-// Transfer stock for an item
+// Transfer stock for an item (atomic - safe for concurrent transfers)
 const transferItemStock = async (itemIdValue, quantity, sourceWarehouse, destinationWarehouse, itemName = null, itemGroupId = null, itemSku = null) => {
   const sourceWarehouseName = sourceWarehouse?.trim() || "Warehouse";
   const destWarehouseName = destinationWarehouse?.trim() || "Warehouse";
-  
+
   // Try standalone item first
   if (itemIdValue && itemIdValue !== null && itemIdValue !== "null") {
     const shoeItem = await ShoeItem.findById(itemIdValue);
     if (shoeItem) {
-      // Convert to plain object, modify, then update using $set (same fix as PurchaseReceiveController)
       const itemPlain = shoeItem.toObject();
-      
       if (!itemPlain.warehouseStocks || !Array.isArray(itemPlain.warehouseStocks)) {
         itemPlain.warehouseStocks = [];
       }
-      
-      // Helper to find or create warehouse stock entry
-      const getOrCreateWarehouseStock = (warehouseName) => {
-        let wsEntry = itemPlain.warehouseStocks.find(ws => 
-          matchesWarehouse(ws.warehouse, warehouseName)
-        );
-        
-        if (!wsEntry) {
-          wsEntry = {
-            warehouse: warehouseName,
-            openingStock: 0,
-            openingStockValue: 0,
-            stockOnHand: 0,
-            committedStock: 0,
-            availableForSale: 0,
-            physicalOpeningStock: 0,
-            physicalStockOnHand: 0,
-            physicalCommittedStock: 0,
-            physicalAvailableForSale: 0,
-          };
-          itemPlain.warehouseStocks.push(wsEntry);
-        }
-        return wsEntry;
-      };
-      
-      // Subtract from source warehouse
-      const sourceWs = getOrCreateWarehouseStock(sourceWarehouseName);
-      const sourceCurrentStock = parseFloat(sourceWs.stockOnHand) || 0;
-      sourceWs.stockOnHand = Math.max(0, sourceCurrentStock - quantity);
-      sourceWs.availableForSale = Math.max(0, (parseFloat(sourceWs.availableForSale) || 0) - quantity);
-      sourceWs.physicalStockOnHand = Math.max(0, (parseFloat(sourceWs.physicalStockOnHand) || 0) - quantity);
-      sourceWs.physicalAvailableForSale = Math.max(0, (parseFloat(sourceWs.physicalAvailableForSale) || 0) - quantity);
-      sourceWs.warehouse = sourceWarehouseName;
-      
-      // Add to destination warehouse
-      const destWs = getOrCreateWarehouseStock(destWarehouseName);
-      const destCurrentStock = parseFloat(destWs.stockOnHand) || 0;
-      destWs.stockOnHand = destCurrentStock + quantity;
-      destWs.availableForSale = (parseFloat(destWs.availableForSale) || 0) + quantity;
-      destWs.physicalStockOnHand = (parseFloat(destWs.physicalStockOnHand) || 0) + quantity;
-      destWs.physicalAvailableForSale = (parseFloat(destWs.physicalAvailableForSale) || 0) + quantity;
-      destWs.warehouse = destWarehouseName;
-      
-      // Update using $set
-      await ShoeItem.findByIdAndUpdate(
-        itemIdValue,
+
+      const sourceWs = itemPlain.warehouseStocks.find(ws => matchesWarehouse(ws.warehouse, sourceWarehouseName));
+      if (!sourceWs) return { success: false, message: `Source warehouse "${sourceWarehouseName}" not found for item "${itemName || itemIdValue}"` };
+
+      const destWs = itemPlain.warehouseStocks.find(ws => matchesWarehouse(ws.warehouse, destWarehouseName));
+      if (!destWs) {
+        // Create destination entry first so $inc can target it
+        await ShoeItem.findByIdAndUpdate(itemIdValue, {
+          $push: {
+            warehouseStocks: {
+              warehouse: destWarehouseName, openingStock: 0, openingStockValue: 0,
+              stockOnHand: 0, committedStock: 0, availableForSale: 0,
+              physicalOpeningStock: 0, physicalStockOnHand: 0, physicalCommittedStock: 0, physicalAvailableForSale: 0
+            }
+          }
+        });
+      }
+
+      // Atomic deduct from source
+      await ShoeItem.findOneAndUpdate(
+        { _id: itemIdValue, "warehouseStocks.warehouse": sourceWs.warehouse },
         {
-          $set: {
-            warehouseStocks: itemPlain.warehouseStocks
+          $inc: {
+            "warehouseStocks.$.stockOnHand": -quantity,
+            "warehouseStocks.$.availableForSale": -quantity,
+            "warehouseStocks.$.physicalStockOnHand": -quantity,
+            "warehouseStocks.$.physicalAvailableForSale": -quantity,
           }
         }
       );
-      
+      // Clamp negatives to 0 (rare edge case)
+      await ShoeItem.findOneAndUpdate(
+        { _id: itemIdValue, "warehouseStocks.warehouse": sourceWs.warehouse, "warehouseStocks.stockOnHand": { $lt: 0 } },
+        { $set: { "warehouseStocks.$.stockOnHand": 0, "warehouseStocks.$.availableForSale": 0, "warehouseStocks.$.physicalStockOnHand": 0, "warehouseStocks.$.physicalAvailableForSale": 0 } }
+      );
+
+      // Atomic add to destination
+      await ShoeItem.findOneAndUpdate(
+        { _id: itemIdValue, "warehouseStocks.warehouse": destWs ? destWs.warehouse : destWarehouseName },
+        {
+          $inc: {
+            "warehouseStocks.$.stockOnHand": quantity,
+            "warehouseStocks.$.availableForSale": quantity,
+            "warehouseStocks.$.physicalStockOnHand": quantity,
+            "warehouseStocks.$.physicalAvailableForSale": quantity,
+          }
+        }
+      );
+
       return { success: true, type: 'standalone' };
     }
   }
-  
+
   // Try item groups
   if (itemGroupId && itemName) {
     const group = await ItemGroup.findById(itemGroupId);
     if (group) {
       const itemIndex = group.items.findIndex(item => {
-        if (itemSku && item.sku) {
-          return item.sku.toLowerCase() === itemSku.toLowerCase();
-        }
+        if (itemSku && item.sku) return item.sku.toLowerCase() === itemSku.toLowerCase();
         return item.name.toLowerCase() === itemName.toLowerCase();
       });
-      
+
       if (itemIndex !== -1) {
-        // Convert to plain object, modify, then update using $set
         const groupPlain = group.toObject();
         const itemPlain = groupPlain.items[itemIndex];
-        
-        if (!itemPlain.warehouseStocks) {
-          itemPlain.warehouseStocks = [];
-        }
-        
-        // Helper to find or create warehouse stock entry
-        const getOrCreateWarehouseStock = (warehouseName) => {
-          let wsEntry = itemPlain.warehouseStocks.find(ws => 
-            matchesWarehouse(ws.warehouse, warehouseName)
-          );
-          
-          if (!wsEntry) {
-            wsEntry = {
-              warehouse: warehouseName,
-              openingStock: 0,
-              openingStockValue: 0,
-              stockOnHand: 0,
-              committedStock: 0,
-              availableForSale: 0,
-              physicalOpeningStock: 0,
-              physicalStockOnHand: 0,
-              physicalCommittedStock: 0,
-              physicalAvailableForSale: 0,
-            };
-            itemPlain.warehouseStocks.push(wsEntry);
-          }
-          return wsEntry;
-        };
-        
-        // Subtract from source warehouse
-        const sourceWs = getOrCreateWarehouseStock(sourceWarehouseName);
-        const sourceCurrentStock = parseFloat(sourceWs.stockOnHand) || 0;
-        sourceWs.stockOnHand = Math.max(0, sourceCurrentStock - quantity);
-        sourceWs.availableForSale = Math.max(0, (parseFloat(sourceWs.availableForSale) || 0) - quantity);
-        sourceWs.physicalStockOnHand = Math.max(0, (parseFloat(sourceWs.physicalStockOnHand) || 0) - quantity);
-        sourceWs.physicalAvailableForSale = Math.max(0, (parseFloat(sourceWs.physicalAvailableForSale) || 0) - quantity);
-        sourceWs.warehouse = sourceWarehouseName;
-        
-        // Add to destination warehouse
-        const destWs = getOrCreateWarehouseStock(destWarehouseName);
-        const destCurrentStock = parseFloat(destWs.stockOnHand) || 0;
-        destWs.stockOnHand = destCurrentStock + quantity;
-        destWs.availableForSale = (parseFloat(destWs.availableForSale) || 0) + quantity;
-        destWs.physicalStockOnHand = (parseFloat(destWs.physicalStockOnHand) || 0) + quantity;
-        destWs.physicalAvailableForSale = (parseFloat(destWs.physicalAvailableForSale) || 0) + quantity;
-        destWs.warehouse = destWarehouseName;
-        
-        // Update using $set
-        await ItemGroup.findByIdAndUpdate(
-          itemGroupId,
-          {
-            $set: {
-              [`items.${itemIndex}`]: itemPlain
+        if (!itemPlain.warehouseStocks) itemPlain.warehouseStocks = [];
+
+        const sourceWs = itemPlain.warehouseStocks.find(ws => matchesWarehouse(ws.warehouse, sourceWarehouseName));
+        if (!sourceWs) return { success: false, message: `Source warehouse "${sourceWarehouseName}" not found for item "${itemName}"` };
+
+        const destWs = itemPlain.warehouseStocks.find(ws => matchesWarehouse(ws.warehouse, destWarehouseName));
+        if (!destWs) {
+          // Create destination entry first
+          await ItemGroup.findByIdAndUpdate(itemGroupId, {
+            $push: {
+              [`items.${itemIndex}.warehouseStocks`]: {
+                warehouse: destWarehouseName, openingStock: 0, openingStockValue: 0,
+                stockOnHand: 0, committedStock: 0, availableForSale: 0,
+                physicalOpeningStock: 0, physicalStockOnHand: 0, physicalCommittedStock: 0, physicalAvailableForSale: 0
+              }
             }
-          }
+          });
+        }
+
+        // Atomic deduct from source
+        await ItemGroup.findOneAndUpdate(
+          { _id: itemGroupId },
+          {
+            $inc: {
+              [`items.${itemIndex}.warehouseStocks.$[ws].stockOnHand`]: -quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].availableForSale`]: -quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].physicalStockOnHand`]: -quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].physicalAvailableForSale`]: -quantity,
+            }
+          },
+          { arrayFilters: [{ "ws.warehouse": sourceWs.warehouse }] }
         );
-        
+
+        // Atomic add to destination
+        await ItemGroup.findOneAndUpdate(
+          { _id: itemGroupId },
+          {
+            $inc: {
+              [`items.${itemIndex}.warehouseStocks.$[ws].stockOnHand`]: quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].availableForSale`]: quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].physicalStockOnHand`]: quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].physicalAvailableForSale`]: quantity,
+            }
+          },
+          { arrayFilters: [{ "ws.warehouse": destWs ? destWs.warehouse : destWarehouseName }] }
+        );
+
         // Update monthly opening stock for transfer
         try {
           const itemId = itemPlain._id?.toString() || itemPlain.id?.toString();
@@ -415,12 +399,12 @@ const transferItemStock = async (itemIdValue, quantity, sourceWarehouse, destina
         } catch (monthlyError) {
           console.error(`   ⚠️ Error updating monthly stock (non-critical):`, monthlyError);
         }
-        
+
         return { success: true, type: 'group' };
       }
     }
   }
-  
+
   return { success: false, message: `Item "${itemName || itemIdValue}" not found` };
 };
 
@@ -584,17 +568,32 @@ const deductSourceStock = async (itemIdValue, quantity, sourceWarehouse, itemNam
   if (itemIdValue && itemIdValue !== null && itemIdValue !== "null") {
     const shoeItem = await ShoeItem.findById(itemIdValue);
     if (shoeItem) {
+      // Use atomic $inc with arrayFilters to avoid race conditions when multiple
+      // transfers are created simultaneously for the same item
       const itemPlain = shoeItem.toObject();
       if (!itemPlain.warehouseStocks || !Array.isArray(itemPlain.warehouseStocks)) {
-        itemPlain.warehouseStocks = [];
+        return { success: false, message: `No warehouseStocks for item "${itemName || itemIdValue}"` };
       }
       const sourceWs = itemPlain.warehouseStocks.find(ws => matchesWarehouse(ws.warehouse, sourceWarehouseName));
       if (!sourceWs) return { success: false, message: `Source warehouse "${sourceWarehouseName}" not found for item "${itemName || itemIdValue}"` };
-      sourceWs.stockOnHand = Math.max(0, (parseFloat(sourceWs.stockOnHand) || 0) - quantity);
-      sourceWs.availableForSale = Math.max(0, (parseFloat(sourceWs.availableForSale) || 0) - quantity);
-      sourceWs.physicalStockOnHand = Math.max(0, (parseFloat(sourceWs.physicalStockOnHand) || 0) - quantity);
-      sourceWs.physicalAvailableForSale = Math.max(0, (parseFloat(sourceWs.physicalAvailableForSale) || 0) - quantity);
-      await ShoeItem.findByIdAndUpdate(itemIdValue, { $set: { warehouseStocks: itemPlain.warehouseStocks } });
+
+      // Use atomic $inc to avoid overwriting concurrent updates
+      await ShoeItem.findOneAndUpdate(
+        { _id: itemIdValue, "warehouseStocks.warehouse": sourceWs.warehouse },
+        {
+          $inc: {
+            "warehouseStocks.$.stockOnHand": -quantity,
+            "warehouseStocks.$.availableForSale": -quantity,
+            "warehouseStocks.$.physicalStockOnHand": -quantity,
+            "warehouseStocks.$.physicalAvailableForSale": -quantity,
+          }
+        }
+      );
+      // Clamp negatives to 0 in a second pass (rare edge case)
+      await ShoeItem.findOneAndUpdate(
+        { _id: itemIdValue, "warehouseStocks.warehouse": sourceWs.warehouse, "warehouseStocks.stockOnHand": { $lt: 0 } },
+        { $set: { "warehouseStocks.$.stockOnHand": 0, "warehouseStocks.$.availableForSale": 0, "warehouseStocks.$.physicalStockOnHand": 0, "warehouseStocks.$.physicalAvailableForSale": 0 } }
+      );
       return { success: true, type: 'standalone' };
     }
   }
@@ -612,11 +611,20 @@ const deductSourceStock = async (itemIdValue, quantity, sourceWarehouse, itemNam
         if (!itemPlain.warehouseStocks) itemPlain.warehouseStocks = [];
         const sourceWs = itemPlain.warehouseStocks.find(ws => matchesWarehouse(ws.warehouse, sourceWarehouseName));
         if (!sourceWs) return { success: false, message: `Source warehouse "${sourceWarehouseName}" not found for item "${itemName}"` };
-        sourceWs.stockOnHand = Math.max(0, (parseFloat(sourceWs.stockOnHand) || 0) - quantity);
-        sourceWs.availableForSale = Math.max(0, (parseFloat(sourceWs.availableForSale) || 0) - quantity);
-        sourceWs.physicalStockOnHand = Math.max(0, (parseFloat(sourceWs.physicalStockOnHand) || 0) - quantity);
-        sourceWs.physicalAvailableForSale = Math.max(0, (parseFloat(sourceWs.physicalAvailableForSale) || 0) - quantity);
-        await ItemGroup.findByIdAndUpdate(itemGroupId, { $set: { [`items.${itemIndex}`]: itemPlain } });
+
+        // Use atomic $inc with arrayFilters to avoid race conditions
+        await ItemGroup.findOneAndUpdate(
+          { _id: itemGroupId },
+          {
+            $inc: {
+              [`items.${itemIndex}.warehouseStocks.$[ws].stockOnHand`]: -quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].availableForSale`]: -quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].physicalStockOnHand`]: -quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].physicalAvailableForSale`]: -quantity,
+            }
+          },
+          { arrayFilters: [{ "ws.warehouse": sourceWs.warehouse }] }
+        );
         return { success: true, type: 'group' };
       }
     }
@@ -638,14 +646,29 @@ const addDestinationStock = async (itemIdValue, quantity, destinationWarehouse, 
       }
       let destWs = itemPlain.warehouseStocks.find(ws => matchesWarehouse(ws.warehouse, destWarehouseName));
       if (!destWs) {
-        destWs = { warehouse: destWarehouseName, openingStock: 0, openingStockValue: 0, stockOnHand: 0, committedStock: 0, availableForSale: 0, physicalOpeningStock: 0, physicalStockOnHand: 0, physicalCommittedStock: 0, physicalAvailableForSale: 0 };
-        itemPlain.warehouseStocks.push(destWs);
+        // Create the entry first, then use $inc atomically
+        await ShoeItem.findByIdAndUpdate(itemIdValue, {
+          $push: {
+            warehouseStocks: {
+              warehouse: destWarehouseName, openingStock: 0, openingStockValue: 0,
+              stockOnHand: 0, committedStock: 0, availableForSale: 0,
+              physicalOpeningStock: 0, physicalStockOnHand: 0, physicalCommittedStock: 0, physicalAvailableForSale: 0
+            }
+          }
+        });
       }
-      destWs.stockOnHand = (parseFloat(destWs.stockOnHand) || 0) + quantity;
-      destWs.availableForSale = (parseFloat(destWs.availableForSale) || 0) + quantity;
-      destWs.physicalStockOnHand = (parseFloat(destWs.physicalStockOnHand) || 0) + quantity;
-      destWs.physicalAvailableForSale = (parseFloat(destWs.physicalAvailableForSale) || 0) + quantity;
-      await ShoeItem.findByIdAndUpdate(itemIdValue, { $set: { warehouseStocks: itemPlain.warehouseStocks } });
+      // Use atomic $inc to avoid race conditions
+      await ShoeItem.findOneAndUpdate(
+        { _id: itemIdValue, "warehouseStocks.warehouse": destWs ? destWs.warehouse : destWarehouseName },
+        {
+          $inc: {
+            "warehouseStocks.$.stockOnHand": quantity,
+            "warehouseStocks.$.availableForSale": quantity,
+            "warehouseStocks.$.physicalStockOnHand": quantity,
+            "warehouseStocks.$.physicalAvailableForSale": quantity,
+          }
+        }
+      );
       return { success: true, type: 'standalone' };
     }
   }
@@ -663,14 +686,30 @@ const addDestinationStock = async (itemIdValue, quantity, destinationWarehouse, 
         if (!itemPlain.warehouseStocks) itemPlain.warehouseStocks = [];
         let destWs = itemPlain.warehouseStocks.find(ws => matchesWarehouse(ws.warehouse, destWarehouseName));
         if (!destWs) {
-          destWs = { warehouse: destWarehouseName, openingStock: 0, openingStockValue: 0, stockOnHand: 0, committedStock: 0, availableForSale: 0, physicalOpeningStock: 0, physicalStockOnHand: 0, physicalCommittedStock: 0, physicalAvailableForSale: 0 };
-          itemPlain.warehouseStocks.push(destWs);
+          // Create the entry first
+          await ItemGroup.findByIdAndUpdate(itemGroupId, {
+            $push: {
+              [`items.${itemIndex}.warehouseStocks`]: {
+                warehouse: destWarehouseName, openingStock: 0, openingStockValue: 0,
+                stockOnHand: 0, committedStock: 0, availableForSale: 0,
+                physicalOpeningStock: 0, physicalStockOnHand: 0, physicalCommittedStock: 0, physicalAvailableForSale: 0
+              }
+            }
+          });
         }
-        destWs.stockOnHand = (parseFloat(destWs.stockOnHand) || 0) + quantity;
-        destWs.availableForSale = (parseFloat(destWs.availableForSale) || 0) + quantity;
-        destWs.physicalStockOnHand = (parseFloat(destWs.physicalStockOnHand) || 0) + quantity;
-        destWs.physicalAvailableForSale = (parseFloat(destWs.physicalAvailableForSale) || 0) + quantity;
-        await ItemGroup.findByIdAndUpdate(itemGroupId, { $set: { [`items.${itemIndex}`]: itemPlain } });
+        // Use atomic $inc with arrayFilters to avoid race conditions
+        await ItemGroup.findOneAndUpdate(
+          { _id: itemGroupId },
+          {
+            $inc: {
+              [`items.${itemIndex}.warehouseStocks.$[ws].stockOnHand`]: quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].availableForSale`]: quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].physicalStockOnHand`]: quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].physicalAvailableForSale`]: quantity,
+            }
+          },
+          { arrayFilters: [{ "ws.warehouse": destWs ? destWs.warehouse : destWarehouseName }] }
+        );
         return { success: true, type: 'group' };
       }
     }
@@ -690,14 +729,28 @@ const restoreSourceStock = async (itemIdValue, quantity, sourceWarehouse, itemNa
       if (!itemPlain.warehouseStocks || !Array.isArray(itemPlain.warehouseStocks)) itemPlain.warehouseStocks = [];
       let sourceWs = itemPlain.warehouseStocks.find(ws => matchesWarehouse(ws.warehouse, sourceWarehouseName));
       if (!sourceWs) {
-        sourceWs = { warehouse: sourceWarehouseName, openingStock: 0, openingStockValue: 0, stockOnHand: 0, committedStock: 0, availableForSale: 0, physicalOpeningStock: 0, physicalStockOnHand: 0, physicalCommittedStock: 0, physicalAvailableForSale: 0 };
-        itemPlain.warehouseStocks.push(sourceWs);
+        await ShoeItem.findByIdAndUpdate(itemIdValue, {
+          $push: {
+            warehouseStocks: {
+              warehouse: sourceWarehouseName, openingStock: 0, openingStockValue: 0,
+              stockOnHand: 0, committedStock: 0, availableForSale: 0,
+              physicalOpeningStock: 0, physicalStockOnHand: 0, physicalCommittedStock: 0, physicalAvailableForSale: 0
+            }
+          }
+        });
       }
-      sourceWs.stockOnHand = (parseFloat(sourceWs.stockOnHand) || 0) + quantity;
-      sourceWs.availableForSale = (parseFloat(sourceWs.availableForSale) || 0) + quantity;
-      sourceWs.physicalStockOnHand = (parseFloat(sourceWs.physicalStockOnHand) || 0) + quantity;
-      sourceWs.physicalAvailableForSale = (parseFloat(sourceWs.physicalAvailableForSale) || 0) + quantity;
-      await ShoeItem.findByIdAndUpdate(itemIdValue, { $set: { warehouseStocks: itemPlain.warehouseStocks } });
+      // Use atomic $inc to avoid race conditions
+      await ShoeItem.findOneAndUpdate(
+        { _id: itemIdValue, "warehouseStocks.warehouse": sourceWs ? sourceWs.warehouse : sourceWarehouseName },
+        {
+          $inc: {
+            "warehouseStocks.$.stockOnHand": quantity,
+            "warehouseStocks.$.availableForSale": quantity,
+            "warehouseStocks.$.physicalStockOnHand": quantity,
+            "warehouseStocks.$.physicalAvailableForSale": quantity,
+          }
+        }
+      );
       return { success: true, type: 'standalone' };
     }
   }
@@ -715,14 +768,29 @@ const restoreSourceStock = async (itemIdValue, quantity, sourceWarehouse, itemNa
         if (!itemPlain.warehouseStocks) itemPlain.warehouseStocks = [];
         let sourceWs = itemPlain.warehouseStocks.find(ws => matchesWarehouse(ws.warehouse, sourceWarehouseName));
         if (!sourceWs) {
-          sourceWs = { warehouse: sourceWarehouseName, openingStock: 0, openingStockValue: 0, stockOnHand: 0, committedStock: 0, availableForSale: 0, physicalOpeningStock: 0, physicalStockOnHand: 0, physicalCommittedStock: 0, physicalAvailableForSale: 0 };
-          itemPlain.warehouseStocks.push(sourceWs);
+          await ItemGroup.findByIdAndUpdate(itemGroupId, {
+            $push: {
+              [`items.${itemIndex}.warehouseStocks`]: {
+                warehouse: sourceWarehouseName, openingStock: 0, openingStockValue: 0,
+                stockOnHand: 0, committedStock: 0, availableForSale: 0,
+                physicalOpeningStock: 0, physicalStockOnHand: 0, physicalCommittedStock: 0, physicalAvailableForSale: 0
+              }
+            }
+          });
         }
-        sourceWs.stockOnHand = (parseFloat(sourceWs.stockOnHand) || 0) + quantity;
-        sourceWs.availableForSale = (parseFloat(sourceWs.availableForSale) || 0) + quantity;
-        sourceWs.physicalStockOnHand = (parseFloat(sourceWs.physicalStockOnHand) || 0) + quantity;
-        sourceWs.physicalAvailableForSale = (parseFloat(sourceWs.physicalAvailableForSale) || 0) + quantity;
-        await ItemGroup.findByIdAndUpdate(itemGroupId, { $set: { [`items.${itemIndex}`]: itemPlain } });
+        // Use atomic $inc with arrayFilters to avoid race conditions
+        await ItemGroup.findOneAndUpdate(
+          { _id: itemGroupId },
+          {
+            $inc: {
+              [`items.${itemIndex}.warehouseStocks.$[ws].stockOnHand`]: quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].availableForSale`]: quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].physicalStockOnHand`]: quantity,
+              [`items.${itemIndex}.warehouseStocks.$[ws].physicalAvailableForSale`]: quantity,
+            }
+          },
+          { arrayFilters: [{ "ws.warehouse": sourceWs ? sourceWs.warehouse : sourceWarehouseName }] }
+        );
         return { success: true, type: 'group' };
       }
     }
