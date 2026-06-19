@@ -25,7 +25,7 @@ const formatDate = (date) => {
  */
 export const getExternalShoeBookings = async (req, res) => {
   try {
-    const { fromDate, toDate, limit = 100, page = 1 } = req.query;
+    const { fromDate, toDate, locCode, storeName, branch, warehouse, limit = 100, page = 1 } = req.query;
     
     // Filter out "Return" category (and optionally "Refund", "Cancel" based on standard logic)
     const query = {
@@ -40,6 +40,18 @@ export const getExternalShoeBookings = async (req, res) => {
       if (toDate) {
         query.invoiceDate.$lte = new Date(toDate);
       }
+    }
+
+    if (locCode) {
+      query.locCode = locCode;
+    }
+
+    const selectedStore = storeName || branch || warehouse;
+    if (selectedStore) {
+      query.$or = [
+        { branch: selectedStore },
+        { warehouse: selectedStore }
+      ];
     }
 
     const parsedLimit = Math.min(Math.max(parseInt(limit) || 100, 1), 1000);
@@ -72,7 +84,7 @@ export const getExternalShoeBookings = async (req, res) => {
  */
 export const getExternalShoeReturns = async (req, res) => {
   try {
-    const { fromDate, toDate, limit = 100, page = 1 } = req.query;
+    const { fromDate, toDate, locCode, storeName, branch, warehouse, limit = 100, page = 1 } = req.query;
 
     // Filter only "Return" category (and refund/cancel if they represent returns)
     const query = {
@@ -87,6 +99,18 @@ export const getExternalShoeReturns = async (req, res) => {
       if (toDate) {
         query.invoiceDate.$lte = new Date(toDate);
       }
+    }
+
+    if (locCode) {
+      query.locCode = locCode;
+    }
+
+    const selectedStore = storeName || branch || warehouse;
+    if (selectedStore) {
+      query.$or = [
+        { branch: selectedStore },
+        { warehouse: selectedStore }
+      ];
     }
 
     const parsedLimit = Math.min(Math.max(parseInt(limit) || 100, 1), 1000);
