@@ -63,12 +63,44 @@ export const getExternalShoeBookings = async (req, res) => {
       .skip(skip)
       .limit(parsedLimit);
 
-    const formattedBookings = invoices.map(invoice => ({
-      invoiceNo: invoice.invoiceNumber,
-      customerName: invoice.customer,
-      phoneNo: invoice.customerPhone || "",
-      billedDate: formatDate(invoice.invoiceDate)
-    }));
+    const formattedBookings = invoices.map(invoice => {
+      const totalQuantity = invoice.lineItems ? invoice.lineItems.reduce((sum, item) => sum + (item.quantity || 0), 0) : 0;
+      
+      const items = (invoice.lineItems || []).map(item => {
+        let itemCategory = item.category || (item.itemData && item.itemData.category);
+        if (!itemCategory) {
+          const itemNameLower = (item.item || "").toLowerCase();
+          const itemSkuLower = (item.itemSku || "").toLowerCase();
+          if (itemNameLower.includes("shirt") || itemNameLower.includes("t-shirt") || itemSkuLower.includes("shirt")) {
+            itemCategory = "shirt";
+          } else if (itemNameLower.includes("shoe") || itemNameLower.includes("footwear") || itemSkuLower.includes("shoe")) {
+            itemCategory = "shoe";
+          } else {
+            itemCategory = "other";
+          }
+        }
+        return {
+          itemName: item.item,
+          sku: item.itemSku || "",
+          category: itemCategory,
+          quantity: item.quantity || 0,
+          rate: item.rate || 0,
+          amount: item.amount || 0,
+          costPrice: item.itemData?.costPrice || 0
+        };
+      });
+
+      return {
+        invoiceNo: invoice.invoiceNumber,
+        customerName: invoice.customer,
+        phoneNo: invoice.customerPhone || "",
+        billedDate: formatDate(invoice.invoiceDate),
+        category: invoice.subCategory || "",
+        value: invoice.finalTotal || 0,
+        quantity: totalQuantity,
+        items
+      };
+    });
 
     res.status(200).json(formattedBookings);
   } catch (error) {
@@ -122,12 +154,44 @@ export const getExternalShoeReturns = async (req, res) => {
       .skip(skip)
       .limit(parsedLimit);
 
-    const formattedReturns = invoices.map(invoice => ({
-      invoiceNo: invoice.invoiceNumber,
-      customerName: invoice.customer,
-      phoneNo: invoice.customerPhone || "",
-      billedReturnedDate: formatDate(invoice.invoiceDate)
-    }));
+    const formattedReturns = invoices.map(invoice => {
+      const totalQuantity = invoice.lineItems ? invoice.lineItems.reduce((sum, item) => sum + (item.quantity || 0), 0) : 0;
+      
+      const items = (invoice.lineItems || []).map(item => {
+        let itemCategory = item.category || (item.itemData && item.itemData.category);
+        if (!itemCategory) {
+          const itemNameLower = (item.item || "").toLowerCase();
+          const itemSkuLower = (item.itemSku || "").toLowerCase();
+          if (itemNameLower.includes("shirt") || itemNameLower.includes("t-shirt") || itemSkuLower.includes("shirt")) {
+            itemCategory = "shirt";
+          } else if (itemNameLower.includes("shoe") || itemNameLower.includes("footwear") || itemSkuLower.includes("shoe")) {
+            itemCategory = "shoe";
+          } else {
+            itemCategory = "other";
+          }
+        }
+        return {
+          itemName: item.item,
+          sku: item.itemSku || "",
+          category: itemCategory,
+          quantity: item.quantity || 0,
+          rate: item.rate || 0,
+          amount: item.amount || 0,
+          costPrice: item.itemData?.costPrice || 0
+        };
+      });
+
+      return {
+        invoiceNo: invoice.invoiceNumber,
+        customerName: invoice.customer,
+        phoneNo: invoice.customerPhone || "",
+        billedReturnedDate: formatDate(invoice.invoiceDate),
+        category: invoice.subCategory || "",
+        value: invoice.finalTotal || 0,
+        quantity: totalQuantity,
+        items
+      };
+    });
 
     res.status(200).json(formattedReturns);
   } catch (error) {
