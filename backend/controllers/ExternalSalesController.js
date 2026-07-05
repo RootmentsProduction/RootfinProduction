@@ -98,6 +98,7 @@ export const getExternalShoeBookings = async (req, res) => {
         category: invoice.subCategory || "",
         value: invoice.finalTotal || 0,
         quantity: totalQuantity,
+        salesPerson: invoice.salesperson || "",
         items
       };
     });
@@ -189,6 +190,7 @@ export const getExternalShoeReturns = async (req, res) => {
         category: invoice.subCategory || "",
         value: invoice.finalTotal || 0,
         quantity: totalQuantity,
+        salesPerson: invoice.salesperson || "",
         items
       };
     });
