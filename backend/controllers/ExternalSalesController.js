@@ -98,7 +98,8 @@ export const getShoeSalesSummary = async (req, res) => {
       const lc  = inv.locCode || "unknown";
       const sub = (inv.subCategory || "").toLowerCase().trim();
       const key = sub === "shoe sales" ? "shoe" : sub === "shirt sales" ? "shirt" : "mixed";
-      const qty = (inv.lineItems || []).reduce((s, i) => s + (i.quantity || 0), 0);
+      // qty = number of line item rows (matches Sales by Invoice Report page logic)
+      const qty = (inv.lineItems || []).length;
       const val = inv.finalTotal || 0;
 
       if (!storeData[lc]) {
