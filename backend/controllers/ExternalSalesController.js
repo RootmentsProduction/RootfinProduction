@@ -66,8 +66,9 @@ export const getShoeSalesSummary = async (req, res) => {
 
     // ── Build query ───────────────────────────────────────────────────────────
     const query = {
-      category:    { $nin: ["Return", "Refund", "Cancel", "refund", "cancel"] },
-      subCategory: { $in: ["shoe sales", "shirt sales", "mixed sales"] },
+      category:     { $nin: ["Return", "Refund", "Cancel", "refund", "cancel"] },
+      subCategory:  { $in: ["shoe sales", "shirt sales", "mixed sales"] },
+      returnStatus: { $ne: "full" },   // exclude fully-returned invoices (0 items left)
     };
 
     if (fromDate || toDate) {
@@ -162,6 +163,185 @@ export const getShoeSalesSummary = async (req, res) => {
   }
 };
 
+/**
+ * @desc  Shoe & shirt sales summary — per salesperson (with per-store breakdown)
+ * @route GET /api/external/shoe-sales/by-salesperson
+ * @query fromDate=YYYY-MM-DD  toDate=YYYY-MM-DD  locCode=XXX  (all optional)
+ * @access Public
+ *
+ * Response shape:
+ * {
+ *   fromDate, toDate, locCode,
+ *   salespersons: [
+ *     {
+ *       salesperson,
+ *       shoe:  { bills, qty, value },
+ *       shirt: { bills, qty, value },
+ *       mixed: { bills, qty, value },
+ *       total: { bills, qty, value },
+ *       stores: [
+ *         {
+ *           locCode, storeName,
+ *           shoe:  { bills, qty, value },
+ *           shirt: { bills, qty, value },
+ *           mixed: { bills, qty, value },
+ *           total: { bills, qty, value }
+ *         }
+ *       ]
+ *     }
+ *   ],
+ *   grandTotal: {
+ *     shoe:  { bills, qty, value },
+ *     shirt: { bills, qty, value },
+ *     mixed: { bills, qty, value },
+ *     total: { bills, qty, value }
+ *   }
+ * }
+ */
+export const getShoeSalesBySalesPerson = async (req, res) => {
+  try {
+    const { fromDate, toDate, locCode } = req.query;
+
+    // ── Build query ─────────────────────────────────────────────────────────
+    const query = {
+      category:     { $nin: ["Return", "Refund", "Cancel", "refund", "cancel"] },
+      subCategory:  { $in: ["shoe sales", "shirt sales", "mixed sales"] },
+      returnStatus: { $ne: "full" },   // exclude fully-returned invoices (0 items left)
+    };
+
+    if (fromDate || toDate) {
+      query.invoiceDate = {};
+      if (fromDate) {
+        const start = new Date(fromDate);
+        start.setHours(0, 0, 0, 0);
+        query.invoiceDate.$gte = start;
+      }
+      if (toDate) {
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999);
+        query.invoiceDate.$lte = end;
+      }
+    }
+
+    if (locCode) query.locCode = locCode;
+
+    // ── Fetch ───────────────────────────────────────────────────────────────
+    const invoices = await SalesInvoice.find(query).select(
+      "locCode subCategory salesperson lineItems finalTotal"
+    );
+
+    // ── Aggregate: spData[salesperson][locCode] = { shoe, shirt, mixed } ────
+    const spData = {};
+
+    for (const inv of invoices) {
+      const sp  = (inv.salesperson || "").trim() || "Unassigned";
+      const lc  = inv.locCode || "unknown";
+      const sub = (inv.subCategory || "").toLowerCase().trim();
+      const key = sub === "shoe sales" ? "shoe" : sub === "shirt sales" ? "shirt" : "mixed";
+      const qty = (inv.lineItems || []).length;   // matches Sales by Invoice Report logic
+      const val = inv.finalTotal || 0;
+
+      // Init salesperson bucket
+      if (!spData[sp]) spData[sp] = {};
+
+      // Init store bucket inside salesperson
+      if (!spData[sp][lc]) {
+        spData[sp][lc] = {
+          shoe:  { bills: 0, qty: 0, value: 0 },
+          shirt: { bills: 0, qty: 0, value: 0 },
+          mixed: { bills: 0, qty: 0, value: 0 },
+        };
+      }
+
+      spData[sp][lc][key].bills += 1;
+      spData[sp][lc][key].qty   += qty;
+      spData[sp][lc][key].value += val;
+    }
+
+    // ── Build response ───────────────────────────────────────────────────────
+    const salespersons = Object.entries(spData).map(([sp, storeMap]) => {
+      // Build per-store array
+      const stores = Object.entries(storeMap).map(([lc, data]) => {
+        const storeTotal = {
+          bills: data.shoe.bills + data.shirt.bills + data.mixed.bills,
+          qty:   data.shoe.qty   + data.shirt.qty   + data.mixed.qty,
+          value: data.shoe.value + data.shirt.value + data.mixed.value,
+        };
+        return {
+          locCode:   lc,
+          storeName: STORE_MAP[lc] || lc,
+          shoe:  data.shoe,
+          shirt: data.shirt,
+          mixed: data.mixed,
+          total: storeTotal,
+        };
+      });
+
+      // Sort stores by storeName
+      stores.sort((a, b) => a.storeName.localeCompare(b.storeName));
+
+      // Roll up totals across all stores for this salesperson
+      const rolled = {
+        shoe:  { bills: 0, qty: 0, value: 0 },
+        shirt: { bills: 0, qty: 0, value: 0 },
+        mixed: { bills: 0, qty: 0, value: 0 },
+        total: { bills: 0, qty: 0, value: 0 },
+      };
+      for (const s of stores) {
+        for (const cat of ["shoe", "shirt", "mixed"]) {
+          rolled[cat].bills += s[cat].bills;
+          rolled[cat].qty   += s[cat].qty;
+          rolled[cat].value += s[cat].value;
+        }
+        rolled.total.bills += s.total.bills;
+        rolled.total.qty   += s.total.qty;
+        rolled.total.value += s.total.value;
+      }
+
+      return {
+        salesperson: sp,
+        shoe:  rolled.shoe,
+        shirt: rolled.shirt,
+        mixed: rolled.mixed,
+        total: rolled.total,
+        stores,
+      };
+    });
+
+    // Sort salespersons by total value descending (top performers first)
+    salespersons.sort((a, b) => b.total.value - a.total.value);
+
+    // ── Grand totals ─────────────────────────────────────────────────────────
+    const grand = {
+      shoe:  { bills: 0, qty: 0, value: 0 },
+      shirt: { bills: 0, qty: 0, value: 0 },
+      mixed: { bills: 0, qty: 0, value: 0 },
+      total: { bills: 0, qty: 0, value: 0 },
+    };
+    for (const sp of salespersons) {
+      for (const cat of ["shoe", "shirt", "mixed"]) {
+        grand[cat].bills += sp[cat].bills;
+        grand[cat].qty   += sp[cat].qty;
+        grand[cat].value += sp[cat].value;
+      }
+      grand.total.bills += sp.total.bills;
+      grand.total.qty   += sp.total.qty;
+      grand.total.value += sp.total.value;
+    }
+
+    res.status(200).json({
+      fromDate:    fromDate || null,
+      toDate:      toDate   || null,
+      locCode:     locCode  || null,
+      salespersons,
+      grandTotal:  grand,
+    });
+  } catch (error) {
+    console.error("Error fetching shoe sales by salesperson:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 // Helper to format Date to YYYY-MM-DDTHH:mm:ss format
 const formatDate = (date) => {
   if (!date) return "";
@@ -189,9 +369,10 @@ export const getExternalShoeBookings = async (req, res) => {
   try {
     const { fromDate, toDate, locCode, storeName, branch, warehouse, limit = 100, page = 1 } = req.query;
     
-    // Filter out "Return" category (and optionally "Refund", "Cancel" based on standard logic)
+    // Filter out "Return" category and fully-returned invoices
     const query = {
-      category: { $nin: ["Return", "refund", "cancel", "Refund", "Cancel"] }
+      category:     { $nin: ["Return", "refund", "cancel", "Refund", "Cancel"] },
+      returnStatus: { $ne: "full" },   // exclude fully-returned invoices (0 items left)
     };
 
     if (fromDate || toDate) {
