@@ -1,4 +1,37 @@
 import SalesInvoice from "../model/SalesInvoice.js";
+import SalesPerson from "../model/SalesPerson.js";
+
+// Helper function to build a name -> employeeId lookup map from SalesPerson database records
+const buildSalesPersonEmpIdMap = async () => {
+  const map = {};
+  try {
+    const salesPersons = await SalesPerson.find({}).lean();
+    for (const sp of salesPersons) {
+      if (!sp.employeeId) continue;
+      const empId = sp.employeeId;
+      const first = (sp.firstName || "").trim();
+      const last = (sp.lastName && sp.lastName !== "-") ? sp.lastName.trim() : "";
+
+      if (first) {
+        map[first.toLowerCase()] = empId;
+      }
+      if (first && last) {
+        map[`${first} ${last}`.toLowerCase()] = empId;
+        map[`${first}-${last}`.toLowerCase()] = empId;
+      }
+    }
+  } catch (error) {
+    console.error("Error building SalesPerson empId map:", error);
+  }
+  return map;
+};
+
+// Helper lookup to resolve empId from salesperson name string
+const resolveEmpId = (name, empIdMap) => {
+  if (!name || typeof name !== "string") return "";
+  const trimmed = name.trim().toLowerCase();
+  return empIdMap[trimmed] || "";
+};
 
 // ── Store master list (locCode → storeName) ──────────────────────────────────
 const STORE_MAP = {
@@ -226,9 +259,12 @@ export const getShoeSalesBySalesPerson = async (req, res) => {
     if (locCode) query.locCode = locCode;
 
     // ── Fetch ───────────────────────────────────────────────────────────────
-    const invoices = await SalesInvoice.find(query).select(
-      "locCode subCategory salesperson lineItems finalTotal"
-    );
+    const [invoices, empIdMap] = await Promise.all([
+      SalesInvoice.find(query).select(
+        "locCode subCategory salesperson lineItems finalTotal"
+      ),
+      buildSalesPersonEmpIdMap(),
+    ]);
 
     // ── Aggregate: spData[salesperson][locCode] = { shoe, shirt, mixed } ────
     const spData = {};
@@ -298,8 +334,11 @@ export const getShoeSalesBySalesPerson = async (req, res) => {
         rolled.total.value += s.total.value;
       }
 
+      const empId = resolveEmpId(sp, empIdMap);
       return {
         salesperson: sp,
+        employeeId: empId,
+        empId: empId,
         shoe:  rolled.shoe,
         shirt: rolled.shirt,
         mixed: rolled.mixed,
@@ -401,10 +440,13 @@ export const getExternalShoeBookings = async (req, res) => {
     const parsedPage = Math.max(parseInt(page) || 1, 1);
     const skip = (parsedPage - 1) * parsedLimit;
 
-    const invoices = await SalesInvoice.find(query)
-      .sort({ invoiceDate: -1 })
-      .skip(skip)
-      .limit(parsedLimit);
+    const [invoices, empIdMap] = await Promise.all([
+      SalesInvoice.find(query)
+        .sort({ invoiceDate: -1 })
+        .skip(skip)
+        .limit(parsedLimit),
+      buildSalesPersonEmpIdMap(),
+    ]);
 
     const formattedBookings = invoices.map(invoice => {
       const totalQuantity = invoice.lineItems ? invoice.lineItems.reduce((sum, item) => sum + (item.quantity || 0), 0) : 0;
@@ -433,6 +475,7 @@ export const getExternalShoeBookings = async (req, res) => {
         };
       });
 
+      const empId = resolveEmpId(invoice.salesperson, empIdMap);
       return {
         invoiceNo: invoice.invoiceNumber,
         customerName: invoice.customer,
@@ -442,6 +485,8 @@ export const getExternalShoeBookings = async (req, res) => {
         value: invoice.finalTotal || 0,
         quantity: totalQuantity,
         salesPerson: invoice.salesperson || "",
+        employeeId: empId,
+        empId: empId,
         items
       };
     });
@@ -493,10 +538,13 @@ export const getExternalShoeReturns = async (req, res) => {
     const parsedPage = Math.max(parseInt(page) || 1, 1);
     const skip = (parsedPage - 1) * parsedLimit;
 
-    const invoices = await SalesInvoice.find(query)
-      .sort({ invoiceDate: -1 })
-      .skip(skip)
-      .limit(parsedLimit);
+    const [invoices, empIdMap] = await Promise.all([
+      SalesInvoice.find(query)
+        .sort({ invoiceDate: -1 })
+        .skip(skip)
+        .limit(parsedLimit),
+      buildSalesPersonEmpIdMap(),
+    ]);
 
     const formattedReturns = invoices.map(invoice => {
       const totalQuantity = invoice.lineItems ? invoice.lineItems.reduce((sum, item) => sum + (item.quantity || 0), 0) : 0;
@@ -525,6 +573,7 @@ export const getExternalShoeReturns = async (req, res) => {
         };
       });
 
+      const empId = resolveEmpId(invoice.salesperson, empIdMap);
       return {
         invoiceNo: invoice.invoiceNumber,
         customerName: invoice.customer,
@@ -534,6 +583,8 @@ export const getExternalShoeReturns = async (req, res) => {
         value: invoice.finalTotal || 0,
         quantity: totalQuantity,
         salesPerson: invoice.salesperson || "",
+        employeeId: empId,
+        empId: empId,
         items
       };
     });
