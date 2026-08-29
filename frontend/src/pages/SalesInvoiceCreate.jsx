@@ -1695,6 +1695,9 @@ const SalesInvoiceCreate = () => {
 
   // Handle saving invoice
   const handleSaveInvoice = async (status = "sent") => {
+    // Prevent double submission if already saving
+    if (isSaving) return;
+
     // Validate required fields
     if (!customer.trim()) {
       showStockAlert("Please enter a customer name", 'error');
@@ -1902,32 +1905,40 @@ const SalesInvoiceCreate = () => {
         throw new Error(data.message || "Failed to save invoice");
       }
 
-      // Success - automatically send WhatsApp message
+      // Success - automatically send WhatsApp message safely
       if (customerPhone.trim()) {
-        console.log("📱 Automatically sending WhatsApp message...");
-        sendWhatsAppMessage(invoiceData);
+        try {
+          console.log("📱 Automatically sending WhatsApp message...");
+          sendWhatsAppMessage(invoiceData);
+        } catch (waError) {
+          console.error("Error sending WhatsApp message:", waError);
+        }
       } else {
         console.log("⚠️ No customer phone provided, skipping WhatsApp");
       }
 
-      // Dispatch stock update event to refresh item pages
-      console.log("📦 Dispatching stock update event...");
-      const stockUpdateEvent = new CustomEvent("stockUpdated", {
-        detail: {
-          updatedItems: invoiceData.lineItems.map(item => ({
-            itemId: item.itemData?._id,
-            itemGroupId: item.itemData?.itemGroupId,
-            itemName: item.itemData?.itemName || item.item,
-            itemSku: item.itemData?.sku,
+      // Dispatch stock update event to refresh item pages safely
+      try {
+        console.log("📦 Dispatching stock update event...");
+        const stockUpdateEvent = new CustomEvent("stockUpdated", {
+          detail: {
+            updatedItems: invoiceData.lineItems.map(item => ({
+              itemId: item.itemData?._id,
+              itemGroupId: item.itemData?.itemGroupId,
+              itemName: item.itemData?.itemName || item.item,
+              itemSku: item.itemData?.sku,
+              warehouse: invoiceData.warehouse,
+              quantityChanged: item.quantity,
+              operation: "sale" // Indicates stock was reduced due to sale
+            })),
             warehouse: invoiceData.warehouse,
-            quantityChanged: item.quantity,
-            operation: "sale" // Indicates stock was reduced due to sale
-          })),
-          warehouse: invoiceData.warehouse,
-          operation: "invoice_created"
-        }
-      });
-      window.dispatchEvent(stockUpdateEvent);
+            operation: "invoice_created"
+          }
+        });
+        window.dispatchEvent(stockUpdateEvent);
+      } catch (evtError) {
+        console.error("Error dispatching stock update event:", evtError);
+      }
 
       // Navigate appropriately
       if (isEditMode) {
@@ -2047,16 +2058,10 @@ Customer Service Available`;
       
       // Fallback: Show alert with instructions
       alert(
-        `WhatsApp redirect was blocked by your browser.\n\n` +
-        `Please allow pop-ups for this site, or manually open WhatsApp and send the message to:\n\n` +
-        `Phone: ${formattedPhone}\n\n` +
-        `The invoice has been saved successfully.`
+        `WhatsApp redirect was blocked by your browser pop-up blocker.\n\n` +
+        `Please allow pop-ups for this site if you wish to auto-open WhatsApp.\n\n` +
+        `The invoice has been saved successfully!`
       );
-      
-      // Try alternative method: direct navigation (works if pop-up blocker is strict)
-      setTimeout(() => {
-        window.location.href = url;
-      }, 100);
     }
   };
 

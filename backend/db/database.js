@@ -1,6 +1,14 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import fs from 'fs';
+import dns from 'dns';
+
+// 🌐 Fallback to public DNS (Google/Cloudflare) if local ISP DNS fails SRV lookups (fixes ECONNREFUSED on mongodb+srv://)
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {
+  console.warn('⚠️ Could not set custom DNS servers:', e.message);
+}
 
 // 🔁 Load correct .env file based on env (only if not loaded already by server.js)
 const env = process.env.NODE_ENV || 'development';

@@ -113,7 +113,14 @@ export const createSalesInvoice = async (req, res) => {
 
     // Resolve final invoice number
     let finalInvoiceNumber = invoiceData.invoiceNumber;
-    if (!finalInvoiceNumber || existingInvoice) {
+    if (invoiceData.invoiceNumber && existingInvoice) {
+      return res.status(409).json({
+        message: `Invoice number ${invoiceData.invoiceNumber} already exists.`,
+        invoice: existingInvoice
+      });
+    }
+
+    if (!finalInvoiceNumber) {
       finalInvoiceNumber = await nextGlobalSalesInvoice(invoicePrefix);
     }
 
