@@ -149,12 +149,18 @@ export const getVendors = async (req, res) => {
     }
     // If admin, no userId filter - show all vendors
 
-    const vendors = await Vendor.findAll({
-      where: whereClause,
-      order: [['createdAt', 'DESC']],
-    });
-
-    res.status(200).json(vendors.map(vendor => vendor.toJSON()));
+    try {
+      const vendors = await Vendor.findAll({
+        where: whereClause,
+        order: [['createdAt', 'DESC']],
+      });
+      return res.status(200).json(vendors.map(vendor => vendor.toJSON()));
+    } catch (pgError) {
+      console.warn("⚠️ PostgreSQL getVendors failed, falling back to MongoDB:", pgError.message);
+      const query = (!isAdmin && userId) ? { userId } : {};
+      const mongoVendors = await MongoVendor.find(query).sort({ createdAt: -1 });
+      return res.status(200).json(mongoVendors);
+    }
   } catch (error) {
     console.error("Get vendors error:", error);
     res.status(500).json({ message: "Server error", error: error.message });
@@ -165,13 +171,21 @@ export const getVendors = async (req, res) => {
 export const getVendorById = async (req, res) => {
   try {
     const { id } = req.params;
-    const vendor = await Vendor.findByPk(id);
-
-    if (!vendor) {
-      return res.status(404).json({ message: "Vendor not found" });
+    try {
+      const vendor = await Vendor.findByPk(id);
+      if (vendor) {
+        return res.status(200).json(vendor.toJSON());
+      }
+    } catch (pgError) {
+      console.warn("⚠️ PostgreSQL getVendorById failed, checking MongoDB:", pgError.message);
     }
 
-    res.status(200).json(vendor.toJSON());
+    const mongoVendor = await MongoVendor.findOne({ $or: [{ _id: id }, { postgresqlId: id }] });
+    if (mongoVendor) {
+      return res.status(200).json(mongoVendor);
+    }
+
+    return res.status(404).json({ message: "Vendor not found" });
   } catch (error) {
     console.error("Get vendor error:", error);
     res.status(500).json({ message: "Server error", error: error.message });

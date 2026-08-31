@@ -70,15 +70,18 @@ const getConnectionUri = () => {
 let sequelize;
 
 const initializePostgres = () => {
-  const connectionUri = getConnectionUri();
-  
+  let connectionUri = getConnectionUri();
+  const isSsl = process.env.DB_SSL === 'true' || process.env.POSTGRES_SSL === 'true' || env === 'production';
+
   if (connectionUri) {
-    // Use connection URI (common for cloud providers like Heroku, Render, etc.)
-    sequelize = new Sequelize(connectionUri, {
+    // Strip sslmode from URI string to prevent Sequelize from overriding dialectOptions.ssl with empty object {}
+    const cleanUri = connectionUri.replace(/[?&]sslmode=[^&]+/g, '').replace(/\?$/, '');
+
+    sequelize = new Sequelize(cleanUri, {
       dialect: 'postgres',
       logging: process.env.POSTGRES_LOGGING === 'true' ? console.log : false,
       dialectOptions: {
-        ssl: (process.env.DB_SSL === 'true' || process.env.POSTGRES_SSL === 'true' || env === 'production') ? {
+        ssl: isSsl ? {
           require: true,
           rejectUnauthorized: false,
         } : false,
