@@ -8,6 +8,7 @@
     "start": "cross-env NODE_ENV=production node --max-old-space-size=2048 server.js",
     "dev": "cross-env NODE_ENV=development node --max-old-space-size=2048 server.js",
     "test:stock": "node test-purchase-receive-stock.js",
+    "test:postgres": "node scripts/test-postgres.js",
     "check-transfers": "node scripts/check-transfer-orders.js",
     "optimize:quick": "node scripts/quick-optimize.js",
     "optimize:full": "node scripts/create-indexes.js"

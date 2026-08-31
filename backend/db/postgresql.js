@@ -3,32 +3,44 @@ dotenv.config(); // 🔥 MUST BE FIRST - Load .env before reading any env variab
 
 import { Sequelize } from 'sequelize';
 import fs from 'fs';
+import dns from 'dns';
+
+// Fallback DNS to public DNS (Google/Cloudflare) if ISP DNS fails lookup
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {
+  // Ignore if custom DNS cannot be set
+}
 
 // NOW read NODE_ENV (after .env is loaded)
 const env = process.env.NODE_ENV || 'development';
 
 // Get PostgreSQL connection details from environment variables
 const getPostgresConfig = () => {
+  const isSsl = process.env.DB_SSL === 'true' || process.env.POSTGRES_SSL === 'true';
+
   if (env === 'production') {
     return {
-      database: process.env.POSTGRES_DB_PROD || process.env.POSTGRES_DB,
-      username: process.env.POSTGRES_USER_PROD || process.env.POSTGRES_USER,
-      password: process.env.POSTGRES_PASSWORD_PROD || process.env.POSTGRES_PASSWORD,
-      host: process.env.POSTGRES_HOST_PROD || process.env.POSTGRES_HOST || 'localhost',
-      port: process.env.POSTGRES_PORT_PROD || process.env.POSTGRES_PORT || 5432,
+      database: process.env.POSTGRES_DB_PROD || process.env.DB_NAME || process.env.POSTGRES_DB,
+      username: process.env.POSTGRES_USER_PROD || process.env.DB_USER || process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD_PROD || process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD,
+      host: process.env.POSTGRES_HOST_PROD || process.env.DB_HOST || process.env.POSTGRES_HOST || 'localhost',
+      port: process.env.POSTGRES_PORT_PROD || process.env.DB_PORT || process.env.POSTGRES_PORT || 5432,
       dialect: 'postgres',
       logging: process.env.POSTGRES_LOGGING === 'true' ? console.log : false,
+      ssl: isSsl,
     };
   } else {
     // Development configuration
     return {
-      database: process.env.POSTGRES_DB_DEV || process.env.POSTGRES_DB || 'rootfin_dev',
-      username: process.env.POSTGRES_USER_DEV || process.env.POSTGRES_USER || 'postgres',
-      password: process.env.POSTGRES_PASSWORD_DEV || process.env.POSTGRES_PASSWORD || 'postgres',
-      host: process.env.POSTGRES_HOST_DEV || process.env.POSTGRES_HOST || 'localhost',
-      port: process.env.POSTGRES_PORT_DEV || process.env.POSTGRES_PORT || 5432,
+      database: process.env.POSTGRES_DB_DEV || process.env.DB_NAME || process.env.POSTGRES_DB || 'postgres',
+      username: process.env.POSTGRES_USER_DEV || process.env.DB_USER || process.env.POSTGRES_USER || 'postgres',
+      password: process.env.POSTGRES_PASSWORD_DEV || process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || 'postgres',
+      host: process.env.POSTGRES_HOST_DEV || process.env.DB_HOST || process.env.POSTGRES_HOST || 'localhost',
+      port: process.env.POSTGRES_PORT_DEV || process.env.DB_PORT || process.env.POSTGRES_PORT || 5432,
       dialect: 'postgres',
       logging: process.env.POSTGRES_LOGGING === 'true' ? console.log : false,
+      ssl: isSsl,
       // Development-specific options
       pool: {
         max: 5,
@@ -66,7 +78,7 @@ const initializePostgres = () => {
       dialect: 'postgres',
       logging: process.env.POSTGRES_LOGGING === 'true' ? console.log : false,
       dialectOptions: {
-        ssl: env === 'production' ? {
+        ssl: (process.env.DB_SSL === 'true' || process.env.POSTGRES_SSL === 'true' || env === 'production') ? {
           require: true,
           rejectUnauthorized: false,
         } : false,
@@ -81,6 +93,8 @@ const initializePostgres = () => {
   } else {
     // Use individual connection parameters
     const config = getPostgresConfig();
+    const sslOption = config.ssl ? { require: true, rejectUnauthorized: false } : false;
+
     sequelize = new Sequelize(
       config.database,
       config.username,
@@ -91,6 +105,7 @@ const initializePostgres = () => {
         dialect: config.dialect,
         logging: config.logging,
         pool: config.pool,
+        dialectOptions: sslOption ? { ssl: sslOption } : {},
       }
     );
   }
