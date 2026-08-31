@@ -10,6 +10,8 @@
     "test:stock": "node test-purchase-receive-stock.js",
     "test:postgres": "node scripts/test-postgres.js",
     "db:sync": "node scripts/sync-database.js",
+    "db:import": "node scripts/import-sql-dump.js",
+    "migrate:vendors": "node scripts/migrate-sql-vendors-to-mongodb.js",
     "check-transfers": "node scripts/check-transfer-orders.js",
     "optimize:quick": "node scripts/quick-optimize.js",
     "optimize:full": "node scripts/create-indexes.js"

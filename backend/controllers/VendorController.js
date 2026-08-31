@@ -23,47 +23,57 @@ export const createVendor = async (req, res) => {
       vendorData.bankAccounts = [];
     }
 
-    // Generate UUID for new vendors if id not provided
-    if (!vendorData.id) {
-      vendorData.id = randomUUID();
+    let vendorJson = null;
+    let savedToPg = false;
+
+    try {
+      const vendor = await Vendor.create(vendorData);
+      vendorJson = vendor.toJSON();
+      savedToPg = true;
+    } catch (pgError) {
+      console.warn("⚠️ PostgreSQL Vendor.create failed, falling back to MongoDB:", pgError.message);
     }
 
-    const vendor = await Vendor.create(vendorData);
-    const vendorJson = vendor.toJSON();
-
     // DUAL-SAVE: Also save to MongoDB for safety/redundancy
+    let mongoVendor = null;
     try {
-      console.log(`💾 Dual-saving vendor to MongoDB for safety...`);
+      console.log(`💾 Saving vendor to MongoDB for safety...`);
       
       const mongoVendorData = {
-        salutation: vendorData.salutation,
-        firstName: vendorData.firstName,
-        lastName: vendorData.lastName,
-        companyName: vendorData.companyName,
+        salutation: vendorData.salutation || "",
+        firstName: vendorData.firstName || "",
+        lastName: vendorData.lastName || "",
+        companyName: vendorData.companyName || "",
         displayName: vendorData.displayName,
-        email: vendorData.email,
-        phone: vendorData.phone,
-        mobile: vendorData.mobile,
-        website: vendorData.website,
-        gstTreatment: vendorData.gstTreatment,
-        gstin: vendorData.gstin,
-        panNumber: vendorData.panNumber,
-        paymentTerms: vendorData.paymentTerms,
-        currency: vendorData.currency,
+        email: vendorData.email || "",
+        phone: vendorData.phone || "",
+        mobile: vendorData.mobile || "",
+        website: vendorData.website || "",
+        gstTreatment: vendorData.gstTreatment || "",
+        gstin: vendorData.gstin || "",
+        panNumber: vendorData.panNumber || vendorData.pan || "",
+        paymentTerms: vendorData.paymentTerms || "",
+        currency: vendorData.currency || "INR",
         openingBalance: vendorData.openingBalance || 0,
         isActive: vendorData.isActive !== false,
         userId: vendorData.userId,
-        postgresqlId: vendor.id,
-        // Add other fields as needed
+        postgresqlId: vendorJson?.id || vendorData.id,
         contacts: vendorData.contacts || [],
         bankAccounts: vendorData.bankAccounts || [],
       };
       
-      await MongoVendor.create(mongoVendorData);
+      mongoVendor = await MongoVendor.create(mongoVendorData);
       console.log(`✅ Successfully saved vendor to MongoDB`);
     } catch (mongoError) {
-      console.error(`⚠️  Failed to save vendor to MongoDB (PostgreSQL save was successful):`, mongoError);
-      // Don't fail the entire operation if MongoDB save fails
+      console.error(`⚠️  Failed to save vendor to MongoDB:`, mongoError.message);
+    }
+
+    if (savedToPg && vendorJson) {
+      return res.status(201).json(vendorJson);
+    } else if (mongoVendor) {
+      return res.status(201).json(mongoVendor);
+    } else {
+      return res.status(500).json({ message: "Server error creating vendor" });
     }
 
     // Log vendor creation activity
