@@ -941,7 +941,7 @@ const SalesInvoiceCreate = () => {
   const [customer, setCustomer] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [branch, setBranch] = useState(getInitialBranch());
-  const [invoiceNumber, setInvoiceNumber] = useState("INV-009193");
+  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [salesperson, setSalesperson] = useState("");
   const [salesPersons, setSalesPersons] = useState([]);
@@ -1425,10 +1425,11 @@ const SalesInvoiceCreate = () => {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.nextInvoiceNumber) {
-          setInvoiceNumber(data.nextInvoiceNumber);
+        const nextNumStr = data.invoiceNumber || data.nextInvoiceNumber;
+        if (nextNumStr) {
+          setInvoiceNumber(nextNumStr);
           // Update next number in settings
-          const numberPart = data.nextInvoiceNumber.replace(invoiceSettings.prefix, "");
+          const numberPart = nextNumStr.replace(invoiceSettings.prefix, "");
           const nextNum = parseInt(numberPart, 10);
           if (!isNaN(nextNum)) {
             setInvoiceSettings(prev => ({
@@ -1442,6 +1443,13 @@ const SalesInvoiceCreate = () => {
       console.error("Error generating invoice number:", error);
     }
   };
+
+  // Auto-fetch next invoice number when in create mode or when branch/prefix changes
+  useEffect(() => {
+    if (!isEditMode && invoiceSettings.autoGenerate) {
+      generateNextInvoiceNumber();
+    }
+  }, [isEditMode, branch, invoiceSettings.prefix, invoiceSettings.autoGenerate]);
 
   // Handle invoice settings save
   const handleSaveInvoiceSettings = () => {
@@ -1818,6 +1826,7 @@ const SalesInvoiceCreate = () => {
 
       const invoiceData = {
         invoiceNumber,
+        autoGenerate: invoiceSettings.autoGenerate,
         invoiceDate: new Date(invoiceDate),
         customer: customer.trim(),
         customerPhone: customerPhone.trim() || "", // Ensure it's always sent

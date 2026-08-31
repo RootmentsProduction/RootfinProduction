@@ -3,27 +3,32 @@ import SalesInvoice from "../model/SalesInvoice.js";
 
 export async function nextSalesInvoice(locCode, prefix = "INV-") {
   try {
-    // Find the latest invoice number for this location with the given prefix
-    const latestInvoice = await SalesInvoice.findOne({
+    const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const invoices = await SalesInvoice.find({
       locCode: locCode,
-      invoiceNumber: { $regex: `^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}` }
-    }).sort({ createdAt: -1 });
+      invoiceNumber: { $regex: `^${escapedPrefix}` }
+    }, { invoiceNumber: 1 }).lean();
 
-    let nextNumber = 1;
-    
-    if (latestInvoice && latestInvoice.invoiceNumber) {
-      // Extract number from the latest invoice number
-      const numberPart = latestInvoice.invoiceNumber.replace(prefix, "");
-      const currentNumber = parseInt(numberPart, 10);
-      
-      if (!isNaN(currentNumber)) {
-        nextNumber = currentNumber + 1;
+    let maxNumber = 0;
+    for (const inv of invoices) {
+      if (inv.invoiceNumber) {
+        const numberPart = inv.invoiceNumber.replace(prefix, "");
+        const currentNumber = parseInt(numberPart, 10);
+        if (!isNaN(currentNumber) && currentNumber > maxNumber) {
+          maxNumber = currentNumber;
+        }
       }
     }
 
-    // Format with leading zeros (6 digits)
-    const formattedNumber = nextNumber.toString().padStart(6, '0');
-    return `${prefix}${formattedNumber}`;
+    let nextNumber = maxNumber + 1;
+    let candidate = `${prefix}${nextNumber.toString().padStart(6, '0')}`;
+
+    while (await SalesInvoice.exists({ invoiceNumber: candidate })) {
+      nextNumber++;
+      candidate = `${prefix}${nextNumber.toString().padStart(6, '0')}`;
+    }
+
+    return candidate;
     
   } catch (error) {
     console.error("Error generating next sales invoice number:", error);
@@ -36,26 +41,31 @@ export async function nextSalesInvoice(locCode, prefix = "INV-") {
 // Generate unique invoice number globally (across all locations)
 export async function nextGlobalSalesInvoice(prefix = "INV-") {
   try {
-    // Find the latest invoice number globally with the given prefix
-    const latestInvoice = await SalesInvoice.findOne({
-      invoiceNumber: { $regex: `^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}` }
-    }).sort({ createdAt: -1 });
+    const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const invoices = await SalesInvoice.find({
+      invoiceNumber: { $regex: `^${escapedPrefix}` }
+    }, { invoiceNumber: 1 }).lean();
 
-    let nextNumber = 1;
-    
-    if (latestInvoice && latestInvoice.invoiceNumber) {
-      // Extract number from the latest invoice number
-      const numberPart = latestInvoice.invoiceNumber.replace(prefix, "");
-      const currentNumber = parseInt(numberPart, 10);
-      
-      if (!isNaN(currentNumber)) {
-        nextNumber = currentNumber + 1;
+    let maxNumber = 0;
+    for (const inv of invoices) {
+      if (inv.invoiceNumber) {
+        const numberPart = inv.invoiceNumber.replace(prefix, "");
+        const currentNumber = parseInt(numberPart, 10);
+        if (!isNaN(currentNumber) && currentNumber > maxNumber) {
+          maxNumber = currentNumber;
+        }
       }
     }
 
-    // Format with leading zeros (6 digits)
-    const formattedNumber = nextNumber.toString().padStart(6, '0');
-    return `${prefix}${formattedNumber}`;
+    let nextNumber = maxNumber + 1;
+    let candidate = `${prefix}${nextNumber.toString().padStart(6, '0')}`;
+
+    while (await SalesInvoice.exists({ invoiceNumber: candidate })) {
+      nextNumber++;
+      candidate = `${prefix}${nextNumber.toString().padStart(6, '0')}`;
+    }
+
+    return candidate;
     
   } catch (error) {
     console.error("Error generating next global sales invoice number:", error);
@@ -64,3 +74,4 @@ export async function nextGlobalSalesInvoice(prefix = "INV-") {
     return `${prefix}${timestamp}`;
   }
 }
+
