@@ -127,10 +127,10 @@ const SecurityReturn = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(transactionData)
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => null);
 
       if (!res.ok) {
-        alert("Error: " + (json?.message || "Unknown error"));
+        alert("Error: " + (json?.message || `Server responded with status ${res.status}`));
         console.error(json);
       } else {
         alert("Transaction successfully created!");

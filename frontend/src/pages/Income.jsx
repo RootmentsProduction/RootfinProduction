@@ -58,17 +58,24 @@ const Income = () => {
 
     try {
       const res = await fetch(`${baseUrl.baseUrl}user/createPayment`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
       });
-      const json = await res.json();
-      if (!res.ok) alert("Error: " + (json?.message || "Unknown error"));
-      else {
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        alert("Error: " + (json?.message || `Server responded with status ${res.status}`));
+      } else {
         alert("Income recorded successfully!");
         setAmount(""); setCashAmount(""); setBankAmount(""); setUpiAmount("");
         setRemark(""); setQuantity(""); setAttachmentFile(null);
       }
-    } catch { alert("Failed to create transaction."); }
-    finally { setIsSubmitting(false); }
+    } catch (err) {
+      console.error("Income creation error:", err);
+      alert("Failed to create transaction. Please check your connection or server status.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
