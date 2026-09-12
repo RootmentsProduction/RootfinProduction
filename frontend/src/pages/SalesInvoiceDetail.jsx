@@ -1038,7 +1038,7 @@ const SalesInvoiceDetail = () => {
                     {storeInfo?.state && <div>{storeInfo.state}</div>}
                     {!storeInfo?.address && !storeInfo?.city && <div>Kerala</div>}
                     {!storeInfo?.state && <div>INDIA</div>}
-                    <div>GSTIN: 32AEHCR4208L1ZS</div>
+                    <div>GSTIN: 32AANCB8936G1ZG</div>
                   </div>
                 </div>
 
