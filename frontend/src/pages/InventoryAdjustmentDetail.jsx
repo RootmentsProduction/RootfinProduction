@@ -274,9 +274,11 @@ const InventoryAdjustmentDetail = () => {
               <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
                 adjustment.status === "adjusted"
                   ? "bg-[#dbeafe] text-[#1e40af]"
+                  : adjustment.status === "pending_approval"
+                  ? "bg-amber-100 text-amber-800"
                   : "bg-[#fef3c7] text-[#92400e]"
               }`}>
-                {adjustment.status === "adjusted" ? "Adjusted" : "Draft"}
+                {adjustment.status === "adjusted" ? "Adjusted" : adjustment.status === "pending_approval" ? "Pending Approval" : "Draft"}
               </span>
             </div>
           </div>
@@ -291,9 +293,11 @@ const InventoryAdjustmentDetail = () => {
               <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${
                 adjustment.status === "adjusted"
                   ? "bg-[#dbeafe] text-[#1e40af]"
+                  : adjustment.status === "pending_approval"
+                  ? "bg-amber-100 text-amber-800"
                   : "bg-[#fef3c7] text-[#92400e]"
               }`}>
-                {adjustment.status === "adjusted" ? "Adjusted" : "Draft"}
+                {adjustment.status === "adjusted" ? "Adjusted" : adjustment.status === "pending_approval" ? "Pending Approval" : "Draft"}
               </span>
             </div>
             <div>

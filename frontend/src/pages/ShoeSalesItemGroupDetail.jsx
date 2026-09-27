@@ -74,6 +74,7 @@ const ShoeSalesItemGroupDetail = () => {
   const isAdmin = isAdminEmail ||
                   user?.power === "admin" || 
                   (user?.locCode && (user.locCode === '858' || user.locCode === '103'));
+  const canSeeCost = isAdmin || user?.power === "warehouse" || user?.role === "superadmin" || user?.role === "admin";
   
   // Fallback locations mapping
   const fallbackLocations = [
@@ -806,9 +807,11 @@ const ShoeSalesItemGroupDetail = () => {
                         <th className="px-6 py-3.5 text-left text-[11px] font-bold uppercase tracking-wider border-r border-[#333333]">
                           Item Details
                         </th>
-                        <th className="px-6 py-3.5 text-left text-[11px] font-bold uppercase tracking-wider border-r border-[#333333]">
-                          Cost Price
-                        </th>
+                        {canSeeCost && (
+                          <th className="px-6 py-3.5 text-left text-[11px] font-bold uppercase tracking-wider border-r border-[#333333]">
+                            Cost Price
+                          </th>
+                        )}
                         <th className="px-6 py-3.5 text-left text-[11px] font-bold uppercase tracking-wider border-r border-[#333333]">
                           Selling Price
                         </th>
@@ -854,9 +857,11 @@ const ShoeSalesItemGroupDetail = () => {
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-xs font-mono font-bold text-[#111827]">
-                              ₹{typeof item.costPrice === 'number' ? item.costPrice.toFixed(2) : (item.costPrice || "0.00")}
-                            </td>
+                            {canSeeCost && (
+                              <td className="px-6 py-4 text-xs font-mono font-bold text-[#111827]">
+                                ₹{typeof item.costPrice === 'number' ? item.costPrice.toFixed(2) : (item.costPrice || "0.00")}
+                              </td>
+                            )}
                             <td className="px-6 py-4 text-xs font-mono font-bold text-[#111827]">
                               ₹{typeof item.sellingPrice === 'number' ? item.sellingPrice.toFixed(2) : (item.sellingPrice || "0.00")}
                             </td>

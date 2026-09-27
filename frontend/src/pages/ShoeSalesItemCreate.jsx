@@ -137,6 +137,9 @@ const ShoeSalesItemCreate = () => {
   const { id: groupId, itemId } = useParams(); // Get groupId and itemId from URL
   const isEditMode = !!itemId; // If itemId exists, we're in edit mode
   const isStandaloneItem = isEditMode && !groupId; // Editing standalone item (has itemId but no groupId)
+  
+  const currentUser = JSON.parse(localStorage.getItem("rootfinuser") || "{}");
+  const canSeeCost = currentUser?.power === "admin" || currentUser?.power === "warehouse" || currentUser?.role === "superadmin" || currentUser?.role === "admin";
   const [formData, setFormData] = useState(initialFormData);
   const [status, setStatus] = useState({ loading: false, error: null });
   const [skuManuallyEdited, setSkuManuallyEdited] = useState(false);
@@ -1410,15 +1413,17 @@ const handleCheckboxChange = (field) => (event) => {
                     </label>
                   </div>
 
-                  <FloatingField
-                    label="Cost Price"
-                    placeholder="0.00"
-                    prefix="₹"
-                    name="costPrice"
-                    value={formData.costPrice}
-                    onChange={handleChange("costPrice")}
-                    disabled={!formData.purchasable || status.loading}
-                  />
+                  {canSeeCost && (
+                    <FloatingField
+                      label="Cost Price"
+                      placeholder="0.00"
+                      prefix="₹"
+                      name="costPrice"
+                      value={formData.costPrice}
+                      onChange={handleChange("costPrice")}
+                      disabled={!formData.purchasable || status.loading}
+                    />
+                  )}
                 </div>
               </div>
             </div>

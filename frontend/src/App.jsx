@@ -14,6 +14,7 @@ import Security from "./pages/Security.jsx";
 import CloseReport from "./pages/CloseReport.jsx";
 import Revenuereport from "./pages/Revenuereport.jsx";
 import AdminClose from "./pages/AdminClose.jsx";
+import PendingDaybookClosures from "./pages/PendingDaybookClosures.jsx";
 import ManageStores from "./pages/ManageStores.jsx";
 import AddNewStore from "./pages/AddNewStore.jsx";
 import AddNewUser from "./pages/AddNewUser.jsx";
@@ -194,6 +195,7 @@ const App = () => {
           <Route path="/securityReport" element={currentuser ? <Security /> : <Navigate to='/login' />} />
           <Route path="/CloseReport" element={currentuser?.power === 'admin' ? <CloseReport /> : <Navigate to='/' />} />
           <Route path="/AdminClose" element={currentuser?.power === 'admin' || currentuser?.locCode === '102' ? <AdminClose /> : <Navigate to='/' />} />
+          <Route path="/PendingDaybookClosures" element={currentuser?.power === 'admin' || currentuser?.role === 'superadmin' ? <PendingDaybookClosures /> : <Navigate to='/' />} />
           <Route path="/ManageStores" element={currentuser?.power === 'admin' ? <ManageStores /> : <Navigate to='/' />} />
 
           {/* Manage Users Routes */}

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Helmet } from "react-helmet";
 import { RefreshCw, ChevronDown, ChevronRight, Download, Filter, TrendingUp, TrendingDown, ArrowUpDown, ShieldCheck, ShieldAlert, Landmark } from "lucide-react";
 import { CSVLink } from "react-csv";
@@ -96,10 +96,12 @@ const getCategoryLabel = (cat) =>
 export default function IncomeExpenseReport() {
   const isSidebarOpen = useSidebar();
   const user = JSON.parse(localStorage.getItem("rootfinuser")) || {};
-  const isAdmin = (user.power || "").toLowerCase() === "admin";
+  const isAdmin = (user.power || "").toLowerCase() === "admin" || (user.role || "").toLowerCase() === "admin";
+  const isSuperAdmin = (user.role || "").toLowerCase() === "superadmin";
   const isClusterManager = (user.role || "").toLowerCase() === "cluster_manager";
   const clusterAllowedLocCodes = user.allowedLocCodes || [];
-  const canSelectStore = isAdmin || isClusterManager;
+  const canSelectStore = isAdmin || isSuperAdmin || isClusterManager;
+  const userCanSeeAdminExpenses = isAdmin || isSuperAdmin || isClusterManager;
 
   const [fromDate, setFromDate] = useState(firstOfMonth());
   const [toDate, setToDate] = useState(today());
@@ -279,14 +281,56 @@ export default function IncomeExpenseReport() {
         const inv = (t.invoiceNo || "").toUpperCase();
         const isShoeOrShirtSale = sub === "shoe sales" || sub === "shirt sales" || sub === "mixed sales"
           || cat === "shoe sales" || cat === "shirt sales" || cat === "mixed sales";
+        const isSalesReturn = sub === "shoe sales return" || sub === "shirt sales return" || sub === "mixed sales return"
+          || cat === "shoe sales return" || cat === "shirt sales return" || cat === "mixed sales return";
         const isReturnInvoice = inv.startsWith("RTN-") || inv.startsWith("RET-");
-        if (!isShoeOrShirtSale && !isReturnInvoice && (inv.startsWith("INV-") || inv.startsWith("RTN-") || inv.startsWith("RET-"))) return;
+        if (!isShoeOrShirtSale && !isSalesReturn && !isReturnInvoice && (inv.startsWith("INV-") || inv.startsWith("RTN-") || inv.startsWith("RET-"))) return;
 
         const isBankToCash = cat === "bank to cash" || sub === "bank to cash" || cat.includes("bank to cash") || sub.includes("bank to cash") || cat.includes("cash to branch") || sub.includes("cash to branch");
         const isCashToBank = !isBankToCash && (cat === "bulk amount transfer" || cat === "cash to bank" || sub === "bulk amount transfer" || sub === "cash to bank" || tp === "money transfer");
+        
+        const isExpenseCategory = tp === "expense" || EXPENSE_CATEGORIES.has(cat);
+        const isActualExpense = isExpenseCategory || isReturnInvoice;
 
-        const normalizedCategory = isShoeOrShirtSale ? "Sales" : isReturnInvoice ? "Return Invoice" : isBankToCash ? "Bank to Cash" : isCashToBank ? "Cash to Bank" : (t.category || "Uncategorized");
-        const normalizedSubCategory = isShoeOrShirtSale ? (t.subCategory || t.category || "Sales") : isReturnInvoice ? (t.subCategory || "Sales Return") : isBankToCash ? "Bank to Cash" : isCashToBank ? "Cash to Bank" : (t.subCategory || t.category || "");
+        if (isExpenseCategory && t.isAdminLevel && !userCanSeeAdminExpenses) {
+          return; // Skip admin level expenses for non-admins
+        }
+
+        const normalizedCategory = (isShoeOrShirtSale && isActualExpense) 
+          ? "Sales Return"
+          : isShoeOrShirtSale 
+            ? "Sales" 
+            : isSalesReturn 
+              ? "Sales Return" 
+              : isReturnInvoice 
+                ? "Return Invoice" 
+                : isBankToCash 
+                  ? "Bank to Cash" 
+                  : isCashToBank 
+                    ? "Cash to Bank" 
+                    : (t.category || "Uncategorized");
+
+        let normalizedSubCategory = (isShoeOrShirtSale && isActualExpense)
+          ? ((sub === "shoe sales" || cat === "shoe sales") ? "Shoe Sales Return" 
+             : (sub === "shirt sales" || cat === "shirt sales") ? "Shirt Sales Return" 
+             : "Mixed Sales Return")
+          : isShoeOrShirtSale 
+            ? (t.subCategory || t.category || "Sales") 
+            : isSalesReturn 
+              ? (t.subCategory || t.category || "Sales Return") 
+              : isReturnInvoice 
+                ? (t.subCategory || "Sales Return") 
+                : isBankToCash 
+                  ? "Bank to Cash" 
+                  : isCashToBank 
+                    ? "Cash to Bank" 
+                    : (t.subCategory || t.category || "");
+
+        const originalSubCategory = normalizedSubCategory;
+
+        if (isExpenseCategory && userCanSeeAdminExpenses && !isReturnInvoice) {
+          normalizedSubCategory = t.isAdminLevel ? "Admin Level Expense" : "Store Level Expense";
+        }
 
         const row = {
           date: (t.date || "").split("T")[0],
@@ -294,6 +338,7 @@ export default function IncomeExpenseReport() {
           customerName: t.customerName || "",
           category: normalizedCategory,
           subCategory: normalizedSubCategory,
+          originalSubCategory: originalSubCategory,
           remark: t.remark || t.remarks || "",
           cash: Number(t.cash || 0),
           rbl:  Number(t.rbl || t.rblRazorPay || 0),
@@ -310,7 +355,7 @@ export default function IncomeExpenseReport() {
           mongoExpense.push(row);
         } else if (tp === "income") {
           mongoIncome.push(row);
-        } else if (tp === "expense" || EXPENSE_CATEGORIES.has(cat)) {
+        } else if (isExpenseCategory) {
           mongoExpense.push(row);
         }
       });
@@ -386,11 +431,43 @@ export default function IncomeExpenseReport() {
   const cashToBankTotal = cashToBankTotals.cash + cashToBankTotals.rbl + cashToBankTotals.bank + cashToBankTotals.upi;
   const bankToCashTotal = bankToCashTotals.cash + bankToCashTotals.rbl + bankToCashTotals.bank + bankToCashTotals.upi;
 
-  const netCash   = incTotals.cash + expTotals.cash;
-  const netRbl    = incTotals.rbl  + expTotals.rbl;
-  const netBank   = incTotals.bank + expTotals.bank;
-  const netUpi    = incTotals.upi  + expTotals.upi;
-  const netTotal  = incTotal + expTotal;
+  const retAndBankCashTotals = {
+    cash: retTotals.cash + bankToCashTotals.cash,
+    rbl: retTotals.rbl + bankToCashTotals.rbl,
+    bank: retTotals.bank + bankToCashTotals.bank,
+    upi: retTotals.upi + bankToCashTotals.upi
+  };
+  const retAndBankCashTotal = retTotal + bankToCashTotal;
+
+  const grandTotalIncomeTotals = {
+    cash: incTotals.cash + retTotals.cash + bankToCashTotals.cash,
+    rbl: incTotals.rbl + retTotals.rbl + bankToCashTotals.rbl,
+    bank: incTotals.bank + retTotals.bank + bankToCashTotals.bank,
+    upi: incTotals.upi + retTotals.upi + bankToCashTotals.upi
+  };
+  const grandTotalIncome = incTotal + retTotal + bankToCashTotal;
+
+  const holdedAndCashBankTotals = {
+    cash: holdedSecTotals.cash + cashToBankTotals.cash,
+    rbl: holdedSecTotals.rbl + cashToBankTotals.rbl,
+    bank: holdedSecTotals.bank + cashToBankTotals.bank,
+    upi: holdedSecTotals.upi + cashToBankTotals.upi
+  };
+  const holdedAndCashBankTotal = holdedSecTotal + cashToBankTotal;
+
+  const grandTotalExpenseTotals = {
+    cash: expTotals.cash + holdedSecTotals.cash + cashToBankTotals.cash,
+    rbl: expTotals.rbl + holdedSecTotals.rbl + cashToBankTotals.rbl,
+    bank: expTotals.bank + holdedSecTotals.bank + cashToBankTotals.bank,
+    upi: expTotals.upi + holdedSecTotals.upi + cashToBankTotals.upi
+  };
+  const grandTotalExpense = expTotal + holdedSecTotal + cashToBankTotal;
+
+  const netCash   = grandTotalIncomeTotals.cash + grandTotalExpenseTotals.cash;
+  const netRbl    = grandTotalIncomeTotals.rbl  + grandTotalExpenseTotals.rbl;
+  const netBank   = grandTotalIncomeTotals.bank + grandTotalExpenseTotals.bank;
+  const netUpi    = grandTotalIncomeTotals.upi  + grandTotalExpenseTotals.upi;
+  const netTotal  = grandTotalIncome + grandTotalExpense;
 
   const allCategories = useMemo(() => {
     return [...new Set([
@@ -611,52 +688,124 @@ export default function IncomeExpenseReport() {
             </td>
           </tr>
 
-          {/* Direct Transaction Rows (no nested subcategory header) */}
+          {/* Direct Transaction Rows or Subcategories */}
           {isCatExp && (
             <>
-
-              {transactions.map((t, i) => {
-                const dateStr = t.date
-                  ? new Date(t.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
-                  : "-";
-                const isRentOutOrReturnable = cat === "RentOut" || cat === "Returnable Income";
-                const isIncentiveCat = cat.toLowerCase() === "incentive";
-                const tCash = isRentOutOrReturnable ? (t.amount || 0) : (t.cash || 0);
-                const tTotal = tCash + (t.rbl || 0) + (t.bank || 0) + (t.upi || 0);
-                
-                return (
-                  <tr key={`${catKey}-tx-${i}`} className="bg-white hover:bg-slate-50/60 border-b border-slate-50 text-xs">
-                    <td className="px-4 py-2.5 text-gray-500 pl-8 whitespace-nowrap italic">{dateStr}</td>
-                    <td className="px-4 py-2.5 text-gray-600 font-medium italic">{t.subCategory || getCategoryLabel(cat)}</td>
-                    <td className="px-4 py-2.5 text-gray-700 italic">
-                      {isIncentiveCat ? (t.remark || t.customerName || "-") : (t.customerName || "-")}
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-500 italic max-w-[180px] truncate" title={t.remark || ""}>
-                      {t.remark || "-"}
-                    </td>
-                    {showBranch && (
-                      <td className="px-4 py-2.5 text-gray-600 font-medium italic">
-                        {getBranchName(t.locCode)}
+              {(cat === "Sales" || cat === "Sales Return" || (typeLabel === "EXPENSE" && userCanSeeAdminExpenses)) ? (
+                Object.keys(g.subCategories).map(sub => {
+                  const sg = g.subCategories[sub];
+                  const subKey = `${catKey}-${sub}`;
+                  const isSubExp = !!expanded[subKey];
+                  const subTotal = sg.cash + sg.rbl + sg.bank + sg.upi;
+                  
+                  return (
+                    <React.Fragment key={subKey}>
+                      <tr 
+                        className="cursor-pointer transition-colors bg-gray-50/50 hover:bg-gray-100 border-t border-gray-100"
+                        onClick={() => toggleExpand(subKey)}
+                      >
+                        <td className="px-4 py-2.5 text-center w-12 pl-8">
+                          {isSubExp ? <ChevronDown size={14} className="inline-block text-gray-500" /> : <ChevronRight size={14} className="inline-block text-gray-500" />}
+                        </td>
+                        <td className="px-4 py-2.5 text-xs font-semibold text-gray-700" colSpan={showBranch ? 4 : 3}>
+                          {getCategoryLabel(sub)}
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-xs font-medium text-gray-600">{sg.rbl !== 0 ? signStr(sg.rbl) : "-"}</td>
+                        <td className="px-4 py-2.5 text-right text-xs font-medium text-gray-600">{sg.cash !== 0 ? signStr(sg.cash) : "-"}</td>
+                        <td className="px-4 py-2.5 text-right text-xs font-medium text-gray-600">{sg.bank !== 0 ? signStr(sg.bank) : "-"}</td>
+                        <td className="px-4 py-2.5 text-right text-xs font-medium text-gray-600">{sg.upi !== 0 ? signStr(sg.upi) : "-"}</td>
+                        <td className="px-4 py-2.5 text-right text-xs font-bold text-gray-700">{fmt(Math.abs(subTotal))}</td>
+                      </tr>
+                      
+                      {isSubExp && sg.transactions.map((t, i) => {
+                        const dateStr = t.date
+                          ? new Date(t.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                          : "-";
+                        const isRentOutOrReturnable = cat === "RentOut" || cat === "Returnable Income";
+                        const isIncentiveCat = cat.toLowerCase() === "incentive";
+                        const tCash = isRentOutOrReturnable ? (t.amount || 0) : (t.cash || 0);
+                        const tTotal = tCash + (t.rbl || 0) + (t.bank || 0) + (t.upi || 0);
+                        
+                        return (
+                          <tr key={`${subKey}-tx-${i}`} className="bg-white hover:bg-slate-50/60 border-b border-slate-50 text-xs">
+                            <td className="px-4 py-2.5 text-gray-400 pl-12 whitespace-nowrap italic">{dateStr}</td>
+                            <td className="px-4 py-2.5 text-gray-500 font-medium italic">{t.originalSubCategory || t.subCategory || getCategoryLabel(cat)}</td>
+                            <td className="px-4 py-2.5 text-gray-600 italic">
+                              {isIncentiveCat ? (t.remark || t.customerName || "-") : (t.customerName || "-")}
+                            </td>
+                            <td className="px-4 py-2.5 text-gray-500 italic max-w-[180px] truncate" title={t.remark || ""}>
+                              {t.remark || "-"}
+                            </td>
+                            {showBranch && (
+                              <td className="px-4 py-2.5 text-gray-500 font-medium italic">
+                                {getBranchName(t.locCode)}
+                              </td>
+                            )}
+                            <td className="px-4 py-2.5 text-right text-gray-500 font-mono italic">
+                              {!isRentOutOrReturnable && t.rbl !== 0 ? fmt(Math.abs(t.rbl)) : "-"}
+                            </td>
+                            <td className="px-4 py-2.5 text-right text-gray-500 font-mono italic">
+                              {tCash !== 0 ? fmt(Math.abs(tCash)) : "-"}
+                            </td>
+                            <td className="px-4 py-2.5 text-right text-gray-500 font-mono italic">
+                              {!isRentOutOrReturnable && t.bank !== 0 ? fmt(Math.abs(t.bank)) : "-"}
+                            </td>
+                            <td className="px-4 py-2.5 text-right text-gray-500 font-mono italic">
+                              {!isRentOutOrReturnable && t.upi !== 0 ? fmt(Math.abs(t.upi)) : "-"}
+                            </td>
+                            <td className="px-4 py-2.5 text-right text-gray-700 font-mono font-bold italic">
+                              {isRentOutOrReturnable ? fmt(Math.abs(tCash)) : fmt(Math.abs(tTotal))}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  );
+                })
+              ) : (
+                transactions.map((t, i) => {
+                  const dateStr = t.date
+                    ? new Date(t.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                    : "-";
+                  const isRentOutOrReturnable = cat === "RentOut" || cat === "Returnable Income";
+                  const isIncentiveCat = cat.toLowerCase() === "incentive";
+                  const tCash = isRentOutOrReturnable ? (t.amount || 0) : (t.cash || 0);
+                  const tTotal = tCash + (t.rbl || 0) + (t.bank || 0) + (t.upi || 0);
+                  
+                  return (
+                    <tr key={`${catKey}-tx-${i}`} className="bg-white hover:bg-slate-50/60 border-b border-slate-50 text-xs">
+                      <td className="px-4 py-2.5 text-gray-500 pl-8 whitespace-nowrap italic">{dateStr}</td>
+                      <td className="px-4 py-2.5 text-gray-600 font-medium italic">{t.originalSubCategory || t.subCategory || getCategoryLabel(cat)}</td>
+                      <td className="px-4 py-2.5 text-gray-700 italic">
+                        {isIncentiveCat ? (t.remark || t.customerName || "-") : (t.customerName || "-")}
                       </td>
-                    )}
-                    <td className="px-4 py-2.5 text-right text-gray-600 font-mono italic">
-                      {!isRentOutOrReturnable && t.rbl !== 0 ? fmt(Math.abs(t.rbl)) : "-"}
-                    </td>
-                    <td className="px-4 py-2.5 text-right text-gray-600 font-mono italic">
-                      {tCash !== 0 ? fmt(Math.abs(tCash)) : "-"}
-                    </td>
-                    <td className="px-4 py-2.5 text-right text-gray-600 font-mono italic">
-                      {!isRentOutOrReturnable && t.bank !== 0 ? fmt(Math.abs(t.bank)) : "-"}
-                    </td>
-                    <td className="px-4 py-2.5 text-right text-gray-600 font-mono italic">
-                      {!isRentOutOrReturnable && t.upi !== 0 ? fmt(Math.abs(t.upi)) : "-"}
-                    </td>
-                    <td className="px-4 py-2.5 text-right text-gray-800 font-mono font-bold italic">
-                      {isRentOutOrReturnable ? fmt(Math.abs(tCash)) : fmt(Math.abs(tTotal))}
-                    </td>
-                  </tr>
-                );
-              })}
+                      <td className="px-4 py-2.5 text-gray-500 italic max-w-[180px] truncate" title={t.remark || ""}>
+                        {t.remark || "-"}
+                      </td>
+                      {showBranch && (
+                        <td className="px-4 py-2.5 text-gray-600 font-medium italic">
+                          {getBranchName(t.locCode)}
+                        </td>
+                      )}
+                      <td className="px-4 py-2.5 text-right text-gray-600 font-mono italic">
+                        {!isRentOutOrReturnable && t.rbl !== 0 ? fmt(Math.abs(t.rbl)) : "-"}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-gray-600 font-mono italic">
+                        {tCash !== 0 ? fmt(Math.abs(tCash)) : "-"}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-gray-600 font-mono italic">
+                        {!isRentOutOrReturnable && t.bank !== 0 ? fmt(Math.abs(t.bank)) : "-"}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-gray-600 font-mono italic">
+                        {!isRentOutOrReturnable && t.upi !== 0 ? fmt(Math.abs(t.upi)) : "-"}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-gray-800 font-mono font-bold italic">
+                        {isRentOutOrReturnable ? fmt(Math.abs(tCash)) : fmt(Math.abs(tTotal))}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </>
           )}
         </tbody>
@@ -1016,7 +1165,7 @@ export default function IncomeExpenseReport() {
                   <tbody>
                     <tr className="bg-[#1c1c1c] border-t border-[#1c1c1c]">
                       <td colSpan={showBranch ? 5 : 4} className="px-4 py-3 text-right text-sm font-bold text-white">
-                        Total Income
+                        TOTAL
                       </td>
                       <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{incTotals.rbl  !== 0 ? fmt(Math.abs(incTotals.rbl))  : "-"}</td>
                       <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{incTotals.cash !== 0 ? fmt(Math.abs(incTotals.cash)) : "-"}</td>
@@ -1031,6 +1180,29 @@ export default function IncomeExpenseReport() {
 
                   {/* 3. BANK TO CASH (Single tab/row) */}
                   {renderCategoryRows(bankToCashGrouped, "BANK_CASH", true, false, true)}
+
+                  <tbody>
+                    <tr className="bg-[#1c1c1c] border-t border-[#1c1c1c]">
+                      <td colSpan={showBranch ? 5 : 4} className="px-4 py-3 text-right text-sm font-bold text-white">
+                        TOTAL
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{retAndBankCashTotals.rbl  !== 0 ? fmt(Math.abs(retAndBankCashTotals.rbl))  : "-"}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{retAndBankCashTotals.cash !== 0 ? fmt(Math.abs(retAndBankCashTotals.cash)) : "-"}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{retAndBankCashTotals.bank !== 0 ? fmt(Math.abs(retAndBankCashTotals.bank)) : "-"}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{retAndBankCashTotals.upi  !== 0 ? fmt(Math.abs(retAndBankCashTotals.upi))  : "-"}</td>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-white font-mono">{fmt(Math.abs(retAndBankCashTotal))}</td>
+                    </tr>
+                    <tr className="bg-[#1c1c1c] border-t border-[#333]">
+                      <td colSpan={showBranch ? 5 : 4} className="px-4 py-3 text-right text-sm font-bold text-white">
+                        TOTAL INCOME
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{grandTotalIncomeTotals.rbl  !== 0 ? fmt(Math.abs(grandTotalIncomeTotals.rbl))  : "-"}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{grandTotalIncomeTotals.cash !== 0 ? fmt(Math.abs(grandTotalIncomeTotals.cash)) : "-"}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{grandTotalIncomeTotals.bank !== 0 ? fmt(Math.abs(grandTotalIncomeTotals.bank)) : "-"}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{grandTotalIncomeTotals.upi  !== 0 ? fmt(Math.abs(grandTotalIncomeTotals.upi))  : "-"}</td>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-white font-mono">{fmt(Math.abs(grandTotalIncome))}</td>
+                    </tr>
+                  </tbody>
 
                   {/* 4. EXPENSES SECTION */}
                   <tbody>
@@ -1055,7 +1227,7 @@ export default function IncomeExpenseReport() {
                   <tbody>
                     <tr className="bg-[#1c1c1c] border-t border-[#1c1c1c]">
                       <td colSpan={showBranch ? 5 : 4} className="px-4 py-3 text-right text-sm font-bold text-white">
-                        Total Income
+                        TOTAL
                       </td>
                       <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{expTotals.rbl  !== 0 ? fmt(Math.abs(expTotals.rbl)) : "-"}</td>
                       <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{expTotals.cash !== 0 ? fmt(Math.abs(expTotals.cash)) : "-"}</td>
@@ -1070,6 +1242,29 @@ export default function IncomeExpenseReport() {
 
                   {/* 6. CASH TO BANK (Single tab/row) */}
                   {renderCategoryRows(cashToBankGrouped, "CASH_BANK", false, false, true)}
+
+                  <tbody>
+                    <tr className="bg-[#1c1c1c] border-t border-[#1c1c1c]">
+                      <td colSpan={showBranch ? 5 : 4} className="px-4 py-3 text-right text-sm font-bold text-white">
+                        TOTAL
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{holdedAndCashBankTotals.rbl  !== 0 ? fmt(Math.abs(holdedAndCashBankTotals.rbl))  : "-"}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{holdedAndCashBankTotals.cash !== 0 ? fmt(Math.abs(holdedAndCashBankTotals.cash)) : "-"}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{holdedAndCashBankTotals.bank !== 0 ? fmt(Math.abs(holdedAndCashBankTotals.bank)) : "-"}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{holdedAndCashBankTotals.upi  !== 0 ? fmt(Math.abs(holdedAndCashBankTotals.upi))  : "-"}</td>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-white font-mono">{fmt(Math.abs(holdedAndCashBankTotal))}</td>
+                    </tr>
+                    <tr className="bg-[#1c1c1c] border-t border-[#333]">
+                      <td colSpan={showBranch ? 5 : 4} className="px-4 py-3 text-right text-sm font-bold text-white">
+                        TOTAL EXPENSES
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{grandTotalExpenseTotals.rbl  !== 0 ? fmt(Math.abs(grandTotalExpenseTotals.rbl))  : "-"}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{grandTotalExpenseTotals.cash !== 0 ? fmt(Math.abs(grandTotalExpenseTotals.cash)) : "-"}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{grandTotalExpenseTotals.bank !== 0 ? fmt(Math.abs(grandTotalExpenseTotals.bank)) : "-"}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold text-white font-mono">{grandTotalExpenseTotals.upi  !== 0 ? fmt(Math.abs(grandTotalExpenseTotals.upi))  : "-"}</td>
+                      <td className="px-4 py-3 text-right text-sm font-bold text-white font-mono">{fmt(Math.abs(grandTotalExpense))}</td>
+                    </tr>
+                  </tbody>
 
                   {/* 7. NET DIFFERENCE SECTION (Total Income - Total Expenses) */}
                   <tbody>

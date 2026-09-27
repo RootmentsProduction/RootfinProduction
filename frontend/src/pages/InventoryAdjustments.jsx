@@ -500,6 +500,7 @@ const InventoryAdjustments = () => {
                 options={[
                   { value: "All", label: "Status: All" },
                   { value: "Draft", label: "Draft" },
+                  { value: "Pending Approval", label: "Pending Approval" },
                   { value: "Adjusted", label: "Adjusted" }
                 ]}
                 styles={customSelectStyles}
@@ -630,9 +631,11 @@ const InventoryAdjustments = () => {
                             <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-none ${
                               adjustment.status === "adjusted"
                                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : adjustment.status === "pending_approval"
+                                ? "bg-amber-50 text-amber-700 border border-amber-200"
                                 : "bg-gray-100 text-gray-700 border border-gray-200"
                             }`}>
-                              {adjustment.status === "adjusted" ? "ADJUSTED" : "DRAFT"}
+                              {adjustment.status === "adjusted" ? "ADJUSTED" : adjustment.status === "pending_approval" ? "PENDING APPROVAL" : "DRAFT"}
                             </span>
                           </td>
                           <td className="px-3 py-2.5 text-[#4B5563] border-r border-[#E5E7EB]">

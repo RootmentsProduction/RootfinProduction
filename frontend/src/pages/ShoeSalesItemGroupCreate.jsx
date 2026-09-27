@@ -51,6 +51,8 @@ const ShoeSalesItemGroupCreate = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditMode = !!id;
+  const currentUser = JSON.parse(localStorage.getItem("rootfinuser") || "{}");
+  const canSeeCost = currentUser?.power === "admin" || currentUser?.power === "warehouse" || currentUser?.role === "superadmin" || currentUser?.role === "admin";
   const [loading, setLoading] = useState(isEditMode);
   const [showAccounts, setShowAccounts] = useState(false);
   const [itemType, setItemType] = useState("goods");
@@ -1414,18 +1416,20 @@ const ShoeSalesItemGroupCreate = () => {
                           </button>
                         </div>
                       </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[#495580]">
-                        <div>COST PRICE (₹)*</div>
-                        <div className="mt-1 flex gap-2 text-[10px] font-normal">
-                          <button className="table-link-button">PER UNIT</button>
-                          <button 
-                            onClick={() => handleCopyToAll("costPrice")}
-                            className="table-link-button"
-                          >
-                            COPY TO ALL
-                          </button>
-                        </div>
-                      </th>
+                      {canSeeCost && (
+                        <th className="px-4 py-3 text-left font-semibold text-[#495580]">
+                          <div>COST PRICE (₹)*</div>
+                          <div className="mt-1 flex gap-2 text-[10px] font-normal">
+                            <button className="table-link-button">PER UNIT</button>
+                            <button 
+                              onClick={() => handleCopyToAll("costPrice")}
+                              className="table-link-button"
+                            >
+                              COPY TO ALL
+                            </button>
+                          </div>
+                        </th>
+                      )}
                       <th className="px-4 py-3 text-left font-semibold text-[#495580]">
                         <div>SELLING PRICE (₹)*</div>
                         <div className="mt-1 flex gap-2 text-[10px] font-normal">
@@ -1544,19 +1548,21 @@ const ShoeSalesItemGroupCreate = () => {
                               className="w-full rounded border border-[#d7dcf5] bg-white px-2 py-1.5 text-sm text-[#1f2937] focus:border-[#4285f4] focus:outline-none"
                             />
                           </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="text"
-                              value={item.costPrice}
-                              onChange={(e) => {
-                                const updated = [...itemRows];
-                                updated[idx].costPrice = e.target.value;
-                                setItemRows(updated);
-                              }}
-                              placeholder="0"
-                              className="w-full rounded border border-[#d7dcf5] bg-white px-2 py-1.5 text-sm text-[#1f2937] focus:border-[#4285f4] focus:outline-none"
-                            />
-                          </td>
+                          {canSeeCost && (
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={item.costPrice}
+                                onChange={(e) => {
+                                  const updated = [...itemRows];
+                                  updated[idx].costPrice = e.target.value;
+                                  setItemRows(updated);
+                                }}
+                                placeholder="0"
+                                className="w-full rounded border border-[#d7dcf5] bg-white px-2 py-1.5 text-sm text-[#1f2937] focus:border-[#4285f4] focus:outline-none"
+                              />
+                            </td>
+                          )}
                           <td className="px-4 py-3">
                             <input
                               type="text"
@@ -1736,19 +1742,21 @@ const ShoeSalesItemGroupCreate = () => {
                             className="w-full rounded border border-[#d7dcf5] bg-white px-2 py-1.5 text-sm text-[#1f2937] focus:border-[#4285f4] focus:outline-none"
                           />
                         </td>
-                        <td className="px-4 py-3">
-                          <input
-                            type="text"
-                            value={item.costPrice}
-                            onChange={(e) => {
-                              const updated = [...generatedItems];
-                              updated[idx].costPrice = e.target.value;
-                              setGeneratedItems(updated);
-                            }}
-                            placeholder="0"
-                            className="w-full rounded border border-[#d7dcf5] bg-white px-2 py-1.5 text-sm text-[#1f2937] focus:border-[#4285f4] focus:outline-none"
-                          />
-                        </td>
+                        {canSeeCost && (
+                          <td className="px-4 py-3">
+                            <input
+                              type="text"
+                              value={item.costPrice}
+                              onChange={(e) => {
+                                const updated = [...generatedItems];
+                                updated[idx].costPrice = e.target.value;
+                                setGeneratedItems(updated);
+                              }}
+                              placeholder="0"
+                              className="w-full rounded border border-[#d7dcf5] bg-white px-2 py-1.5 text-sm text-[#1f2937] focus:border-[#4285f4] focus:outline-none"
+                            />
+                          </td>
+                        )}
                         <td className="px-4 py-3">
                           <input
                             type="text"

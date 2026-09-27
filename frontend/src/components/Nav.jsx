@@ -521,10 +521,16 @@ const Nav = () => {
                                         {currentuser.power === 'admin' && (
                                             <Link to="/CloseReport" className={singleLinkClasses("/CloseReport")}><FolderClosed size={18} className="shrink-0" /><span>Close Report</span></Link>
                                         )}
-                                        <Link to="/AdminClose" className={singleLinkClasses("/AdminClose")}><Notebook size={18} className="shrink-0" /><span>Admin Close</span></Link>
+                                        {(currentuser.power === 'admin' || currentuser.role === 'superadmin') && (
+                                            <Link to="/AdminClose" className={singleLinkClasses("/AdminClose")}><Notebook size={18} className="shrink-0" /><span>Admin Close</span></Link>
+                                        )}
+                                        
+                                        {(currentuser.power === 'admin' || currentuser.role === 'superadmin') && (
+                                            <Link to="/PendingDaybookClosures" className={singleLinkClasses("/PendingDaybookClosures")}><Notebook size={18} className="shrink-0" /><span>Late Closures</span></Link>
+                                        )}
 
-                                        {/* Manage Users — admin only */}
-                                        {currentuser.power === 'admin' && (
+                                        {/* Manage Users — super admin only */}
+                                        {currentuser.role === 'superadmin' && (
                                             <div>
                                                 <button onClick={() => setOpenSection(isManageUsersOpen ? null : "manageUsers")} className={groupButtonClasses(isManageUsersOpen, isManageUsersActive)}>
                                                     <div className="flex w-full items-center gap-3.5">

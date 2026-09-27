@@ -19,7 +19,7 @@ const inventoryAdjustmentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["draft", "adjusted"],
+      enum: ["draft", "pending_approval", "adjusted"],
       default: "draft",
     },
     

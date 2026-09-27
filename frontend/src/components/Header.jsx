@@ -1,8 +1,8 @@
 import { IoPersonCircleOutline } from "react-icons/io5";
 import Rootments from '../assets/Rootments.jpg';
 import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Bell } from 'lucide-react';
 import baseUrl from '../api/api';
 import salesInventoryAccessConfig from '../config/salesInventoryAccess.json';
 
@@ -68,6 +68,11 @@ const Header = (prop) => {
     // Dropdown state
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
+    
+    const [pendingClosuresCount, setPendingClosuresCount] = useState(0);
+    const [pendingAdjustmentsCount, setPendingAdjustmentsCount] = useState(0);
+    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+    const notificationRef = useRef(null);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -124,6 +129,9 @@ const Header = (prop) => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
+            }
+            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+                setIsNotificationOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -209,6 +217,33 @@ const Header = (prop) => {
         };
 
         fetchStores();
+
+        // Fetch notifications for admins
+        const fetchNotifications = async () => {
+            const user = getInitialUser();
+            if (user?.power === 'admin' || user?.role === 'superadmin') {
+                try {
+                    const closuresRes = await fetch(`${API_URL}/user/pendingClosures`);
+                    if (closuresRes.ok) {
+                        const closuresData = await closuresRes.json();
+                        setPendingClosuresCount(closuresData.data?.length || 0);
+                    }
+                } catch (e) {
+                    console.error("Error fetching pending closures", e);
+                }
+
+                try {
+                    const adjRes = await fetch(`${API_URL}/inventory/adjustments?status=pending_approval`);
+                    if (adjRes.ok) {
+                        const adjData = await adjRes.json();
+                        setPendingAdjustmentsCount(adjData.data?.length || 0);
+                    }
+                } catch (e) {
+                    console.error("Error fetching pending adjustments", e);
+                }
+            }
+        };
+        fetchNotifications();
     }, []);
 
     // Additional useEffect to periodically sync user from localStorage
@@ -338,6 +373,71 @@ const Header = (prop) => {
                 </div>
                 
                 <div className="flex items-center gap-4 shrink-0">
+                    {/* Notification Bell */}
+                    {(isAdmin || currentUser?.role === 'superadmin') && (
+                        <div className="relative" ref={notificationRef}>
+                            <button
+                                type="button"
+                                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                                className="relative p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
+                            >
+                                <Bell size={20} />
+                                {(pendingClosuresCount + pendingAdjustmentsCount) > 0 && (
+                                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full transform translate-x-1/4 -translate-y-1/4">
+                                        {pendingClosuresCount + pendingAdjustmentsCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {isNotificationOpen && (
+                                <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+                                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                                        <h3 className="text-sm font-semibold text-gray-800">Pending Requests</h3>
+                                    </div>
+                                    <div className="max-h-64 overflow-y-auto">
+                                        {pendingClosuresCount > 0 ? (
+                                            <Link 
+                                                to="/PendingDaybookClosures" 
+                                                onClick={() => setIsNotificationOpen(false)}
+                                                className="block px-4 py-3 hover:bg-purple-50 transition-colors border-b border-gray-50"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-800">Late Daybook Closures</p>
+                                                        <p className="text-xs text-gray-500 mt-0.5">Require super admin approval</p>
+                                                    </div>
+                                                    <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">{pendingClosuresCount}</span>
+                                                </div>
+                                            </Link>
+                                        ) : null}
+                                        
+                                        {pendingAdjustmentsCount > 0 ? (
+                                            <Link 
+                                                to="/inventory/adjustments" 
+                                                onClick={() => setIsNotificationOpen(false)}
+                                                className="block px-4 py-3 hover:bg-purple-50 transition-colors"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-800">Inventory Adjustments</p>
+                                                        <p className="text-xs text-gray-500 mt-0.5">Require super admin approval</p>
+                                                    </div>
+                                                    <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">{pendingAdjustmentsCount}</span>
+                                                </div>
+                                            </Link>
+                                        ) : null}
+
+                                        {pendingClosuresCount === 0 && pendingAdjustmentsCount === 0 && (
+                                            <div className="px-4 py-6 text-center text-sm text-gray-500">
+                                                No pending requests.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    
                     {/* Location Selector */}
                     {(isAdmin || isClusterManager) ? (
                         <div className="relative" ref={dropdownRef}>

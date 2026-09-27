@@ -230,14 +230,21 @@ const DayBookInc = () => {
     const currentusers = JSON.parse(localStorage.getItem("rootfinuser"));
     const showAction = (currentusers?.power || "").toLowerCase() === "admin";
 
-    const date1 = new Date();
-    const previousDate = new Date(date1);
+    const [currentDate, setCurrentDate] = useState(new Date().toISOString().split("T")[0]);
+    const isToday = currentDate === new Date().toISOString().split("T")[0];
+
+    const [isDayBookFrozen, setIsDayBookFrozen] = useState(false);
+    const [freezeReason, setFreezeReason] = useState(null);
+    const [adminWarningBanner, setAdminWarningBanner] = useState(null);
+
+    const [year, month, day] = currentDate.split("-").map(Number);
+    const date1 = new Date(year, month - 1, day);
+    const previousDate = new Date(year, month - 1, day);
     previousDate.setDate(date1.getDate() - 1);
     const TodayDate = `${String(date1.getDate()).padStart(2, '0')}-${String(date1.getMonth() + 1).padStart(2, '0')}-${date1.getFullYear()}`;
     const previousDate1 = `${String(previousDate.getDate()).padStart(2, '0')}-${String(previousDate.getMonth() + 1).padStart(2, '0')}-${previousDate.getFullYear()}`;
     const date = TodayDate;
 
-    const currentDate = new Date().toISOString().split("T")[0];
     const formatDate = (inputDate) => {
         const [day, month, year] = inputDate.split("-");
         return `${year}-${month}-${day}`;
@@ -249,7 +256,7 @@ const DayBookInc = () => {
         month: 'short',
         day: 'numeric',
         year: 'numeric'
-    }).format(new Date());
+    }).format(date1);
 
     const apiUrl = `https://rentalapi.rootments.live/api/GetBooking/GetBookingList?LocCode=${currentusers?.locCode}&DateFrom=${currentDate}&DateTo=${currentDate}`;
     const apiurl1 = `https://rentalapi.rootments.live/api/GetBooking/GetRentoutList?LocCode=${currentusers?.locCode}&DateFrom=${currentDate}&DateTo=${currentDate}`;
@@ -703,7 +710,7 @@ const DayBookInc = () => {
         if (preOpen1 != null) return;
         setQuantities(prev => {
             const next = [...prev];
-            next[index] = value === "" ? "" : (parseInt(value, 10) || 0);
+            next[index] = value === "" ? "" : Math.max(0, parseInt(value, 10) || 0);
             return next;
         });
     }, [preOpen1]);
@@ -723,7 +730,7 @@ const DayBookInc = () => {
         setQuantities(prev => {
             const next = [...prev];
             const currentVal = parseInt(next[index], 10) || 0;
-            next[index] = currentVal - 1;
+            next[index] = Math.max(0, currentVal - 1);
             return next;
         });
     }, [preOpen1]);
@@ -741,8 +748,9 @@ const DayBookInc = () => {
         email,
         totalCash: calculatedTotals.totalCash,
         totalAmount,
-        totalBankAmount: calculatedTotals.totalBankAmount
-    }), [date, locCode, email, calculatedTotals.totalCash, totalAmount, calculatedTotals.totalBankAmount]);
+        totalBankAmount: calculatedTotals.totalBankAmount,
+        status: isToday ? "closed" : "pending_approval"
+    }), [date, locCode, email, calculatedTotals.totalCash, totalAmount, calculatedTotals.totalBankAmount, isToday]);
 
     const CreateCashBank = async () => {
         if (savedData.totalAmount === 0) {
@@ -795,6 +803,14 @@ const DayBookInc = () => {
             if (!response.ok) {
                 if (response.status === 404) {
                     setPreOpen(null);
+                    if (isToday) {
+                        if (!showAction && currentusers?.role !== "superadmin") {
+                            setIsDayBookFrozen(true);
+                            setFreezeReason('missing_yesterday');
+                        } else {
+                            setAdminWarningBanner('missing_yesterday');
+                        }
+                    }
                     return;
                 }
                 throw new Error(`Error fetching opening balance: ${response.status}`);
@@ -802,6 +818,17 @@ const DayBookInc = () => {
 
             const data = await response.json();
             setPreOpen(data?.data);
+            if (isToday && data?.data?.status === "pending_approval") {
+                if (!showAction && currentusers?.role !== "superadmin") {
+                    setIsDayBookFrozen(true);
+                    setFreezeReason('pending_approval');
+                } else {
+                    setAdminWarningBanner('pending_approval');
+                }
+            } else {
+                setIsDayBookFrozen(false);
+                setAdminWarningBanner(null);
+            }
         } catch (error) {
             console.error("Error fetching opening balance:", error);
             setPreOpen(null);
@@ -832,7 +859,7 @@ const DayBookInc = () => {
                     const apiUrl = `${baseUrl.baseUrl}api/tws/getEditedTransactions?fromDate=${currentDate}&toDate=${currentDate}&locCode=${currentusers?.locCode}`;
                     const res = await fetch(apiUrl);
                     const json = await res.json();
-    
+
                     const overrideRows = json?.data || [];
                     const editedObj = {};
                     overrideRows.forEach(row => {
@@ -868,9 +895,9 @@ const DayBookInc = () => {
             ]);
             setIsInitialLoading(false);
         };
-        
+
         loadInitialData();
-    }, []);
+    }, [currentDate]);
 
     const handleEditClick = async (transaction, index) => {
         setIsSyncing(true);
@@ -1152,6 +1179,52 @@ const DayBookInc = () => {
         );
     }
 
+    if (isDayBookFrozen) {
+        return (
+            <div className="flex min-h-[60vh] w-full items-center justify-center bg-transparent">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+                    <div className="bg-white rounded-lg p-8 shadow-2xl max-w-md w-full text-center border-t-4 border-red-500">
+                        <div className="mb-4 text-red-500">
+                            <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-2xl font-bold mb-2 text-gray-800">Day Book Frozen</h2>
+                        {freezeReason === 'missing_yesterday' ? (
+                            <p className="text-gray-600 mb-6">
+                                You failed to close yesterday's day book by 11:59 PM. You must close yesterday's day book now. Once closed, it will be sent as a request for approval. Then only you can proceed.
+                            </p>
+                        ) : (
+                            <p className="text-gray-600 mb-6">
+                                Your late day book closure for yesterday is pending approval. You cannot access today's day book until it is accepted.
+                            </p>
+                        )}
+                        {freezeReason === 'missing_yesterday' ? (
+                            <button
+                                onClick={() => {
+                                    setIsDayBookFrozen(false);
+                                    const y = new Date();
+                                    y.setDate(y.getDate() - 1);
+                                    setCurrentDate(y.toISOString().split("T")[0]);
+                                }}
+                                className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
+                            >
+                                Close Yesterday's Day Book
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
+                            >
+                                Check Status Again
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
             <div>
@@ -1192,6 +1265,23 @@ const DayBookInc = () => {
                 <Headers title={"Day Book"} />
 
                 <div className={`transition-all duration-300 ${isSidebarOpen ? 'md:ml-[240px] ml-0' : 'ml-0'} overflow-hidden`}>
+                    {/* Admin Warning Banner */}
+                    {adminWarningBanner && (
+                        <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 m-4 md:m-8 md:mb-4 rounded shadow-sm flex items-start no-print">
+                            <svg className="w-6 h-6 mr-3 text-amber-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <div>
+                                <h3 className="font-bold">Attention Admin: Store Day Book Incomplete</h3>
+                                <p className="text-sm mt-1">
+                                    {adminWarningBanner === 'missing_yesterday' 
+                                        ? "This store failed to close yesterday's day book by 11:59 PM. Their access is currently frozen until they submit it for your approval."
+                                        : "This store has submitted a late day book closure that is currently pending your approval."}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="p-4 md:p-8 bg-white min-h-screen">
 
                         {/* Top Section: Page Header, Category Filters & Date */}
@@ -1445,9 +1535,10 @@ const DayBookInc = () => {
                                                         <span className="text-sm font-medium text-gray-700 w-1/3">{denom.label}</span>
                                                         <div className="w-1/3 flex justify-center">
                                                             <div className="flex items-center border border-gray-300 rounded-md overflow-hidden bg-white print:border-none print:rounded-none">
-                                                                <button type="button" className="px-2.5 py-1 text-gray-500 hover:bg-gray-100 border-r border-gray-300 print:hidden" onClick={() => handleQuantityChange(index, (parseInt(quantities[index]) || 0) - 1)} disabled={preOpen1 != null}><Minus size={14} /></button>
+                                                                <button type="button" className="px-2.5 py-1 text-gray-500 hover:bg-gray-100 border-r border-gray-300 print:hidden" onClick={() => handleQuantityChange(index, Math.max(0, (parseInt(quantities[index]) || 0) - 1))} disabled={preOpen1 != null}><Minus size={14} /></button>
                                                                 <input
                                                                     type="number"
+                                                                    min="0"
                                                                     value={quantities[index]}
                                                                     onChange={(e) => handleQuantityChange(index, e.target.value)}
                                                                     readOnly={preOpen1 != null}
@@ -1458,7 +1549,7 @@ const DayBookInc = () => {
                                                             </div>
                                                         </div>
                                                         <span className="text-sm font-semibold text-gray-800 w-1/3 text-right">
-                                                            {amt !== 0 ? amt.toLocaleString() : "0.00"}
+                                                            {amt > 0 ? amt.toLocaleString() : "0.00"}
                                                         </span>
                                                     </div>
                                                 );
@@ -1466,7 +1557,7 @@ const DayBookInc = () => {
                                             <div className="px-6 py-3.5 flex justify-between items-center bg-[#dedede]">
                                                 <span className="text-sm font-bold text-gray-900 w-2/3">Physical Total</span>
                                                 <span className="text-sm font-bold text-gray-900 w-1/3 text-right">
-                                                    {physicalCash !== 0 ? physicalCash.toLocaleString() : "0.00"}
+                                                    {physicalCash > 0 ? physicalCash.toLocaleString() : "0.00"}
                                                 </span>
                                             </div>
                                         </div>

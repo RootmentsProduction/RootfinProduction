@@ -33,8 +33,41 @@ const baseExpenseCats = [
 const Expenses = () => {
   const isSidebarOpen = useSidebar();
   const currentusers = JSON.parse(localStorage.getItem("rootfinuser")) || {};
-  const isAdmin = (currentusers.power || "").toLowerCase() === "admin";
+  const isAdmin = (currentusers.power || "").toLowerCase() === "admin" || (currentusers.role || "").toLowerCase() === "admin";
+  const isSuperAdmin = (currentusers.role || "").toLowerCase() === "superadmin";
+  const canSelectStore = isAdmin || isSuperAdmin;
   const cats = baseExpenseCats;
+
+  const fallbackLocations = [
+    { "locName": "Z-Edapally1", "locCode": "144" },
+    { "locName": "Warehouse", "locCode": "858" },
+    { "locName": "G-Edappally", "locCode": "702" },
+    { "locName": "HEAD OFFICE01", "locCode": "759" },
+    { "locName": "SG-Trivandrum", "locCode": "700" },
+    { "locName": "Z- Edappal", "locCode": "100" },
+    { "locName": "Z.Perinthalmanna", "locCode": "133" },
+    { "locName": "Z.Kottakkal", "locCode": "122" },
+    { "locName": "G.Kottayam", "locCode": "701" },
+    { "locName": "G.Perumbavoor", "locCode": "703" },
+    { "locName": "G.Thrissur", "locCode": "704" },
+    { "locName": "G.Chavakkad", "locCode": "706" },
+    { "locName": "G.Calicut ", "locCode": "712" },
+    { "locName": "G.Vadakara", "locCode": "708" },
+    { "locName": "G.Edappal", "locCode": "707" },
+    { "locName": "G.Perinthalmanna", "locCode": "709" },
+    { "locName": "G.Kottakkal", "locCode": "711" },
+    { "locName": "G.Manjeri", "locCode": "710" },
+    { "locName": "G.Palakkad ", "locCode": "705" },
+    { "locName": "G.Kalpetta", "locCode": "717" },
+    { "locName": "G.Kannur", "locCode": "716" },
+    { "locName": "G.Mg Road", "locCode": "718" },
+    { "locName": "Production", "locCode": "101" },
+    { "locName": "Office", "locCode": "102" },
+    { "locName": "WAREHOUSE", "locCode": "103" }
+  ];
+
+  const defaultStore = currentusers.locCode || "759";
+  const [selectedStore, setSelectedStore] = useState(defaultStore);
 
   const [selectedCategory, setSelectedCategory] = useState(cats[0]);
   const [subCategory, setSubCategory] = useState(cats[0].subs?.[0] || "");
@@ -77,7 +110,8 @@ const Expenses = () => {
       category: selectedCategory.value,
       subCategory: subCategory || (selectedCategory.subs?.[0] || ""),
       remark,
-      locCode: currentusers.locCode,
+      locCode: canSelectStore ? selectedStore : currentusers.locCode,
+      isAdminLevel: canSelectStore,
       amount: `-${amount}`,
       cash: splitPayment ? `-${cashAmount || "0"}` : paymentMethod === "cash" ? `-${amount}` : "0",
       bank: splitPayment ? `-${bankAmount || "0"}` : paymentMethod === "bank" ? `-${amount}` : "0",
@@ -131,6 +165,25 @@ const Expenses = () => {
         {/* Card */}
         <div className="rounded-2xl bg-white shadow-sm border border-[#e6ebfa] p-8">
           <form onSubmit={handleSubmit}>
+
+            {/* Admin Store Dropdown */}
+            {canSelectStore && (
+              <div className="mb-6">
+                <label className="block text-xs font-semibold uppercase tracking-widest text-[#9ca3af] mb-2">Store</label>
+                <div className="relative w-full md:w-1/3">
+                  <select
+                    value={selectedStore}
+                    onChange={(e) => setSelectedStore(e.target.value)}
+                    className="w-full appearance-none rounded-xl border border-[#d9def1] bg-white px-5 py-4 text-base text-[#101828] focus:outline-none focus:border-[#1e3a8a] pr-10 cursor-pointer"
+                  >
+                    {fallbackLocations.map(loc => (
+                      <option key={loc.locCode} value={loc.locCode}>{loc.locName}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={18} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
+                </div>
+              </div>
+            )}
 
             {/* Row 1: Category, Sub Category (if available), Amount */}
             <div className={`grid grid-cols-1 ${selectedCategory.subs?.length > 0 ? "md:grid-cols-3" : "md:grid-cols-2"} gap-6 mb-6`}>

@@ -715,6 +715,7 @@ const InventoryAdjustmentCreate = () => {
   const user = userStr ? JSON.parse(userStr) : null;
   const userId = user?.email || user?._id || user?.id || "";
   const isAdmin = user?.power === "admin";
+  const isSuperAdmin = user?.role === "superadmin" || (user?.power === "admin" && user?.role === "superadmin");
   
   // Fallback locations mapping
   const fallbackLocations = [
@@ -1419,7 +1420,7 @@ const InventoryAdjustmentCreate = () => {
         }));
       }
       
-      alert(`Adjustment ${isEditMode ? "updated" : "saved"} successfully as ${status === "draft" ? "Draft" : "Adjusted"}`);
+      alert(`Adjustment ${isEditMode ? "updated" : "saved"} successfully as ${status === "draft" ? "Draft" : status === "pending_approval" ? "Pending Approval" : "Adjusted"}`);
       navigate("/inventory/adjustments");
     } catch (error) {
       console.error("Error saving adjustment:", error);
@@ -1430,7 +1431,7 @@ const InventoryAdjustmentCreate = () => {
   };
 
   // Enter key to save adjustment
-  useEnterToSave(() => handleSave("adjusted"), saving);
+  useEnterToSave(() => handleSave(isSuperAdmin ? "adjusted" : "pending_approval"), saving);
   
   if (loading) {
     return (
@@ -1712,13 +1713,23 @@ const InventoryAdjustmentCreate = () => {
           >
             {saving ? "Saving..." : "Save as Draft"}
           </button>
-          <button
-            onClick={() => handleSave("adjusted")}
-            disabled={saving}
-            className="rounded-md border border-[#d7dcf5] px-4 py-2 text-sm font-medium text-[#475569] transition hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? "Saving..." : "Convert to Adjusted"}
-          </button>
+          {isSuperAdmin ? (
+            <button
+              onClick={() => handleSave("adjusted")}
+              disabled={saving}
+              className="rounded-md border border-[#d7dcf5] px-4 py-2 text-sm font-medium text-[#475569] transition hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? "Saving..." : "Convert to Adjusted"}
+            </button>
+          ) : (
+            <button
+              onClick={() => handleSave("pending_approval")}
+              disabled={saving}
+              className="rounded-md border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? "Saving..." : "Submit for Approval"}
+            </button>
+          )}
           <Link
             to="/inventory/adjustments"
             className="rounded-md border border-[#d7dcf5] px-4 py-2 text-sm font-medium text-[#475569] transition hover:bg-white"
