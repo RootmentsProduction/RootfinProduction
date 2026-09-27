@@ -7,7 +7,7 @@ import { CSVLink } from 'react-csv';
 import { Helmet } from "react-helmet";
 import { FiDownload } from "react-icons/fi";
 import useSidebar from "../hooks/useSidebar";
-import LoadingScreen from "../components/LoadingScreen.jsx";
+
 
 const CheckboxOption = (props) => {
   return (
@@ -1798,10 +1798,7 @@ const Datewisedaybook = () => {
             </div>
 
             <div ref={printRef}>
-              {/* Loading Screen */}
-              {isFetching && <LoadingScreen title="ROOTFIN" subtitle="BRYNEX FINANCIAL SOFTWARE" />}
-
-              {!isFetching && selectedStore === "all" ? (
+              {selectedStore === "all" ? (
                 <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "500px", overflowY: "auto" }}>
                     <table className="w-full border-collapse min-w-full text-sm">
@@ -1842,7 +1839,7 @@ const Datewisedaybook = () => {
                     </table>
                   </div>
                 </div>
-              ) : !isFetching && selectedStore === "multi" ? (
+              ) : selectedStore === "multi" ? (
                 <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "600px", overflowY: "auto", overflowX: "auto" }}>
                     <table className="w-full border-collapse text-xs" style={{ minWidth: '1300px' }}>
@@ -1970,7 +1967,7 @@ const Datewisedaybook = () => {
                   </div>
                 </div>
               ) : (
-                !isFetching && <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
+                <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "600px", overflowY: "auto", overflowX: "auto" }}>
                     <table className="w-full border-collapse text-xs" style={{ minWidth: '1200px' }}>
                       <thead
