@@ -27,7 +27,7 @@ const CheckboxOption = (props) => {
 };
 
 const headers = [
-    { label: "Date", key: "date" },
+    { label: "Time", key: "time" },
     { label: "Invoice No", key: "invoiceNo" },
     { label: "Customer Name", key: "customerName" },
     { label: "Category", key: "Category" },
@@ -370,7 +370,7 @@ const DayBookInc = () => {
             return {
                 ...transaction,
                 date: transaction?.bookingDate || null,
-                time: transaction?.time || transaction?.bookingTime || "10:34 am",
+                time: transaction?.time || transaction?.bookingTime || (transaction?.bookingDate && transaction.bookingDate.includes("T") ? new Date(transaction.bookingDate + (transaction.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am"),
                 customerName: transaction?.customerName || transaction?.customer || "Customer",
                 bookingCashAmount,
                 bookingBankAmount,
@@ -405,7 +405,7 @@ const DayBookInc = () => {
             return {
                 ...transaction,
                 date: transaction?.rentOutDate ?? "",
-                time: transaction?.time || transaction?.rentOutTime || "10:34 am",
+                time: transaction?.time || transaction?.rentOutTime || (transaction?.rentOutDate && transaction.rentOutDate.includes("T") ? new Date(transaction.rentOutDate + (transaction.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am"),
                 customerName: transaction?.customerName || transaction?.customer || "Customer",
                 rentoutCashAmount,
                 rentoutBankAmount,
@@ -443,7 +443,7 @@ const DayBookInc = () => {
             return {
                 ...transaction,
                 date: transaction?.returnedDate || null,
-                time: transaction?.time || transaction?.returnedTime || "10:34 am",
+                time: transaction?.time || transaction?.returnedTime || (transaction?.returnedDate && transaction.returnedDate.includes("T") ? new Date(transaction.returnedDate + (transaction.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am"),
                 customerName: transaction?.customerName || transaction?.customer || "Customer",
                 returnBankAmount,
                 returnCashAmount,
@@ -477,7 +477,7 @@ const DayBookInc = () => {
             return {
                 ...transaction,
                 date: transaction.cancelDate,
-                time: transaction?.time || transaction?.cancelTime || "10:34 am",
+                time: transaction?.time || transaction?.cancelTime || (transaction?.cancelDate && transaction.cancelDate.includes("T") ? new Date(transaction.cancelDate + (transaction.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am"),
                 customerName: transaction?.customerName || transaction?.customer || "Customer",
                 Category: "Cancel",
                 SubCategory: "cancellation Refund",
@@ -1349,7 +1349,7 @@ const DayBookInc = () => {
                                     <table className="w-full text-left border-collapse min-w-[1200px] print:min-w-0 print:w-full daybook-print-table">
                                         <thead>
                                             <tr className="bg-[#1c1c1c] text-white">
-                                                <th className="py-3.5 pl-4 pr-2 text-[11px] font-bold uppercase tracking-wider">DATE</th>
+                                                <th className="py-3.5 pl-4 pr-2 text-[11px] font-bold uppercase tracking-wider">TIME</th>
                                                 <th className="py-3.5 px-2 text-[11px] font-bold uppercase tracking-wider">INVOICE NO.</th>
                                                 <th className="py-3.5 px-2 text-[11px] font-bold uppercase tracking-wider">CUSTOMER NAME</th>
                                                 <th className="py-3.5 px-2 text-[11px] font-bold uppercase tracking-wider">CATEGORY</th>
@@ -1385,7 +1385,7 @@ const DayBookInc = () => {
                                             {filteredTransactions.length > 0 ? (
                                                 filteredTransactions.map((tx, idx) => {
                                                     const isEditing = editingIndex === idx;
-                                                    const displayDate = tx.date ? (tx.date.includes("T") ? tx.date.split("T")[0] : tx.date) : "-";
+                                                    const displayTime = tx.time ? tx.time : "-";
                                                     const displayInvoice = tx.invoiceNo || tx.locCode || "-";
                                                     const displayCustomer = tx.customerName || "-";
                                                     const displayCategory = tx.Category || tx.type || tx.category || "-";
@@ -1402,7 +1402,7 @@ const DayBookInc = () => {
 
                                                     return (
                                                         <tr key={tx._id || idx} className="hover:bg-gray-50/70 transition-colors text-gray-800">
-                                                            <td className="py-3.5 pl-4 pr-2 text-xs text-gray-600 whitespace-nowrap">{displayDate}</td>
+                                                            <td className="py-3.5 pl-4 pr-2 text-xs text-gray-600 whitespace-nowrap">{displayTime}</td>
                                                             <td className="py-3.5 px-2 font-medium text-xs whitespace-nowrap">{displayInvoice}</td>
                                                             <td className="py-3.5 px-2 font-medium text-xs whitespace-nowrap">{displayCustomer}</td>
                                                             <td className="py-3.5 px-2 text-xs whitespace-nowrap">{displayCategory}</td>

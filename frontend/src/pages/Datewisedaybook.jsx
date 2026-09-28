@@ -318,6 +318,7 @@ const Datewisedaybook = () => {
       const bookingList = (bookingData?.dataSet?.data || []).map(item => ({
         ...item,
         date: item.bookingDate?.split("T")[0],
+        time: item?.time || item?.bookingTime || (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate + (item.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
         invoiceNo: item.invoiceNo,
         customerName: item.customerName,
         quantity: item.quantity || 1,
@@ -342,6 +343,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.rentOutDate || "").split("T")[0],
+          time: item?.time || item?.rentOutTime || (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate + (item.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           quantity: item.quantity || 1,
@@ -374,6 +376,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
+          time: item?.time || item?.returnedTime || (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate + (item.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
           customerName: item.customerName || item.custName || item.customer || "",
           invoiceNo: item.invoiceNo,
           Category: "Return",
@@ -402,6 +405,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: item.cancelDate?.split("T")[0],
+          time: item?.time || item?.cancelTime || (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate + (item.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           Category: "Cancel",
@@ -431,6 +435,7 @@ const Datewisedaybook = () => {
         return {
           ...tx,
           date: tx.date?.split("T")[0] || "",
+          time: tx?.time || (tx?.date && tx.date.includes("T") ? new Date(tx.date + (tx.date.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
           Category: tx.type,
           SubCategory: subCatLabel,
           SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
@@ -489,6 +494,7 @@ const Datewisedaybook = () => {
             SubCategory1: override.SubCategory1 || override.subCategory1 || t.SubCategory1 || t.subCategory1 || "",
             customerName: override.customerName || t.customerName || "",
             date: override.date || t.date || "",
+            time: override.time || t.time || "",
             securityAmount: isRentOutStore
               ? Number(override.securityAmount ?? t.securityAmount ?? 0)
               : 0,
@@ -507,7 +513,7 @@ const Datewisedaybook = () => {
       const deduped = Array.from(
         new Map(
           allTransactions.map((tx) => {
-            const dateKey = new Date(tx.date).toISOString().split("T")[0];
+            const dateKey = (tx.date ? new Date(tx.date).toISOString().split("T")[0] : "");
             // Use _id as primary key if available (for mongo transactions), otherwise use invoiceNo + category + date + source
             const key = tx._id
               ? tx._id
@@ -584,6 +590,7 @@ const Datewisedaybook = () => {
           const bList = (bookingData?.dataSet?.data || []).map(item => ({
             ...item,
             date: item.bookingDate?.split("T")[0],
+        time: item?.time || item?.bookingTime || (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate + (item.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
             invoiceNo: item.invoiceNo,
             customerName: item.customerName,
             quantity: item.quantity || 1,
@@ -610,6 +617,7 @@ const Datewisedaybook = () => {
             return {
               ...item,
               date: (item.rentOutDate || "").split("T")[0],
+          time: item?.time || item?.rentOutTime || (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate + (item.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
               invoiceNo: item.invoiceNo,
               customerName: item.customerName,
               quantity: item.quantity || 1,
@@ -640,6 +648,7 @@ const Datewisedaybook = () => {
             return {
               ...item,
               date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
+          time: item?.time || item?.returnedTime || (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate + (item.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
               customerName: item.customerName || item.custName || item.customer || "",
               invoiceNo: item.invoiceNo,
               Category: "Return",
@@ -666,6 +675,7 @@ const Datewisedaybook = () => {
             return {
               ...item,
               date: item.cancelDate?.split("T")[0],
+          time: item?.time || item?.cancelTime || (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate + (item.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
               invoiceNo: item.invoiceNo,
               customerName: item.customerName,
               Category: "Cancel",
@@ -698,6 +708,7 @@ const Datewisedaybook = () => {
             return {
               ...tx,
               date: tx.date?.split("T")[0] || "",
+          time: tx?.time || (tx?.date && tx.date.includes("T") ? new Date(tx.date + (tx.date.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
               Category: tx.type,
               SubCategory: subCatLabel,
               SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
@@ -754,6 +765,7 @@ const Datewisedaybook = () => {
                 SubCategory1: override.SubCategory1 || override.subCategory1 || t.SubCategory1 || t.subCategory1 || "",
                 customerName: override.customerName || t.customerName || "",
                 date: override.date || t.date || "",
+            time: override.time || t.time || "",
                 securityAmount: isRentOutMulti ? Number(override.securityAmount ?? t.securityAmount ?? 0) : 0,
                 Balance: isRentOutMulti ? Number(override.Balance ?? t.Balance ?? 0) : 0,
                 amount: Number(override.amount ?? t.amount),
@@ -769,7 +781,7 @@ const Datewisedaybook = () => {
           const dedupedMulti = Array.from(
             new Map(
               allTransactionsMulti.map((tx) => {
-                const dateKey = new Date(tx.date).toISOString().split("T")[0];
+                const dateKey = (tx.date ? new Date(tx.date).toISOString().split("T")[0] : "");
                 const key = tx._id
                   ? `${tx._id}-${locCode}`
                   : `${tx.invoiceNo || tx.locCode}-${dateKey}-${tx.Category || tx.type || ""}-${tx.source || ""}-${locCode}`;
@@ -804,6 +816,7 @@ const Datewisedaybook = () => {
       const bookingList = (bookingData?.dataSet?.data || []).map(item => ({
         ...item,
         date: item.bookingDate?.split("T")[0],
+        time: item?.time || item?.bookingTime || (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate + (item.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
         invoiceNo: item.invoiceNo,
         customerName: item.customerName,
         quantity: item.quantity || 1,
@@ -830,6 +843,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.rentOutDate || "").split("T")[0],
+          time: item?.time || item?.rentOutTime || (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate + (item.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           quantity: item.quantity || 1,
@@ -863,6 +877,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
+          time: item?.time || item?.returnedTime || (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate + (item.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
           customerName: item.customerName || item.custName || item.customer || "",
           invoiceNo: item.invoiceNo,
           Category: "Return",
@@ -892,6 +907,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: item.cancelDate?.split("T")[0],
+          time: item?.time || item?.cancelTime || (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate + (item.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           Category: "Cancel",
@@ -923,6 +939,7 @@ const Datewisedaybook = () => {
         return {
           ...tx,
           date: tx.date?.split("T")[0] || "",
+          time: tx?.time || (tx?.date && tx.date.includes("T") ? new Date(tx.date + (tx.date.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
           Category: tx.type,
           SubCategory: subCatLabel,
           SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
@@ -996,6 +1013,7 @@ const Datewisedaybook = () => {
             SubCategory1: override.SubCategory1 || override.subCategory1 || t.SubCategory1 || t.subCategory1 || "",
             customerName: override.customerName || t.customerName || "",
             date: override.date || t.date || "",
+            time: override.time || t.time || "",
             securityAmount: isRentOut
               ? Number(override.securityAmount ?? t.securityAmount ?? 0)
               : 0,
@@ -1015,7 +1033,7 @@ const Datewisedaybook = () => {
       const deduped = Array.from(
         new Map(
           allTransactions.map((tx) => {
-            const dateKey = new Date(tx.date).toISOString().split("T")[0];
+            const dateKey = (tx.date ? new Date(tx.date).toISOString().split("T")[0] : "");
             const key = tx._id
               ? tx._id
               : `${tx.invoiceNo || tx.locCode}-${dateKey}-${tx.Category || tx.type || ""}-${tx.source || ""}`;
@@ -1799,9 +1817,8 @@ const Datewisedaybook = () => {
 
             <div ref={printRef}>
               {/* Loading Screen */}
-              {isFetching && <LoadingScreen title="ROOTFIN" subtitle="BRYNEX FINANCIAL SOFTWARE" />}
 
-              {!isFetching && selectedStore === "all" ? (
+              {selectedStore === "all" ? (
                 <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "500px", overflowY: "auto" }}>
                     <table className="w-full border-collapse min-w-full text-sm">
@@ -1842,13 +1859,13 @@ const Datewisedaybook = () => {
                     </table>
                   </div>
                 </div>
-              ) : !isFetching && selectedStore === "multi" ? (
+              ) : selectedStore === "multi" ? (
                 <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "600px", overflowY: "auto", overflowX: "auto" }}>
                     <table className="w-full border-collapse text-xs" style={{ minWidth: '1300px' }}>
                       <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
                         <tr className="bg-[#1e1e1e] text-white text-xs uppercase tracking-wide">
-                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Date</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs min-w-[110px]">Date</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Invoice No.</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Customer Name</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Qty</th>
@@ -1875,7 +1892,7 @@ const Datewisedaybook = () => {
                               return (
                                 <React.Fragment key={`mb-frag-${t._id || t.invoiceNo || index}`}>
                                   <tr key={`mb-${index}-sec`} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
-                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.date}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.customerName || "-"}</td>
                                     <td rowSpan="2" className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.quantity}</td>
@@ -1898,7 +1915,7 @@ const Datewisedaybook = () => {
                                     <td rowSpan="2" className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs font-medium">{t.branch}</td>
                                   </tr>
                                   <tr key={`mb-${index}-bal`} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
-                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.date}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.customerName || "-"}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.SubCategory1}</td>
@@ -1910,7 +1927,7 @@ const Datewisedaybook = () => {
                             }
                             return (
                               <tr key={`mb-${t.invoiceNo || t._id || t.locCode}-${index}`} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
-                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.date}</td>
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.customerName || "-"}</td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.quantity}</td>
@@ -1970,7 +1987,7 @@ const Datewisedaybook = () => {
                   </div>
                 </div>
               ) : (
-                !isFetching && <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
+                <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "600px", overflowY: "auto", overflowX: "auto" }}>
                     <table className="w-full border-collapse text-xs" style={{ minWidth: '1200px' }}>
                       <thead
@@ -1981,7 +1998,7 @@ const Datewisedaybook = () => {
                         }}
                       >
                         <tr className="bg-[#1e1e1e] text-white text-xs uppercase tracking-wide font-bold">
-                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Date</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs min-w-[110px]">Date</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Invoice No.</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Customer Name</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Qty</th>
@@ -2025,7 +2042,7 @@ const Datewisedaybook = () => {
                               return (
                                 <React.Fragment key={`sb-frag-${t._id || t.invoiceNo || index}`}>
                                   <tr key={`${index}-sec`} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
-                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.date}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                       {t.customerName || t.customer || t.name || "-"}
@@ -2170,7 +2187,7 @@ const Datewisedaybook = () => {
                                   </tr>
 
                                   <tr key={`${index}-bal`} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
-                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.date}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                       {t.customerName || t.customer || t.name || "-"}
@@ -2198,12 +2215,10 @@ const Datewisedaybook = () => {
 
                             return (
                               <tr
-                                key={`${t.invoiceNo || t._id || t.locCode}-${new Date(
-                                  t.date
-                                ).toISOString().split("T")[0]}-${index}`}
+                                key={`${t.invoiceNo || t._id || t.locCode}-${(t.date ? new Date(t.date).toISOString().split("T")[0] : "")}-${index}`}
                                 className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors"
                               >
-                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.date}</td>
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                   {t.customerName || t.customer || t.name || "-"}
