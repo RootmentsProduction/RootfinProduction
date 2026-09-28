@@ -85,7 +85,8 @@ const CATEGORY_LABEL_MAP = {
   "shoe sales return":      "Shoe Sales Return",
   "shirt sales return":     "Shirt Sales Return",
   "returnable income":      "Returnable Income",
-  "holded security refund": "Holded Security Refund",
+  "security refund":        "Security Refund",
+  "holded security refund": "Security Refund",
   "bank to cash":           "Bank to Cash",
   "cash to branch":         "Bank to Cash",
 };
@@ -233,15 +234,15 @@ export default function IncomeExpenseReport() {
         });
       });
 
-      // Return -> Holded Security Refund
+      // Return -> Security Refund
       const returnList = (returnData?.dataSet?.data || []).map(item => {
         const rbl = -Math.abs(Number(item.rblRazorPay || 0));
         return {
           date: (item.returnedDate || item.returnDate || "").split("T")[0],
           invoiceNo: item.invoiceNo,
           customerName: item.customerName || "",
-          category: "Holded Security Refund",
-          subCategory: "Holded Security Refund",
+          category: "Security Refund",
+          subCategory: "Security Refund",
           cash: -Math.abs(Number(item.returnCashAmount || 0)),
           rbl,
           bank: rbl !== 0 ? 0 : -Math.abs(Number(item.returnBankAmount || 0)),
@@ -567,7 +568,7 @@ export default function IncomeExpenseReport() {
       });
     });
 
-    // 4. Holded Security Refund
+    // 4. Security Refund
     Object.keys(holdedSecRefundGrouped).forEach(cat => {
       const g = holdedSecRefundGrouped[cat];
       Object.keys(g.subCategories).forEach(sub => {
@@ -575,7 +576,7 @@ export default function IncomeExpenseReport() {
         sg.transactions.forEach(t => {
           const tTotal = (t.cash || 0) + (t.rbl || 0) + (t.bank || 0) + (t.upi || 0);
           rows.push([
-            "HOLDED SECURITY REFUND",
+            "SECURITY REFUND",
             t.date || "",
             getCategoryLabel(cat),
             t.customerName || t.invoiceNo || "",
@@ -989,6 +990,10 @@ export default function IncomeExpenseReport() {
                     <strong className="text-gray-800">{fmt(incTotals.cash)}</strong>
                   </div>
                   <div className="flex justify-between text-[13px] text-gray-500">
+                    <span>Razorpay :</span>
+                    <strong className="text-gray-800">{fmt(incTotals.rbl)}</strong>
+                  </div>
+                  <div className="flex justify-between text-[13px] text-gray-500">
                     <span>Card/Bank :</span>
                     <strong className="text-gray-800">{fmt(incTotals.bank)}</strong>
                   </div>
@@ -1034,6 +1039,10 @@ export default function IncomeExpenseReport() {
                     <strong className="text-gray-800">{fmt(Math.abs(expTotals.cash))}</strong>
                   </div>
                   <div className="flex justify-between text-[13px] text-gray-500">
+                    <span>Razorpay :</span>
+                    <strong className="text-gray-800">{fmt(Math.abs(expTotals.rbl))}</strong>
+                  </div>
+                  <div className="flex justify-between text-[13px] text-gray-500">
                     <span>Card/Bank :</span>
                     <strong className="text-gray-800">{fmt(Math.abs(expTotals.bank))}</strong>
                   </div>
@@ -1063,6 +1072,10 @@ export default function IncomeExpenseReport() {
                   <div className="flex justify-between text-[13px] text-gray-500">
                     <span>Cash :</span>
                     <strong className="text-gray-800">{fmt(netCash)}</strong>
+                  </div>
+                  <div className="flex justify-between text-[13px] text-gray-500">
+                    <span>Razorpay :</span>
+                    <strong className="text-gray-800">{fmt(netRbl)}</strong>
                   </div>
                   <div className="flex justify-between text-[13px] text-gray-500">
                     <span>Card/Bank :</span>
@@ -1237,7 +1250,7 @@ export default function IncomeExpenseReport() {
                     </tr>
                   </tbody>
 
-                  {/* 5. HOLDED SECURITY REFUND (Single tab/row) */}
+                  {/* 5. SECURITY REFUND (Single tab/row) */}
                   {renderCategoryRows(holdedSecRefundGrouped, "HOLDED_SEC", false, false, true)}
 
                   {/* 6. CASH TO BANK (Single tab/row) */}

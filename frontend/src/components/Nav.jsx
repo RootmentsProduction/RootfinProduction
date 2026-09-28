@@ -411,8 +411,14 @@ const Nav = () => {
                             </>
                         ) : (
                             <>
-                                {/* Day Book - Standalone */}
+                                {/* Dashboard */}
                                 <Link to="/" className={singleLinkClasses("/")}>
+                                    <LineChart size={18} className="shrink-0" />
+                                    <span>Dashboard</span>
+                                </Link>
+
+                                {/* Day Book - Standalone */}
+                                <Link to="/daybook" className={singleLinkClasses("/daybook")}>
                                     <FileText size={18} className="shrink-0" />
                                     <span>Day Book</span>
                                 </Link>
