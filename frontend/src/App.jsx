@@ -10,6 +10,7 @@ import DayBook from "./pages/DayBook.jsx";
 import SecurityReturn from "./pages/SecurityReturn";
 import SecurityPending from "./pages/SecurityPending";
 import Nav from "./components/Nav.jsx";
+import DaybookGuard from "./components/DaybookGuard";
 import Login from "./pages/Login.jsx";
 import Security from "./pages/Security.jsx";
 import CloseReport from "./pages/CloseReport.jsx";
@@ -188,13 +189,13 @@ const App = () => {
           <Route path="/" element={currentuser ? (isClusterManager ? <Navigate to="/datewisedaybook" /> : ((currentuser?.power === 'admin' || currentuser?.role === 'superadmin') ? <Home /> : <Navigate to="/daybook" />)) : <Navigate to="/login" />} />
           <Route path="/daybook" element={currentuser ? <DayBookInc /> : <Navigate to="/login" />} />
           <Route path="/datewisedaybook" element={currentuser ? <Datewisedaybook /> : <Navigate to="/login" />} />
-          <Route path="/BookingReport" element={currentuser ? <Booking /> : <Navigate to="/login" />} />
-          <Route path="/RentOutReport" element={currentuser ? <DayBook /> : <Navigate to="/login" />} />
-          <Route path="/Income&Expenses" element={currentuser ? <ClusterGuard><SecurityReturn /></ClusterGuard> : <Navigate to="/login" />} />
-          <Route path="/income" element={currentuser ? <ClusterGuard><Income /></ClusterGuard> : <Navigate to="/login" />} />
-          <Route path="/expenses" element={currentuser ? <ClusterGuard><Expenses /></ClusterGuard> : <Navigate to="/login" />} />
-          <Route path="/CashBankLedger" element={currentuser ? <ClusterGuard><SecurityPending /></ClusterGuard> : <Navigate to="/login" />} />
-          <Route path="/securityReport" element={currentuser ? <Security /> : <Navigate to='/login' />} />
+          <Route path="/BookingReport" element={currentuser ? <DaybookGuard><Booking /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/RentOutReport" element={currentuser ? <DaybookGuard><DayBook /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/Income&Expenses" element={currentuser ? <ClusterGuard><DaybookGuard><SecurityReturn /></DaybookGuard></ClusterGuard> : <Navigate to="/login" />} />
+          <Route path="/income" element={currentuser ? <ClusterGuard><DaybookGuard><Income /></DaybookGuard></ClusterGuard> : <Navigate to="/login" />} />
+          <Route path="/expenses" element={currentuser ? <ClusterGuard><DaybookGuard><Expenses /></DaybookGuard></ClusterGuard> : <Navigate to="/login" />} />
+          <Route path="/CashBankLedger" element={currentuser ? <ClusterGuard><DaybookGuard><SecurityPending /></DaybookGuard></ClusterGuard> : <Navigate to="/login" />} />
+          <Route path="/securityReport" element={currentuser ? <DaybookGuard><Security /></DaybookGuard> : <Navigate to='/login' />} />
           <Route path="/CloseReport" element={currentuser?.power === 'admin' ? <CloseReport /> : <Navigate to='/' />} />
           <Route path="/AdminClose" element={currentuser?.power === 'admin' || currentuser?.locCode === '102' ? <AdminClose /> : <Navigate to='/' />} />
           <Route path="/PendingDaybookClosures" element={currentuser?.power === 'admin' || currentuser?.role === 'superadmin' ? <PendingDaybookClosures /> : <Navigate to='/' />} />
@@ -250,7 +251,7 @@ const App = () => {
           <Route path="/sales/returns" element={currentuser ? <SalesReturns /> : <Navigate to="/login" />} />
           <Route path="/sales/credit-notes" element={currentuser ? <CreditNotes /> : <Navigate to="/login" />} />
 
-          <Route path="/Revenuereport" element={currentuser ? <Revenuereport /> : <Navigate to="/login" />} />
+          <Route path="/Revenuereport" element={currentuser ? <DaybookGuard><Revenuereport /></DaybookGuard> : <Navigate to="/login" />} />
           <Route path="/shoe-sales/inactive" element={currentuser ? <InactiveItems /> : <Navigate to="/login" />} />
 
           {/* Purchase */}
@@ -277,11 +278,11 @@ const App = () => {
           <Route path="/purchase/vendors/:id" element={currentuser ? <PurchaseVendorDetail /> : <Navigate to="/login" />} />
 
           {/* Reports */}
-          <Route path="/reports/sales-by-invoice" element={currentuser ? <SalesByInvoiceReport /> : <Navigate to="/login" />} />
-          <Route path="/reports/sales-by-group" element={currentuser ? <SalesByGroupReport /> : <Navigate to="/login" />} />
-          <Route path="/reports/sales" element={currentuser ? <SalesReport /> : <Navigate to="/login" />} />
-          <Route path="/reports/inventory" element={currentuser ? <InventoryReport /> : <Navigate to="/login" />} />
-          <Route path="/reports/income-expense" element={currentuser ? <IncomeExpenseReport /> : <Navigate to="/login" />} />
+          <Route path="/reports/sales-by-invoice" element={currentuser ? <DaybookGuard><SalesByInvoiceReport /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/reports/sales-by-group" element={currentuser ? <DaybookGuard><SalesByGroupReport /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/reports/sales" element={currentuser ? <DaybookGuard><SalesReport /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/reports/inventory" element={currentuser ? <DaybookGuard><InventoryReport /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/reports/income-expense" element={currentuser ? <DaybookGuard><IncomeExpenseReport /></DaybookGuard> : <Navigate to="/login" />} />
 
           {/* Reorder Alerts */}
           <Route path="/inventory/reorder-alerts" element={currentuser ? <ReorderAlerts /> : <Navigate to="/login" />} />

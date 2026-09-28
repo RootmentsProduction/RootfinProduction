@@ -102,18 +102,28 @@ const InactiveItems = () => {
       if (user?.power) itemsParams.append("userPower", user.power);
       if (user?.locCode) itemsParams.append("locCode", user.locCode);
 
-      const [groupsRes, itemsRes, vendorsRes] = await Promise.all([
+      const [groupsRes, itemsRes] = await Promise.all([
         fetch(`${API_ROOT}/api/shoe-sales/item-groups?${groupsParams}`),
-        fetch(`${API_ROOT}/api/shoe-sales/items?${itemsParams}`),
-        fetch(`${API_ROOT}/api/purchase/vendors?userId=${encodeURIComponent(userEmail)}${user?.power ? `&userPower=${encodeURIComponent(user.power)}` : ""}`),
+        fetch(`${API_ROOT}/api/shoe-sales/items?${itemsParams}`)
       ]);
+      
       if (!groupsRes.ok) throw new Error("Failed to load item groups");
       if (!itemsRes.ok) throw new Error("Failed to load items");
-      if (!vendorsRes.ok) throw new Error("Failed to load vendors");
 
       const groupsData = await groupsRes.json();
       const itemsData = await itemsRes.json();
-      const vendorsData = await vendorsRes.json();
+      
+      let vendorsData = [];
+      try {
+        const vendorsRes = await fetch(`${API_ROOT}/api/purchase/vendors?userId=${encodeURIComponent(userEmail)}${user?.power ? `&userPower=${encodeURIComponent(user.power)}` : ""}`);
+        if (vendorsRes.ok) {
+          vendorsData = await vendorsRes.json();
+        } else {
+          console.warn("Failed to load vendors: API returned", vendorsRes.status);
+        }
+      } catch (err) {
+        console.warn("Failed to load vendors:", err);
+      }
 
       // Handle paginated response for groups
       let groupsList = [];

@@ -880,6 +880,7 @@ const ItemDropdown = ({ rowId, value, description, onDescriptionChange, onChange
 
 const NewBillForm = ({ billId, isEditMode = false }) => {
   const navigate = useNavigate();
+  const isSidebarOpen = useSidebar();
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
   const [vendorName, setVendorName] = useState("");
   const [selectedVendor, setSelectedVendor] = useState(null);
@@ -3011,6 +3012,7 @@ const Bills = () => {
   const isNewBill = location.pathname === "/purchase/bills/new";
   const isEditBill = id && location.pathname.includes("/edit");
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
+  const isSidebarOpen = useSidebar();
 
   // Fetch bills from MongoDB
   const [bills, setBills] = useState([]);

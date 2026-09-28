@@ -936,6 +936,7 @@ const ItemDropdown = ({ rowId, value, onChange, onNewItem, selectedWarehouse = "
 // New Vendor Credit Form Component
 const NewVendorCreditForm = ({ creditId, isEditMode = false }) => {
   const navigate = useNavigate();
+  const isSidebarOpen = useSidebar();
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [branch, setBranch] = useState("Head Office");
@@ -2371,6 +2372,7 @@ const VendorCredits = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams();
+  const isSidebarOpen = useSidebar();
   const isNewCredit = location.pathname === "/purchase/vendor-credits/new";
   const isEditCredit = id && location.pathname.includes("/edit");
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
@@ -2378,6 +2380,7 @@ const VendorCredits = () => {
   const [vendorCredits, setVendorCredits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
 
   useEffect(() => {
     if (isNewCredit || isEditCredit) return;

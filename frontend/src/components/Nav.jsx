@@ -82,6 +82,8 @@ const Nav = () => {
     // Admin users always have access, regular users need to be in the allowed list
     const userEmail = currentuser?.email?.toLowerCase() || "";
     const isAdmin = currentuser?.power === 'admin';
+    const isSuperAdmin = (currentuser?.role || "").toLowerCase() === "superadmin";
+    const isAdminOrSuperAdmin = isAdmin || isSuperAdmin;
     const isClusterManager = (currentuser?.role || "").toLowerCase() === "cluster_manager";
     const isInAllowedList = salesInventoryAccessConfig.allowedEmails
         .map(email => email.toLowerCase())
@@ -411,11 +413,13 @@ const Nav = () => {
                             </>
                         ) : (
                             <>
-                                {/* Dashboard */}
-                                <Link to="/" className={singleLinkClasses("/")}>
-                                    <LineChart size={18} className="shrink-0" />
-                                    <span>Dashboard</span>
-                                </Link>
+                                {/* Dashboard - Only for Admin / Super Admin */}
+                                {isAdminOrSuperAdmin && (
+                                    <Link to="/" className={singleLinkClasses("/")}>
+                                        <LineChart size={18} className="shrink-0" />
+                                        <span>Dashboard</span>
+                                    </Link>
+                                )}
 
                                 {/* Day Book - Standalone */}
                                 <Link to="/daybook" className={singleLinkClasses("/daybook")}>

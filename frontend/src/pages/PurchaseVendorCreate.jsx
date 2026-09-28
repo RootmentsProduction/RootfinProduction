@@ -1803,6 +1803,7 @@ const PurchaseVendorCreate = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const isSidebarOpen = useSidebar();
   const isEditMode = !!id;
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);

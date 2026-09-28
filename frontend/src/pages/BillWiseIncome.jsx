@@ -1,6 +1,7 @@
 import { CSVLink } from "react-csv";
 import Headers from '../components/Header.jsx';
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import html2pdf from 'html2pdf.js';
 import Select, { components } from "react-select";
 import useFetch from '../hooks/useFetch.jsx';
 import baseUrl from '../api/api.js';
@@ -783,6 +784,20 @@ const DayBookInc = () => {
             alert("Data saved successfully");
             setIsSaved(true);
             setLoading(false);
+            
+            // Auto download PDF only for late daybook closures (yesterday's daybook flow)
+            if (!isToday && printRef.current) {
+                const element = printRef.current;
+                const opt = {
+                    margin: 0.2,
+                    filename: `DayBook_Close_${currentDate}_${locCode}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+                };
+                html2pdf().set(opt).from(element).save();
+            }
+
             takeCreateCashBank();
         } catch (error) {
             console.error("Error saving data:", error);
