@@ -154,7 +154,9 @@ const DayBook = () => {
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `RentOut_Report_${fromDate}_to_${toDate}.csv`);
+        const storeName = (currentusers.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_");
+        const dateRange = fromDate === toDate ? fromDate : `${fromDate}_to_${toDate}`;
+        link.setAttribute("download", `daybook_${storeName}_${dateRange}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -162,9 +164,11 @@ const DayBook = () => {
 
     const handlePrintPDF = () => {
         const element = document.getElementById('report-table-container');
+        const storeName = (currentusers.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_");
+        const dateRange = fromDate === toDate ? fromDate : `${fromDate}_to_${toDate}`;
         const opt = {
             margin: 0.5,
-            filename: `RentOut_Report_${fromDate}_to_${toDate}.pdf`,
+            filename: `daybook_${storeName}_${dateRange}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2 },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }

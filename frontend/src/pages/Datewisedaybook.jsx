@@ -1092,10 +1092,13 @@ const Datewisedaybook = () => {
     const tableHtml = printRef.current.innerHTML;
     const w = window.open("", "_blank", "width=900,height=600");
 
+    const storeName = selectedStore === "all" ? "All_Branches" : selectedStore === "multi" ? "Multiple_Branches" : (AllLoation.find(loc => loc.locCode === currentusers.locCode)?.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_");
+    const dateRange = fromDate === toDate ? fromDate : `${fromDate}_to_${toDate}`;
+
     w.document.write(`
     <html>
       <head>
-        <title>Financial Summary</title>
+        <title>financial_summary_${storeName}_${dateRange}</title>
         <style>
           @page { margin: 10mm; }
           body  { font-family: Arial, sans-serif; }
@@ -1790,7 +1793,7 @@ const Datewisedaybook = () => {
                     <CSVLink
                       data={selectedStore === "all" ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
                       headers={selectedStore === "all" ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
-                      filename={`${fromDate} to ${toDate} report.csv`}
+                      filename={`financial_summary_${selectedStore === "all" ? "All_Branches" : selectedStore === "multi" ? "Multiple_Branches" : (AllLoation.find(loc => loc.locCode === currentusers.locCode)?.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_")}_${fromDate === toDate ? fromDate : fromDate + "_to_" + toDate}.csv`}
                     >
                       <button
                         type="button"
