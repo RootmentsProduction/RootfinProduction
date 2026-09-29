@@ -58,3 +58,17 @@ export const getExpenseTarget = async (req, res) => {
     return res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+// Fetch All Targets (for dashboard aggregations)
+export const getAllExpenseTargets = async (req, res) => {
+  try {
+    const { month } = req.query;
+    const filter = month ? { month } : {};
+    
+    const targets = await ExpenseTarget.find(filter);
+    return res.status(200).json({ success: true, targets });
+  } catch (error) {
+    console.error("Error fetching all expense targets:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};

@@ -126,11 +126,13 @@ const Dashboard = ({ isSidebarOpen }) => {
       setPendingStores(STORE_LOC_CODES.filter(lc => !closedArr.includes(lc)).map(lc => STORE_LIST.find(s => s.locCode === lc)).filter(Boolean));
 
       // ── 2. Quick Overview: Reorder Alerts, Purchase Orders, Late Closures ──
+      let expenseTargets = [];
       try {
-        const [reorderRes, poRes, closuresRes] = await Promise.all([
-          fetch(`${API_URL}api/reorder-alerts`).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`${API_URL}api/purchase/orders`).then(r => r.ok ? r.json() : []).catch(() => []),
-          fetch(`${API_URL}user/pendingClosures`).then(r => r.ok ? r.json() : {}).catch(() => ({}))
+        const [reorderRes, poRes, closuresRes, targetsRes] = await Promise.all([
+          fetch(`${API_URL}/api/reorder-alerts`).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`${API_URL}/api/purchase/orders`).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`${API_URL}/user/pendingClosures`).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+          fetch(`${API_URL}/api/expense-targets/all?month=${dateTo.slice(0, 7)}`).then(r => r.ok ? r.json() : { targets: [] }).catch(() => ({ targets: [] }))
         ]);
 
         const reorderList = Array.isArray(reorderRes) ? reorderRes : (reorderRes.data || []);
@@ -141,6 +143,8 @@ const Dashboard = ({ isSidebarOpen }) => {
 
         const closuresList = closuresRes.data || closuresRes || [];
         setLateClosures(Array.isArray(closuresList) ? closuresList.length : 0);
+        
+        expenseTargets = targetsRes.targets || [];
       } catch (e) { console.error("Quick overview error:", e); }
 
       // ── 3. Financial Summary — all stores (same logic as IncomeExpenseReport) ──
@@ -283,7 +287,13 @@ const Dashboard = ({ isSidebarOpen }) => {
           if (isExp) sExp += amt;
           else if (tp === "income") sInc += amt;
         });
-        return { name: shortName, fullName: storeName, income: Math.abs(sInc), expense: Math.abs(sExp) };
+        
+        let sExpLimit = 0;
+        expenseTargets.filter(et => et.storeCode === lc).forEach(et => {
+          sExpLimit += Number(et.targetAmount || 0);
+        });
+
+        return { name: shortName, fullName: storeName, income: Math.abs(sInc), expense: Math.abs(sExp), expenseLimit: sExpLimit };
       });
 
       setChartData(perStoreData); // Keep in STORE_LIST order so names match bars
@@ -408,17 +418,20 @@ const Dashboard = ({ isSidebarOpen }) => {
                 </div>
 
                 <div className="flex-1 w-full overflow-x-auto relative pb-3 custom-horizontal-scrollbar z-10">
-                  <div className="min-w-[1500px] h-full">
+                  <div className="min-w-[1000px] h-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }} barGap={4}>
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280', fontWeight: 500 }} dy={10} interval={0} />
                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280', fontWeight: 500 }} tickFormatter={(v) => v >= 1000 ? `${v / 1000}K` : v} />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f3f4f6', opacity: 0.4 }} />
                         {(chartFilter === "All" || chartFilter === "Income") && (
-                          <Bar dataKey="income" fill="#dfbbfd" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                          <Bar dataKey="income" fill="#dfbbfd" radius={[4, 4, 0, 0]} maxBarSize={40} />
                         )}
                         {(chartFilter === "All" || chartFilter === "Expense") && (
-                          <Bar dataKey="expense" fill="#6a1e9c" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                          <Bar dataKey="expense" fill="#6a1e9c" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                        )}
+                        {chartFilter === "Expense" && (
+                          <Bar dataKey="expenseLimit" name="Expense Limit" fill="#fb923c" radius={[4, 4, 0, 0]} maxBarSize={40} />
                         )}
                       </BarChart>
                     </ResponsiveContainer>
