@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import { CalendarIcon, RefreshCw, HandCoins, Banknote, Receipt, Link2, FileText } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import baseUrl from '../api/api.js';
 
 const STORE_LIST = [
@@ -420,7 +420,15 @@ const Dashboard = ({ isSidebarOpen }) => {
                 <div className="flex-1 w-full overflow-x-auto relative pb-3 custom-horizontal-scrollbar z-10">
                   <div className="min-w-[1000px] h-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }} barGap={4}>
+                      <BarChart 
+                        data={chartData.map(d => {
+                          if (chartFilter === "Income") return { name: d.name, fullName: d.fullName, income: d.income };
+                          if (chartFilter === "Expense") return { name: d.name, fullName: d.fullName, expense: d.expense, expenseLimit: d.expenseLimit };
+                          return d;
+                        })} 
+                        margin={{ top: 10, right: 0, left: -20, bottom: 0 }} 
+                        barGap={4}
+                      >
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280', fontWeight: 500 }} dy={10} interval={0} />
                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280', fontWeight: 500 }} tickFormatter={(v) => v >= 1000 ? `${v / 1000}K` : v} />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f3f4f6', opacity: 0.4 }} />
@@ -428,7 +436,14 @@ const Dashboard = ({ isSidebarOpen }) => {
                           <Bar dataKey="income" fill="#dfbbfd" radius={[4, 4, 0, 0]} maxBarSize={40} />
                         )}
                         {(chartFilter === "All" || chartFilter === "Expense") && (
-                          <Bar dataKey="expense" fill="#6a1e9c" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                          <Bar dataKey="expense" fill="#6a1e9c" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                            {chartFilter === "Expense" && chartData.map((entry, index) => (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={entry.expenseLimit > 0 && entry.expense > entry.expenseLimit ? "#ef4444" : "#6a1e9c"} 
+                              />
+                            ))}
+                          </Bar>
                         )}
                         {chartFilter === "Expense" && (
                           <Bar dataKey="expenseLimit" name="Expense Limit" fill="#fb923c" radius={[4, 4, 0, 0]} maxBarSize={40} />
