@@ -5,6 +5,7 @@ import { BsBank2 } from "react-icons/bs";
 import { MdCurrencyRupee } from "react-icons/md";
 import { ChevronDown } from "lucide-react";
 import { useSidebar } from "../hooks/useSidebar.js";
+import AssignTargetModal from "../components/AssignTargetModal.jsx";
 
 const baseExpenseCats = [
   { value: "dry cleaning",          label: "Dry Cleaning" },
@@ -80,6 +81,7 @@ const Expenses = () => {
   const [upiAmount, setUpiAmount] = useState("");
   const [attachmentFile, setAttachmentFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
 
   const handleCategoryChange = (val) => {
     const cat = cats.find(c => c.value === val);
@@ -160,7 +162,25 @@ const Expenses = () => {
             <h1 className="text-lg font-bold text-[#101828] tracking-wide uppercase">Expenses</h1>
             <p className="text-sm text-[#6c728a]">Record & Track your business transactions</p>
           </div>
+          {canSelectStore && (
+            <div className="ml-auto">
+              <button
+                onClick={() => setIsTargetModalOpen(true)}
+                className="px-5 py-2.5 rounded-lg bg-[#0a142f] text-white text-sm font-medium hover:bg-[#162548] transition-colors shadow-sm flex items-center gap-2"
+              >
+                Set Expense Limit
+              </button>
+            </div>
+          )}
         </div>
+
+        <AssignTargetModal 
+          isOpen={isTargetModalOpen}
+          onClose={() => setIsTargetModalOpen(false)}
+          cats={cats}
+          fallbackLocations={fallbackLocations}
+          currentusers={currentusers}
+        />
 
         {/* Card */}
         <div className="rounded-2xl bg-white shadow-sm border border-[#e6ebfa] p-8">
@@ -185,91 +205,92 @@ const Expenses = () => {
               </div>
             )}
 
-            {/* Row 1: Category, Sub Category (if available), Amount */}
-            <div className={`grid grid-cols-1 ${selectedCategory.subs?.length > 0 ? "md:grid-cols-3" : "md:grid-cols-2"} gap-6 mb-6`}>
+            {/* Row 1: Category and Amount */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-[#9ca3af] mb-2">Category</label>
+                <label className="block text-[11px] font-semibold uppercase text-gray-500 mb-2">Category</label>
                 <div className="relative">
                   <select
                     value={selectedCategory.value}
                     onChange={e => handleCategoryChange(e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-[#d9def1] bg-white px-5 py-4 text-base text-[#101828] focus:outline-none focus:border-[#1e3a8a] pr-10 cursor-pointer"
+                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-[15px] text-gray-900 focus:outline-none focus:border-[#a855f7] focus:ring-1 focus:ring-[#a855f7] pr-10 cursor-pointer"
                   >
                     {cats.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
-                  <ChevronDown size={18} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
+                  <ChevronDown size={18} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
               </div>
 
-              {selectedCategory.subs?.length > 0 && (
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-widest text-[#9ca3af] mb-2">Sub Category</label>
-                  <div className="relative">
-                    <select
-                      value={subCategory}
-                      onChange={e => setSubCategory(e.target.value)}
-                      className="w-full appearance-none rounded-xl border border-[#d9def1] bg-white px-5 py-4 text-base text-[#101828] focus:outline-none focus:border-[#1e3a8a] pr-10 cursor-pointer"
-                    >
-                      {selectedCategory.subs.map(sub => (
-                        <option key={sub} value={sub}>{sub}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={18} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
-                  </div>
-                </div>
-              )}
-
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-[#9ca3af] mb-2">Amount</label>
+                <label className="block text-[11px] font-semibold uppercase text-gray-500 mb-2">Amount</label>
                 <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[#9ca3af] text-base">₹</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-[15px]">₹</span>
                   <input
                     type="number"
                     value={amount}
                     onChange={e => setAmount(e.target.value)}
                     placeholder="0.00"
                     required
-                    className="w-full rounded-xl border border-[#d9def1] bg-white pl-10 pr-5 py-4 text-base text-[#101828] focus:outline-none focus:border-[#1e3a8a]"
+                    className="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 py-3 text-[15px] text-gray-900 focus:outline-none focus:border-[#a855f7] focus:ring-1 focus:ring-[#a855f7]"
                   />
                 </div>
               </div>
             </div>
 
+            {/* Row 2: Subcategories as pills */}
+            {selectedCategory.subs?.length > 0 && (
+              <div className="flex items-center gap-4 mb-6">
+                <span className="text-[13px] text-gray-500 font-medium">Subcategories:</span>
+                <div className="flex flex-wrap gap-2">
+                  {selectedCategory.subs.map(sub => (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => setSubCategory(sub)}
+                      className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-colors ${subCategory === sub ? 'bg-[#faf5ff] text-[#9333ea]' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                    >
+                      {sub}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <hr className="border-[#e6ebfa] my-6" />
 
             {/* Way of Payment */}
-            <div className="mb-6">
-              <label className="block text-xs font-semibold uppercase tracking-widest text-[#9ca3af] mb-4">Way of Payment</label>
-              <div className="flex flex-wrap items-center gap-6">
+            <div className="mb-8">
+              <label className="block text-[11px] font-semibold uppercase text-gray-500 mb-3">Way of Payment</label>
+              <div className="flex flex-wrap items-center gap-4">
                 {[
-                  { id: "cash", label: "Cash", icon: <MdCurrencyRupee size={20} /> },
+                  { id: "cash", label: "Cash", icon: <MdCurrencyRupee size={18} /> },
                   ...(selectedCategory.value !== "bulk amount transfer" ? [
-                    { id: "bank", label: "Bank", icon: <BsBank2 size={18} /> },
-                    { id: "upi",  label: "UPI",  icon: <span className="font-black italic text-sm">UPI</span> },
+                    { id: "bank", label: "Bank", icon: <BsBank2 size={16} /> },
+                    { id: "upi",  label: "UPI",  icon: <span className="font-bold italic text-sm">UPI</span> },
                   ] : []),
                 ].map(({ id, label, icon }) => {
                   const active = !splitPayment && paymentMethod === id;
                   return (
-                    <label key={id} className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <label key={id} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border ${active ? 'border-[#a855f7] bg-[#faf5ff] text-[#9333ea]' : 'border-gray-200 bg-white text-gray-600'} cursor-pointer select-none transition-colors`}>
                       <input
                         type="radio"
                         name="paymentMethod"
                         value={id}
                         checked={active}
                         onChange={() => { setPaymentMethod(id); setSplitPayment(false); }}
-                        className="w-5 h-5 accent-[#1e3a8a]"
+                        className="w-4 h-4 accent-[#a855f7]"
                       />
-                      <span className="flex items-center gap-1.5 text-base font-medium text-[#374151]">
+                      <span className="flex items-center gap-1.5 text-[14px] font-medium">
                         {icon} {label}
                       </span>
                     </label>
                   );
                 })}
                 {selectedCategory.value !== "bulk amount transfer" && (
-                  <label className="flex items-center gap-2.5 text-base font-medium text-[#374151] cursor-pointer ml-2">
+                  <label className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border ${splitPayment ? 'border-[#a855f7] bg-[#faf5ff] text-[#9333ea]' : 'border-gray-200 bg-white text-gray-600'} cursor-pointer select-none transition-colors`}>
                     <input type="checkbox" checked={splitPayment} onChange={() => setSplitPayment(!splitPayment)}
-                      className="w-5 h-5 accent-[#1e3a8a]" />
-                    Split Payment (Cash + Bank + UPI)
+                      className="w-4 h-4 accent-[#a855f7]" />
+                    <span className="text-[14px] font-medium">Split Payment (Cash + Bank + UPI)</span>
                   </label>
                 )}
               </div>
@@ -288,33 +309,33 @@ const Expenses = () => {
             </div>
 
             {/* Remarks + Attachment */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 mt-2">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-[#9ca3af] mb-2">Remarks</label>
+                <label className="block text-[11px] font-semibold uppercase text-gray-500 mb-2">Remarks</label>
                 <textarea
-                  rows={6}
+                  rows={5}
                   value={remark}
                   onChange={e => setRemark(e.target.value)}
                   required
-                  placeholder="Enter your transactions details here...."
-                  className="w-full rounded-xl border border-[#d9def1] px-5 py-4 text-sm text-[#101828] focus:outline-none focus:border-[#1e3a8a] resize-none"
+                  placeholder="Enter your transaction details here..."
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-[14px] text-gray-900 focus:outline-none focus:border-[#a855f7] focus:ring-1 focus:ring-[#a855f7] resize-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-[#9ca3af] mb-2">Attachment *</label>
+                <label className="block text-[11px] font-semibold uppercase text-gray-500 mb-2">Attachment <span className="text-red-500">*</span></label>
                 <SingleImageUpload onImageSelect={setAttachmentFile} existingImage={attachmentFile} required />
               </div>
             </div>
 
             {/* Actions */}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="flex justify-end items-center gap-4 pt-4">
               <button type="button" onClick={handleCancel}
-                className="w-full py-4 rounded-xl border-2 border-[#d9def1] text-sm font-bold uppercase text-[#374151] hover:bg-[#f9fafb] tracking-widest">
+                className="px-8 py-3 rounded-xl border border-gray-200 text-[14px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                 Cancel
               </button>
               <button type="submit" disabled={isSubmitting}
-                className="w-full py-4 rounded-xl bg-[#1e3a8a] text-white text-sm font-bold uppercase hover:bg-[#1e40af] disabled:opacity-50 tracking-widest">
-                {isSubmitting ? "Submitting..." : "Submit"}
+                className="px-8 py-3 rounded-xl bg-[#a855f7] text-white text-[14px] font-medium hover:bg-purple-600 transition-colors disabled:opacity-50">
+                {isSubmitting ? "Submitting..." : "Submit Expense"}
               </button>
             </div>
 

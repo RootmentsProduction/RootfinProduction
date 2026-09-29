@@ -111,6 +111,7 @@ export const CreatePayment = async (req, res) => {
       date,
       invoiceNo,        // may be omitted
       isSecurityReturn,
+      isAdminLevel,
       attachment        // 🔺 ADDED  (base-64 string from React)
     } = req.body;
 
@@ -170,6 +171,7 @@ export const CreatePayment = async (req, res) => {
       paymentMethod,
       date,
       invoiceNo: finalInvoice,
+      isAdminLevel,
       attachment: attachmentObj                     // 🔺 ADDED
     });
 

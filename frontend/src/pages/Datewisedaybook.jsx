@@ -533,9 +533,15 @@ const Datewisedaybook = () => {
       return { cash, rbl, bank, upi, amount: cash + rbl + bank + upi }; // ✅ Added rbl
     }
 
-    if (selectedStore === "all") {
+    if (selectedStore === "all" || selectedStore === "all_departments") {
+      const isDept = selectedStore === "all_departments";
+      const deptLocCodes = ["858", "759", "103"];
+      const filteredLocations = visibleLocations.filter(loc => 
+        isDept ? deptLocCodes.includes(loc.locCode) : !deptLocCodes.includes(loc.locCode)
+      );
+      
       const results = await Promise.all(
-        visibleLocations.map(async ({ locCode, locName }) => {
+        filteredLocations.map(async ({ locCode, locName }) => {
           const summary = await getStoreFooterTotals(locCode, fromDate, toDate);
           return { store: locName, locCode, ...summary };
         })
@@ -1092,10 +1098,13 @@ const Datewisedaybook = () => {
     const tableHtml = printRef.current.innerHTML;
     const w = window.open("", "_blank", "width=900,height=600");
 
+    const storeName = selectedStore === "all" ? "All_Branches" : selectedStore === "multi" ? "Multiple_Branches" : (AllLoation.find(loc => loc.locCode === currentusers.locCode)?.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_");
+    const dateRange = fromDate === toDate ? fromDate : `${fromDate}_to_${toDate}`;
+
     w.document.write(`
     <html>
       <head>
-        <title>Financial Summary</title>
+        <title>financial_summary_${storeName}_${dateRange}</title>
         <style>
           @page { margin: 10mm; }
           body  { font-family: Arial, sans-serif; }
@@ -1539,7 +1548,7 @@ const Datewisedaybook = () => {
             <div className="bg-white rounded-none p-6 border border-gray-200 shadow-sm mb-6 no-print">
               <div className="flex flex-col gap-5">
                 {/* Inputs & Selects Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 items-end">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
                   {/* From Date */}
                   <div className="flex flex-col">
                     <label className="text-sm font-medium text-gray-500 mb-1.5">From Date</label>
@@ -1682,10 +1691,11 @@ const Datewisedaybook = () => {
                   <div className="flex flex-col">
                     <label className="text-sm font-medium text-gray-500 mb-1.5">Store</label>
                     <Select
+                      placeholder="Select Store..."
                       options={[
                         { value: "current", label: `Current Store (${currentusers.locCode})` },
                         ...(((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager)
-                          ? [{ value: "all", label: "All Stores (Totals)" }]
+                          ? [{ value: "all", label: "All Stores" }]
                           : []),
                         ...(((currentusers.power || '').toLowerCase() === 'admin')
                           ? [{ value: "multi", label: "Multiple Branches" }]
@@ -1693,10 +1703,80 @@ const Datewisedaybook = () => {
                       ]}
                       value={[
                         { value: "current", label: `Current Store (${currentusers.locCode})` },
-                        { value: "all", label: "All Stores (Totals)" },
+                        { value: "all", label: "All Stores" },
                         { value: "multi", label: "Multiple Branches" }
-                      ].find(o => o.value === selectedStore)}
+                      ].find(o => o.value === selectedStore) || null}
                       onChange={(opt) => setSelectedStore(opt ? opt.value : "current")}
+                      menuPortalTarget={document.body}
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          minHeight: '42px',
+                          height: '42px',
+                          border: state.isFocused ? '1px solid #9B48D7' : '1px solid #e5e7eb',
+                          borderRadius: '0px',
+                          boxShadow: state.isFocused ? '0 0 0 2px rgba(155,72,215,0.15)' : 'none',
+                          fontSize: '0.875rem',
+                          backgroundColor: 'white',
+                          transition: 'all 0.15s ease',
+                          '&:hover': { border: '1px solid #cbd5e1' }
+                        }),
+                        valueContainer: base => ({ ...base, height: '40px', padding: '0 12px' }),
+                        input: base => ({ ...base, margin: '0px', padding: '0px' }),
+                        indicatorSeparator: base => ({ ...base, display: 'none' }),
+                        dropdownIndicator: (base, state) => ({
+                          ...base,
+                          padding: '0 12px',
+                          transition: 'transform 0.2s ease',
+                          transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                          color: '#6b7280'
+                        }),
+                        menu: base => ({
+                          ...base,
+                          zIndex: 9999,
+                          borderRadius: '0px',
+                          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+                          animation: 'dropdownOpen 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                          overflow: 'hidden'
+                        }),
+                        menuPortal: base => ({ ...base, zIndex: 9999 }),
+                        option: (base, state) => ({
+                          ...base,
+                          fontSize: '0.875rem',
+                          backgroundColor: state.isSelected ? '#9B48D7' : state.isFocused ? '#f5f3ff' : 'white',
+                          color: state.isSelected ? 'white' : '#374151',
+                          cursor: 'pointer',
+                        }),
+                      }}
+                    />
+                  </div>
+
+                  {/* Department */}
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-500 mb-1.5">Department</label>
+                    <Select
+                      placeholder="All Departments"
+                      options={[
+                        ...(((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager)
+                          ? [{ value: "all_departments", label: "All Departments" }]
+                          : []),
+                        { value: "759", label: "HEAD OFFICE01" },
+                        { value: "Office", label: "Office" },
+                        { value: "Production", label: "Production" },
+                        { value: "858", label: "Warehouse" },
+                        { value: "103", label: "WAREHOUSE" }
+                      ]}
+                      value={[
+                        { value: "all_departments", label: "All Departments" },
+                        { value: "759", label: "HEAD OFFICE01" },
+                        { value: "Office", label: "Office" },
+                        { value: "Production", label: "Production" },
+                        { value: "858", label: "Warehouse" },
+                        { value: "103", label: "WAREHOUSE" }
+                      ].find(o => o.value === selectedStore) || null}
+                      onChange={(opt) => {
+                          if (opt) setSelectedStore(opt.value);
+                      }}
                       menuPortalTarget={document.body}
                       styles={{
                         control: (base, state) => ({
@@ -1766,10 +1846,27 @@ const Datewisedaybook = () => {
                     {selectedStore === "multi" && (
                       <button
                         onClick={() => setShowStoreSelector(prev => !prev)}
-                        className="h-[42px] px-4 rounded-none border border-gray-200 bg-white text-gray-700 text-sm font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          whiteSpace: 'nowrap',
+                          height: '42px',
+                          padding: '0 16px',
+                          border: '1px solid #e5e7eb',
+                          backgroundColor: '#ffffff',
+                          color: '#374151',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          boxSizing: 'border-box'
+                        }}
+                        className="hover:bg-gray-50 transition-colors"
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4 text-gray-500 shrink-0"><path d="M3 6h18M7 12h10M11 18h2" /></svg>
-                        <span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4 text-gray-500 shrink-0" style={{ display: 'block' }}><path d="M3 6h18M7 12h10M11 18h2" /></svg>
+                        <span style={{ display: 'inline-block' }}>
                           {selectedStores.length === 0 ? "Select Branches" : `${selectedStores.length} Branch${selectedStores.length > 1 ? "es" : ""}`}
                         </span>
                         {selectedStores.length > 0 && (
@@ -1780,7 +1877,7 @@ const Datewisedaybook = () => {
                             {selectedStores.length}
                           </span>
                         )}
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`w-3.5 h-3.5 text-gray-400 transition-transform shrink-0 ${showStoreSelector ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6" /></svg>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`w-3.5 h-3.5 text-gray-400 transition-transform shrink-0 ${showStoreSelector ? "rotate-180" : ""}`} style={{ display: 'block' }}><path d="M6 9l6 6 6-6" /></svg>
                       </button>
                     )}
                   </div>
@@ -1788,9 +1885,9 @@ const Datewisedaybook = () => {
                   {/* Action Buttons Right Side */}
                   <div className="flex items-center gap-3">
                     <CSVLink
-                      data={selectedStore === "all" ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
-                      headers={selectedStore === "all" ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
-                      filename={`${fromDate} to ${toDate} report.csv`}
+                      data={(selectedStore === "all" || selectedStore === "all_departments") ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
+                      headers={(selectedStore === "all" || selectedStore === "all_departments") ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
+                      filename={`financial_summary_${selectedStore === "all" ? "All_Branches" : selectedStore === "all_departments" ? "All_Departments" : selectedStore === "multi" ? "Multiple_Branches" : (AllLoation.find(loc => loc.locCode === currentusers.locCode)?.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_")}_${fromDate === toDate ? fromDate : fromDate + "_to_" + toDate}.csv`}
                     >
                       <button
                         type="button"
@@ -1818,7 +1915,7 @@ const Datewisedaybook = () => {
             <div ref={printRef}>
               {/* Loading Screen */}
 
-              {selectedStore === "all" ? (
+              {(selectedStore === "all" || selectedStore === "all_departments") ? (
                 <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "500px", overflowY: "auto" }}>
                     <table className="w-full border-collapse min-w-full text-sm">

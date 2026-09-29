@@ -1,12 +1,8 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { ShieldCheck, TrendingUp, TrendingDown, ArrowUpDown, Bell, AlertTriangle, AlertCircle, Calendar as CalendarIcon, StoreIcon } from "lucide-react";
-import baseUrl from "../api/api";
-import useSidebar from "../hooks/useSidebar";
-import Header from "../components/Header";
-
-const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
-const TWS_BASE = "https://rentalapi.rootments.live/api/GetBooking";
+import React, { useState, useEffect } from 'react';
+import Header from '../components/Header';
+import { CalendarIcon, RefreshCw, HandCoins, Banknote, Receipt, Link2, FileText } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import baseUrl from '../api/api.js';
 
 const STORE_LIST = [
   { locName: "G-Edappal",        locCode: "707" },
@@ -36,229 +32,246 @@ const STORE_LIST = [
   { locName: "Z-Perinthalmanna", locCode: "133" },
 ];
 
-const fmt = (n) =>
-  new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 2 }).format(n || 0);
-
-const todayDate = () => new Date().toISOString().slice(0, 10);
-
-const Home = () => {
-  const isSidebarOpen = useSidebar();
-  const user = JSON.parse(localStorage.getItem("rootfinuser")) || {};
-
-  const [dateFrom, setDateFrom] = useState(todayDate());
-  const [dateTo, setDateTo] = useState(todayDate());
-  const [loading, setLoading] = useState(true);
-
-  // Stats State
-  const [incTotals, setIncTotals] = useState({ cash: 0, rbl: 0, bank: 0, upi: 0 });
-  const [retTotals, setRetTotals] = useState({ cash: 0, rbl: 0, bank: 0, upi: 0 });
-  const [expTotals, setExpTotals] = useState({ cash: 0, rbl: 0, bank: 0, upi: 0 });
-  const [netTotals, setNetTotals] = useState({ cash: 0, rbl: 0, bank: 0, upi: 0 });
-  const [securityStats, setSecurityStats] = useState({ in: 0, out: 0 });
+const Dashboard = ({ isSidebarOpen }) => {
+  const [dateFrom, setDateFrom] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().split('T')[0];
+  });
   
-  const [closedStores, setClosedStores] = useState([]);
+  const [dateTo, setDateTo] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [chartFilter, setChartFilter] = useState("All");
+  const [daybookFilter, setDaybookFilter] = useState("All");
+
+  const [incTotals, setIncTotals] = useState({ cash: 0, bank: 0, rbl: 0, upi: 0 });
+  const [retTotals, setRetTotals] = useState({ cash: 0, bank: 0, rbl: 0, upi: 0 });
+  const [expTotals, setExpTotals] = useState({ cash: 0, bank: 0, rbl: 0, upi: 0 });
+  const [netTotals, setNetTotals] = useState({ cash: 0, bank: 0, rbl: 0, upi: 0 });
+
+  const [chartData, setChartData] = useState([]);
   const [pendingStores, setPendingStores] = useState([]);
+  const [closedStores, setClosedStores] = useState([]);
   
   const [reorderAlerts, setReorderAlerts] = useState(0);
   const [purchaseOrders, setPurchaseOrders] = useState(0);
   const [lateClosures, setLateClosures] = useState(0);
 
+  const fmt = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(val || 0);
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-gray-900 text-white p-3 rounded-lg shadow-xl text-xs min-w-[150px]">
+          <p className="font-bold mb-2 pb-2 border-b border-gray-700">{label}</p>
+          {payload.map((entry, index) => (
+            <div key={index} className="flex justify-between items-center py-1">
+              <div className="flex items-center">
+                <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: entry.color }} />
+                <span className="text-gray-300 capitalize">{entry.name}</span>
+              </div>
+              <span className="font-bold">{fmt(entry.value)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   useEffect(() => {
     fetchDashboardData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFrom, dateTo]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
+    const TWS_BASE = "https://rentalapi.rootments.live/api/GetBooking";
+    const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "";
+    const ALL_LOC_CODES = STORE_LIST.map(s => s.locCode);
+    const DEPT_CODES = ["759", "102", "101", "858", "103"];
+    const STORE_LOC_CODES = ALL_LOC_CODES.filter(lc => !DEPT_CODES.includes(lc));
+
+    const EXPENSE_CATS = new Set([
+      "petty expenses","staff reimbursement","maintenance expenses","telephone internet",
+      "utility bill","salary","rent","courier charges","asset purchase","promotion_services",
+      "spot incentive","other expenses","shoe sales return","shirt sales return",
+      "dry cleaning","altration","material","travel exp","fuel exp",
+      "waste management","water charges","printing stationary","staff welfare",
+      "staff accommodation","incentive","write off",
+    ]);
+
+    const safeFetch = async (url) => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return {};
+        return await res.json();
+      } catch (e) { return {}; }
+    };
+
     try {
-      // For dashboard, we want all stores combined data
-      const locCode = ""; 
-      
-      // 1. Fetch Daybook closures
-      let closed = [];
+      // ── 1. Daybook Status ─────────────────────────────────────────────────
+      let closedArr = [];
       try {
         const clsRes = await fetch(`${API_URL}/api/user/AdminColseView?date=${dateTo}&role=admin`);
         if (clsRes.ok) {
           const clsData = await clsRes.json();
-          closed = (clsData.data || []).map(c => c.locCode);
+          closedArr = (clsData.data || []).map(c => c.locCode);
         }
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) { console.error("Daybook error", e); }
 
-      const closedStoresList = STORE_LIST.filter(s => closed.includes(s.locCode));
-      const pendingStoresList = STORE_LIST.filter(s => !closed.includes(s.locCode));
-      setClosedStores(closedStoresList);
-      setPendingStores(pendingStoresList);
+      setClosedStores(STORE_LOC_CODES.filter(lc => closedArr.includes(lc)).map(lc => STORE_LIST.find(s => s.locCode === lc)).filter(Boolean));
+      setPendingStores(STORE_LOC_CODES.filter(lc => !closedArr.includes(lc)).map(lc => STORE_LIST.find(s => s.locCode === lc)).filter(Boolean));
 
-      // 2. Fetch Reorder Alerts
+      // ── 2. Quick Overview: Reorder Alerts, Purchase Orders, Late Closures ──
       try {
-        const reorderRes = await fetch(`${API_URL}/api/reorder-alerts`);
-        if (reorderRes.ok) {
-          const reorderData = await reorderRes.json();
-          setReorderAlerts((reorderData || []).filter(a => a.status === "active").length);
-        }
-      } catch (e) {
-        console.error(e);
-      }
+        const [reorderRes, poRes, closuresRes] = await Promise.all([
+          fetch(`${API_URL}api/reorder-alerts`).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`${API_URL}api/purchase/orders`).then(r => r.ok ? r.json() : []).catch(() => []),
+          fetch(`${API_URL}user/pendingClosures`).then(r => r.ok ? r.json() : {}).catch(() => ({}))
+        ]);
 
-      // 3. Fetch Purchase Orders (Active/Pending)
-      try {
-        const poRes = await fetch(`${API_URL}/api/purchase/orders`);
-        if (poRes.ok) {
-          const poData = await poRes.json();
-          setPurchaseOrders((poData || []).filter(o => o.status !== "Closed" && o.status !== "Cancelled").length);
-        }
-      } catch (e) {
-        console.error(e);
-      }
+        const reorderList = Array.isArray(reorderRes) ? reorderRes : (reorderRes.data || []);
+        setReorderAlerts(reorderList.filter(a => (a.status || "").toLowerCase() === "active").length);
 
-      // 3.5. Fetch Late Closures
-      try {
-        const closuresRes = await fetch(`${API_URL}/user/pendingClosures`);
-        if (closuresRes.ok) {
-          const closuresData = await closuresRes.json();
-          setLateClosures(closuresData.data?.length || 0);
-        }
-      } catch (e) {
-        console.error(e);
-      }
+        const poList = Array.isArray(poRes) ? poRes : (poRes.data || []);
+        setPurchaseOrders(poList.filter(o => o.status !== "Closed" && o.status !== "Cancelled" && o.status !== "Received").length);
 
-      // 4. Fetch Income / Expense / Security
-      const incomeReq = fetch(`${TWS_BASE}/GetBookingList?LocCode=${locCode}&DateFrom=${dateFrom}&DateTo=${dateTo}`);
-      const rentoutReq = fetch(`${TWS_BASE}/GetRentoutList?LocCode=${locCode}&DateFrom=${dateFrom}&DateTo=${dateTo}`);
-      const returnReq = fetch(`${TWS_BASE}/GetReturnList?LocCode=${locCode}&DateFrom=${dateFrom}&DateTo=${dateTo}`);
-      const cancelReq = fetch(`${TWS_BASE}/GetCancelList?LocCode=${locCode}&DateFrom=${dateFrom}&DateTo=${dateTo}`);
-      
-      let mongoUrl = `${API_URL}/api/user/Income_expense?DateFrom=${dateFrom}&DateTo=${dateTo}`;
-      if (locCode && locCode !== "759" && locCode !== "102") mongoUrl += `&LocCode=${locCode}`;
-      const mongoReq = fetch(mongoUrl);
+        const closuresList = closuresRes.data || closuresRes || [];
+        setLateClosures(Array.isArray(closuresList) ? closuresList.length : 0);
+      } catch (e) { console.error("Quick overview error:", e); }
 
-      const [incRes, rentRes, retRes, canRes, mongoResp] = await Promise.all([
-        incomeReq.then(res => res.json()).catch(() => ({})),
-        rentoutReq.then(res => res.json()).catch(() => ({})),
-        returnReq.then(res => res.json()).catch(() => ({})),
-        cancelReq.then(res => res.json()).catch(() => ({})),
-        mongoReq.then(res => res.json()).catch(() => ({ data: [] }))
-      ]);
+      // ── 3. Financial Summary — all stores (same logic as IncomeExpenseReport) ──
+      // Fetch TWS data for ALL loc codes in parallel
+      const twsResults = await Promise.all(
+        ALL_LOC_CODES.map(lc => Promise.all([
+          safeFetch(`${TWS_BASE}/GetBookingList?LocCode=${lc}&DateFrom=${dateFrom}&DateTo=${dateTo}`),
+          safeFetch(`${TWS_BASE}/GetRentoutList?LocCode=${lc}&DateFrom=${dateFrom}&DateTo=${dateTo}`),
+          safeFetch(`${TWS_BASE}/GetReturnList?LocCode=${lc}&DateFrom=${dateFrom}&DateTo=${dateTo}`),
+          safeFetch(`${TWS_BASE}/GetDeleteList?LocCode=${lc}&DateFrom=${dateFrom}&DateTo=${dateTo}`),
+        ]))
+      );
 
-      let iCash=0, iRbl=0, iBank=0, iUpi=0;
-      let rCash=0, rRbl=0, rBank=0, rUpi=0;
-      let eCash=0, eRbl=0, eBank=0, eUpi=0;
+      const bookingData = twsResults.flatMap(r => r[0]?.dataSet?.data || []);
+      const rentoutData = twsResults.flatMap(r => r[1]?.dataSet?.data || []);
+      const returnData  = twsResults.flatMap(r => r[2]?.dataSet?.data || []);
+      const deleteData  = twsResults.flatMap(r => r[3]?.dataSet?.data || []);
+
+      // Mongo: fetch all stores
+      const mongoResults = await Promise.all(
+        ALL_LOC_CODES.map(lc =>
+          fetch(`${API_URL}/user/Getpayment?LocCode=${lc}&DateFrom=${dateFrom}&DateTo=${dateTo}`)
+            .then(r => r.ok ? r.json() : {})
+            .catch(() => ({}))
+        )
+      );
+      const mongoTxns = mongoResults.flatMap(r => Array.isArray(r) ? r : (r?.data || []));
+
+      // ── Booking → Income
+      let iCash = 0, iRbl = 0, iBank = 0, iUpi = 0;
+      bookingData.forEach(item => {
+        iCash += Number(item.bookingCashAmount || 0);
+        iRbl  += Number(item.rblRazorPay || 0);
+        iBank += Number(item.bookingBankAmount || 0);
+        iUpi  += Number(item.bookingUPIAmount || 0);
+      });
+
+      // ── RentOut → Income (balance payable) + Returnable (security)
+      let rCash = 0, rRbl = 0, rBank = 0, rUpi = 0;
+      let retCash = 0;
+      rentoutData.forEach(item => {
+        const security = Number(item.securityAmount || 0);
+        const cash  = Number(item.rentoutCashAmount || 0);
+        const rbl   = Number(item.rblRazorPay || 0);
+        const bank  = Number(item.rentoutBankAmount || 0);
+        const upi   = Number(item.rentoutUPIAmount || 0);
+        // Income part
+        iCash += cash; iRbl += rbl; iBank += bank; iUpi += upi;
+        // Returnable income (security)
+        if (security > 0) retCash += security;
+      });
+
+      // ── Return → Security Refund (expense)
+      let secRefCash = 0, secRefRbl = 0, secRefBank = 0, secRefUpi = 0;
+      returnData.forEach(item => {
+        secRefCash += -Math.abs(Number(item.returnCashAmount || 0));
+        secRefRbl  += -Math.abs(Number(item.rblRazorPay || 0));
+        secRefBank += -Math.abs(Number(item.returnBankAmount || 0));
+        secRefUpi  += -Math.abs(Number(item.returnUPIAmount || 0));
+      });
+
+      // ── Delete (Cancel) → Expense
+      let eCash = 0, eRbl = 0, eBank = 0, eUpi = 0;
+      deleteData.forEach(item => {
+        eCash += -Math.abs(Number(item.deleteCashAmount || 0));
+        eRbl  += -Math.abs(Number(item.rblRazorPay || 0));
+        eBank += -Math.abs(Number(item.deleteBankAmount || 0));
+        eUpi  += -Math.abs(Number(item.deleteUPIAmount || 0));
+      });
+
+      // ── Mongo Transactions
       let b2cCash=0, b2cRbl=0, b2cBank=0, b2cUpi=0;
       let c2bCash=0, c2bRbl=0, c2bBank=0, c2bUpi=0;
-      let hSecCash=0, hSecRbl=0, hSecBank=0, hSecUpi=0;
-      
-      let secIn = 0;
-      let secOutCash = 0;
-      let secOutRbl = 0;
-
-      // Booking
-      (incRes?.dataSet?.data || []).forEach(item => {
-        iCash += Number(item.cash || 0);
-        iRbl += Number(item.rblRazorPay || 0);
-        iBank += Number(item.bank || 0);
-        iUpi += Number(item.upi || 0);
-      });
-
-      // Rentout (Returnable + Security In)
-      (rentRes?.dataSet?.data || []).forEach(item => {
-        const amt = Number(item.amount || 0);
-        const sd = Number(item.securityDeposit || 0);
-        const rbl = Number(item.rblRazorPay || 0);
-        secIn += sd;
-        if (rbl > 0) {
-          rRbl += amt;
-        } else {
-          rCash += amt;
-        }
-      });
-
-      // Return (Holded Sec + Security Out)
-      (retRes?.dataSet?.data || []).forEach(item => {
-        const cash = -Math.abs(Number(item.returnCashAmount || 0));
-        const rbl = -Math.abs(Number(item.rblRazorPay || 0));
-        const bank = rbl !== 0 ? 0 : -Math.abs(Number(item.returnBankAmount || 0));
-        const upi = rbl !== 0 ? 0 : -Math.abs(Number(item.returnUPIAmount || 0));
-        
-        hSecCash += cash; hSecRbl += rbl; hSecBank += bank; hSecUpi += upi;
-        
-        secOutCash += Math.abs(cash);
-        secOutRbl += Math.abs(rbl);
-      });
-
-      // Cancel
-      (canRes?.dataSet?.data || []).forEach(item => {
-        const rbl = -Math.abs(Number(item.rblRazorPay || 0));
-        eCash += -Math.abs(Number(item.deleteCashAmount || 0));
-        eRbl += rbl;
-        eBank += rbl !== 0 ? 0 : -Math.abs(Number(item.deleteBankAmount || 0));
-        eUpi += rbl !== 0 ? 0 : -Math.abs(Number(item.deleteUPIAmount || 0));
-      });
-
-      // Mongo
-      const mongoTxns = Array.isArray(mongoResp) ? mongoResp : (mongoResp.data || []);
-      const EXPENSE_CATEGORIES = new Set([
-        "petty expenses","staff reimbursement","maintenance expenses","telephone internet",
-        "utility bill","salary","rent","courier charges","asset purchase","promotion_services",
-        "spot incentive","other expenses","shoe sales return",
-        "shirt sales return","dry cleaning","altration","material","travel exp","fuel exp",
-        "waste management","water charges","printing stationary","staff welfare",
-        "staff accommodation","incentive","write off",
-      ]);
-
       mongoTxns.forEach(t => {
+        const tp  = (t.type || "").toLowerCase();
         const cat = (t.category || "").toLowerCase().trim();
         const sub = (t.subCategory || "").toLowerCase().trim();
-        const tp = (t.type || "").toLowerCase();
-        
-        const isBankToCash = cat === "bank to cash" || sub === "bank to cash" || cat.includes("bank to cash") || sub.includes("bank to cash") || cat.includes("cash to branch") || sub.includes("cash to branch");
-        const isCashToBank = !isBankToCash && (cat === "bulk amount transfer" || cat === "cash to bank" || sub === "bulk amount transfer" || sub === "cash to bank" || tp === "money transfer");
-        const isExpense = tp === "expense" || EXPENSE_CATEGORIES.has(cat);
         const inv = (t.invoiceNo || "").toUpperCase();
+        const isShoeOrShirtSale = sub === "shoe sales" || sub === "shirt sales" || cat === "shoe sales" || cat === "shirt sales";
+        const isSalesReturn = sub.includes("sales return") || cat.includes("sales return");
         const isReturnInvoice = inv.startsWith("RTN-") || inv.startsWith("RET-");
-        
-        const cash = Number(t.cash || 0);
-        const rbl = Number(t.rbl || t.rblRazorPay || 0);
-        const bank = Number(t.bank || 0);
-        const upi = Number(t.upi || 0);
-
-        if (isBankToCash) {
-          b2cCash += cash; b2cRbl += rbl; b2cBank += bank; b2cUpi += upi;
-        } else if (isCashToBank) {
-          c2bCash += cash; c2bRbl += rbl; c2bBank += bank; c2bUpi += upi;
-        } else if (isReturnInvoice || isExpense) {
-          eCash += cash; eRbl += rbl; eBank += bank; eUpi += upi;
-        } else if (tp === "income") {
-          iCash += cash; iRbl += rbl; iBank += bank; iUpi += upi;
-        }
+        // Filter same as IncomeExpenseReport
+        if (!isShoeOrShirtSale && !isSalesReturn && !isReturnInvoice && (inv.startsWith("INV-") || inv.startsWith("RTN-") || inv.startsWith("RET-"))) return;
+        const isBankToCash = cat === "bank to cash" || cat.includes("bank to cash") || cat.includes("cash to branch");
+        const isCashToBank = !isBankToCash && (cat === "bulk amount transfer" || cat === "cash to bank" || tp === "money transfer");
+        const isExpense = tp === "expense" || EXPENSE_CATS.has(cat);
+        const cash = Number(t.cash || 0), rbl = Number(t.rbl || t.rblRazorPay || 0), bank = Number(t.bank || 0), upi = Number(t.upi || 0);
+        if (isBankToCash) { b2cCash += cash; b2cRbl += rbl; b2cBank += bank; b2cUpi += upi; }
+        else if (isCashToBank) { c2bCash += cash; c2bRbl += rbl; c2bBank += bank; c2bUpi += upi; }
+        else if (isReturnInvoice || isExpense) { eCash += cash; eRbl += rbl; eBank += bank; eUpi += upi; }
+        else if (tp === "income") { iCash += cash; iRbl += rbl; iBank += bank; iUpi += upi; }
       });
 
+      // ── Set Summary Card Totals
       setIncTotals({ cash: iCash, rbl: iRbl, bank: iBank, upi: iUpi });
-      setRetTotals({ cash: rCash, rbl: rRbl, bank: rBank, upi: rUpi });
-      setExpTotals({ cash: eCash, rbl: eRbl, bank: eBank, upi: eUpi });
-      
-      const gtIncomeCash = iCash + rCash + b2cCash;
-      const gtIncomeRbl = iRbl + rRbl + b2cRbl;
-      const gtIncomeBank = iBank + rBank + b2cBank;
-      const gtIncomeUpi = iUpi + rUpi + b2cUpi;
-      
-      const gtExpenseCash = eCash + hSecCash + c2bCash;
-      const gtExpenseRbl = eRbl + hSecRbl + c2bRbl;
-      const gtExpenseBank = eBank + hSecBank + c2bBank;
-      const gtExpenseUpi = eUpi + hSecUpi + c2bUpi;
-      
-      setNetTotals({
-        cash: gtIncomeCash + gtExpenseCash,
-        rbl: gtIncomeRbl + gtExpenseRbl,
-        bank: gtIncomeBank + gtExpenseBank,
-        upi: gtIncomeUpi + gtExpenseUpi,
+      setRetTotals({ cash: retCash, rbl: 0, bank: 0, upi: 0 });
+      setExpTotals({ cash: Math.abs(eCash), rbl: Math.abs(eRbl), bank: Math.abs(eBank), upi: Math.abs(eUpi) });
+
+      const netCash = iCash + eCash + secRefCash;
+      const netRbl  = iRbl  + eRbl  + secRefRbl;
+      const netBank = iBank + eBank + secRefBank;
+      const netUpi  = iUpi  + eUpi  + secRefUpi;
+      setNetTotals({ cash: netCash, rbl: netRbl, bank: netBank, upi: netUpi });
+
+      // ── 4. Per-store chart data (store-only, no depts) ───────────────────────────
+      const perStoreData = STORE_LOC_CODES.map(lc => {
+        const store = STORE_LIST.find(s => s.locCode === lc);
+        const idx = ALL_LOC_CODES.indexOf(lc);
+        if (idx === -1) return { name: store?.locName || lc, income: 0, expense: 0 };
+
+        const sBk = twsResults[idx][0]?.dataSet?.data || [];
+        const sRt = twsResults[idx][1]?.dataSet?.data || [];
+        const sDl = twsResults[idx][3]?.dataSet?.data || [];
+        const sMg = mongoResults[idx];
+        const sMgTxns = Array.isArray(sMg) ? sMg : (sMg?.data || []);
+
+        let sInc = 0, sExp = 0;
+        sBk.forEach(i => { sInc += Number(i.bookingCashAmount||0) + Number(i.rblRazorPay||0) + Number(i.bookingBankAmount||0) + Number(i.bookingUPIAmount||0); });
+        sRt.forEach(i => { sInc += Number(i.rentoutCashAmount||0) + Number(i.rblRazorPay||0) + Number(i.rentoutBankAmount||0) + Number(i.rentoutUPIAmount||0); });
+        sDl.forEach(i => { sExp += Math.abs(Number(i.deleteCashAmount||0)) + Math.abs(Number(i.rblRazorPay||0)) + Math.abs(Number(i.deleteBankAmount||0)); });
+        sMgTxns.forEach(t => {
+          const tp = (t.type||"").toLowerCase(), cat = (t.category||"").toLowerCase().trim();
+          const isExp = tp === "expense" || EXPENSE_CATS.has(cat);
+          const amt = Number(t.cash||0) + Number(t.rbl||t.rblRazorPay||0) + Number(t.bank||0) + Number(t.upi||0);
+          if (isExp) sExp += amt;
+          else if (tp === "income") sInc += amt;
+        });
+        return { name: store?.locName || lc, income: Math.abs(sInc), expense: Math.abs(sExp) };
       });
 
-      setSecurityStats({
-        in: secIn,
-        out: secOutCash + secOutRbl,
-      });
+      setChartData(perStoreData); // Keep in STORE_LIST order so names match bars
 
     } catch (err) {
       console.error(err);
@@ -267,252 +280,317 @@ const Home = () => {
     }
   };
 
+
+
+
   const sum = (t) => t.cash + t.rbl + t.bank + t.upi;
   const incTotal = sum(incTotals);
   const retTotal = sum(retTotals);
   const expTotal = sum(expTotals);
   const netTotal = sum(netTotals);
 
+  let displayedDaybooks = [];
+  if (daybookFilter === "All") displayedDaybooks = [...pendingStores.map(s => ({...s, st: 'not'})), ...closedStores.map(s => ({...s, st: 'closed'}))];
+  if (daybookFilter === "Closed") displayedDaybooks = closedStores.map(s => ({...s, st: 'closed'}));
+  if (daybookFilter === "Not Closed") displayedDaybooks = pendingStores.map(s => ({...s, st: 'not'}));
+
   return (
     <>
       <Header />
-      <div className={`transition-all duration-300 p-6 bg-[#f5f7fb] min-h-screen ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Overview of your stores and financial metrics</p>
-        </div>
+      <div className={`transition-all duration-300 p-6 bg-[#fbfcfd] min-h-screen pb-20 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
         
-        <div className="flex items-center space-x-3 mt-4 md:mt-0">
-          <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
-            <CalendarIcon size={16} className="text-gray-400 mr-2" />
-            <input 
-              type="date" 
-              value={dateFrom} 
-              onChange={e => setDateFrom(e.target.value)}
-              className="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 p-0"
-            />
-            <span className="mx-2 text-gray-300">to</span>
-            <input 
-              type="date" 
-              value={dateTo} 
-              onChange={e => setDateTo(e.target.value)}
-              className="text-sm font-medium text-gray-700 bg-transparent border-none focus:ring-0 p-0"
-            />
+        {/* Header */}
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end mb-6 gap-4">
+          <div>
+            <h1 className="text-[26px] font-semibold text-gray-900 tracking-tight leading-tight">Dashboard</h1>
+            <p className="text-[14px] text-gray-400 mt-1">Overview of your stores and financial metrics</p>
           </div>
-          <button 
-            onClick={fetchDashboardData}
-            className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors shadow-sm"
-          >
-            Refresh
-          </button>
+                    <div className="flex items-end gap-3">
+            {/* From Date */}
+            <div className="flex flex-col">
+              <p className="text-[12px] text-gray-400 mb-2">From Date</p>
+              <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 h-[42px] gap-3 relative" style={{minWidth: '155px'}}>
+                <span className="text-[14px] font-medium text-gray-800 flex-1 select-none">
+                  {dateFrom ? dateFrom.split('-').reverse().join('-') : ''}
+                </span>
+                <label htmlFor="from-date-picker" className="cursor-pointer text-gray-400 hover:text-gray-600 flex items-center">
+                  <CalendarIcon size={16} strokeWidth={1.8} />
+                </label>
+                <input
+                  id="from-date-picker"
+                  type="date"
+                  value={dateFrom}
+                  onChange={e => setDateFrom(e.target.value)}
+                  style={{ position: 'absolute', opacity: 0, width: '1px', height: '1px', pointerEvents: 'none' }}
+                />
+              </div>
+            </div>
+            {/* To Date */}
+            <div className="flex flex-col">
+              <p className="text-[12px] text-gray-400 mb-2">To Date</p>
+              <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 h-[42px] gap-3 relative" style={{minWidth: '155px'}}>
+                <span className="text-[14px] font-medium text-gray-800 flex-1 select-none">
+                  {dateTo ? dateTo.split('-').reverse().join('-') : ''}
+                </span>
+                <label htmlFor="to-date-picker" className="cursor-pointer text-gray-400 hover:text-gray-600 flex items-center">
+                  <CalendarIcon size={16} strokeWidth={1.8} />
+                </label>
+                <input
+                  id="to-date-picker"
+                  type="date"
+                  value={dateTo}
+                  onChange={e => setDateTo(e.target.value)}
+                  style={{ position: 'absolute', opacity: 0, width: '1px', height: '1px', pointerEvents: 'none' }}
+                />
+              </div>
+            </div>
+            <div>
+              <button 
+                onClick={fetchDashboardData} 
+                style={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: '42px', height: '42px', padding: 0, margin: 0,
+                  backgroundColor: '#a855f7', border: 'none', borderRadius: '10px',
+                  cursor: 'pointer', flexShrink: 0
+                }}
+              >
+                <RefreshCw size={18} color="white" className={loading ? "animate-spin" : ""} />
+              </button>
+            </div>
+          </div>
         </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center py-32">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#a855f7]"></div>
+          </div>
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+            
+            {/* Left Column */}
+            <div className="flex-1 flex flex-col space-y-5 min-w-0">
+              
+              {/* Chart */}
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col relative" style={{height: '420px'}}>
+                <div className="flex justify-between items-center mb-6 z-10">
+                  <h3 className="text-[16px] font-bold text-gray-900 tracking-tight">Store Financial Ranking</h3>
+                  <div className="flex p-1 bg-[#f9fafb] rounded-full border border-gray-100 text-[12px] font-medium">
+                    <button onClick={() => setChartFilter("All")} className={`px-4 py-1.5 rounded-full transition-all ${chartFilter === "All" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-500 hover:text-gray-700"}`}>All</button>
+                    <button onClick={() => setChartFilter("Income")} className={`flex items-center px-4 py-1.5 rounded-full transition-all ${chartFilter === "Income" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-500 hover:text-gray-700"}`}>
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#dfbbfd] mr-1.5"></span> Income
+                    </button>
+                    <button onClick={() => setChartFilter("Expense")} className={`flex items-center px-4 py-1.5 rounded-full transition-all ${chartFilter === "Expense" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-500 hover:text-gray-700"}`}>
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#6a1e9c] mr-1.5"></span> Expense
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Horizontal Dashed Lines positioned absolutely behind chart to ensure they go edge to edge */}
+                <div className="absolute left-6 right-6 top-[85px] bottom-[65px] flex flex-col justify-between pointer-events-none">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="w-full border-t border-dashed border-gray-200 h-0"></div>
+                  ))}
+                </div>
+                
+                <div className="flex-1 w-full overflow-x-auto relative pb-3 custom-horizontal-scrollbar z-10">
+                  <div className="min-w-[800px] h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }} barGap={0}>
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280', fontWeight: 500 }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280', fontWeight: 500 }} tickFormatter={(v) => v >= 1000 ? `${v/1000}K` : v} />
+                        <Tooltip content={<CustomTooltip />} cursor={{fill: '#f3f4f6', opacity: 0.4}} />
+                        {(chartFilter === "All" || chartFilter === "Income") && (
+                          <Bar dataKey="income" fill="#dfbbfd" radius={[2, 2, 0, 0]} maxBarSize={12} />
+                        )}
+                        {(chartFilter === "All" || chartFilter === "Expense") && (
+                          <Bar dataKey="expense" fill="#6a1e9c" radius={[2, 2, 0, 0]} maxBarSize={12} />
+                        )}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Row inside left col */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 flex-1">
+                
+                {/* Daybook Status */}
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[360px]">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-[16px] font-bold text-gray-900 tracking-tight">Daybook Status</h3>
+                    <div className="flex space-x-1 bg-[#f9fafb] p-1 rounded-full border border-gray-100 text-[12px] font-medium">
+                      <button onClick={() => setDaybookFilter("All")} className={`px-4 py-1.5 rounded-full transition-all ${daybookFilter === "All" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-400 hover:text-gray-600"}`}>All</button>
+                      <button onClick={() => setDaybookFilter("Closed")} className={`px-4 py-1.5 rounded-full transition-all ${daybookFilter === "Closed" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-400 hover:text-gray-600"}`}>Closed</button>
+                      <button onClick={() => setDaybookFilter("Not Closed")} className={`px-4 py-1.5 rounded-full transition-all ${daybookFilter === "Not Closed" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-400 hover:text-gray-600"}`}>Not Closed</button>
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto pr-3 space-y-3 custom-vertical-scrollbar">
+                    {displayedDaybooks.map((s, i) => {
+                      const isClosed = s.st === 'closed';
+                      return (
+                        <div key={`${s.locCode}-${i}`} className={`flex justify-between items-center py-2 px-3 rounded-xl ${isClosed ? 'bg-[#f0fdf4]' : 'bg-[#fff1f2]'}`}>
+                          <div className="flex items-center gap-3">
+                            <div className={`${isClosed ? 'text-[#16a34a]' : 'text-[#ef4444]'}`}>
+                              <FileText size={18} strokeWidth={2.5} />
+                            </div>
+                            <span className="text-[14px] font-medium text-gray-800">{s.locName}</span>
+                          </div>
+                          <span className={`text-[11px] font-bold px-3 py-1.5 rounded-md ${isClosed ? 'text-[#16a34a]' : 'text-[#ef4444]'}`}>
+                            {isClosed ? 'Closed' : 'Not Closed'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {displayedDaybooks.length === 0 && <p className="text-center text-gray-400 text-sm mt-10">No stores found.</p>}
+                  </div>
+                </div>
+
+                {/* Quick Overview */}
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[360px]">
+                  <h3 className="text-[16px] font-bold text-gray-900 tracking-tight mb-5">Quick Overview</h3>
+                  <div className="flex flex-col justify-between h-full space-y-1">
+                    
+                    {/* Reorder Alert */}
+                    <div className="flex justify-between items-center pb-5 border-b border-gray-100">
+                      <div>
+                        <h4 className={`text-[28px] leading-none font-bold tracking-tight mb-1 ${reorderAlerts > 0 ? 'text-[#ef4444]' : 'text-gray-900'}`}>{String(reorderAlerts).padStart(2, '0')}</h4>
+                        <p className="text-[13px] font-medium text-gray-500">Reorder Alert</p>
+                      </div>
+                      <span className={`text-[11px] font-bold px-3 py-1.5 rounded-md ${reorderAlerts > 0 ? 'bg-[#fee2e2] text-[#ef4444]' : 'bg-[#dcfce7] text-[#16a34a]'}`}>
+                        {reorderAlerts > 0 ? 'Action Needed' : 'All Good'}
+                      </span>
+                    </div>
+
+                    {/* Purchase Order */}
+                    <div className="flex justify-between items-center pb-5 border-b border-gray-100">
+                      <div>
+                        <h4 className="text-[28px] leading-none font-bold tracking-tight mb-1 text-gray-900">{String(purchaseOrders).padStart(2, '0')}</h4>
+                        <p className="text-[13px] font-medium text-gray-500">Purchase Order</p>
+                      </div>
+                      <span className={`text-[11px] font-bold px-3 py-1.5 rounded-md ${purchaseOrders > 0 ? 'bg-[#dcfce7] text-[#16a34a]' : 'bg-gray-100 text-gray-600'}`}>
+                        {purchaseOrders > 0 ? 'Active' : 'None'}
+                      </span>
+                    </div>
+
+                    {/* Late Closure */}
+                    <div className="flex justify-between items-center pb-2">
+                      <div>
+                        <h4 className={`text-[28px] leading-none font-bold tracking-tight mb-1 ${lateClosures > 0 ? 'text-[#ef4444]' : 'text-gray-900'}`}>{lateClosures}</h4>
+                        <p className="text-[13px] font-medium text-gray-500">Late Closure</p>
+                      </div>
+                      <span className={`text-[11px] font-bold px-3 py-1.5 rounded-md ${lateClosures > 0 ? 'bg-[#fee2e2] text-[#ef4444]' : 'bg-[#dcfce7] text-[#16a34a]'}`}>
+                        {lateClosures > 0 ? 'Action Needed' : 'All Good'}
+                      </span>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Right Column (Span 1/3) */}
+            <div className="w-full lg:w-[320px] xl:w-[340px] shrink-0 flex flex-col gap-4">
+              
+              {/* Total Income */}
+              <div className="bg-white p-5 px-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col">
+                <div className="flex justify-between items-center mb-1">
+                  <p className="text-[15px] font-bold text-[#1f2937]">Total Income</p>
+                  <div className="w-[34px] h-[34px] rounded-[10px] bg-[#d1fae5] text-[#10b981] flex items-center justify-center shrink-0">
+                    <HandCoins size={18} strokeWidth={2.5} />
+                  </div>
+                </div>
+                <h3 className="text-[28px] font-extrabold text-[#111827] tracking-tight mt-1 mb-5">{fmt(incTotal)}</h3>
+                <div className="w-full border-t border-gray-100"></div>
+                <div className="pt-4 space-y-2.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] font-medium text-gray-500">Cash :</span>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(incTotals.cash)}</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] font-medium text-gray-500">Card/Bank :</span>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(incTotals.bank + incTotals.rbl)}</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] font-medium text-gray-500">UPI :</span>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(incTotals.upi)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Returnable Income */}
+              <div className="bg-white p-5 px-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col">
+                <div className="flex justify-between items-center mb-1">
+                  <p className="text-[15px] font-bold text-[#1f2937]">Returnable Income</p>
+                  <div className="w-[34px] h-[34px] rounded-[10px] bg-[#ffedd5] text-[#f97316] flex items-center justify-center shrink-0">
+                    <HandCoins size={18} strokeWidth={2.5} />
+                  </div>
+                </div>
+                <h3 className="text-[28px] font-extrabold text-[#111827] tracking-tight mt-1 mb-5">{fmt(retTotal)}</h3>
+                <div className="w-full border-t border-gray-100"></div>
+                <div className="pt-4">
+                  <p className="text-[13px] font-medium text-gray-500">Total returnable income held</p>
+                </div>
+              </div>
+
+              {/* Total Expenses */}
+              <div className="bg-white p-5 px-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col">
+                <div className="flex justify-between items-center mb-1">
+                  <p className="text-[15px] font-bold text-[#1f2937]">Total Expenses</p>
+                  <div className="w-[34px] h-[34px] rounded-[10px] bg-[#ffe4e6] text-[#e11d48] flex items-center justify-center shrink-0">
+                    <HandCoins size={18} strokeWidth={2.5} />
+                  </div>
+                </div>
+                <h3 className="text-[28px] font-extrabold text-[#111827] tracking-tight mt-1 mb-5">{fmt(Math.abs(expTotal))}</h3>
+                <div className="w-full border-t border-gray-100"></div>
+                <div className="pt-4 space-y-2.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] font-medium text-gray-500">Cash :</span>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(Math.abs(expTotals.cash))}</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] font-medium text-gray-500">Card/Bank :</span>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(Math.abs(expTotals.bank + expTotals.rbl))}</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] font-medium text-gray-500">UPI :</span>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(Math.abs(expTotals.upi))}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Net Difference */}
+              <div className="bg-white p-5 px-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col">
+                <div className="flex justify-between items-center mb-1">
+                  <p className="text-[15px] font-bold text-[#1f2937]">Net Difference</p>
+                  <div className="w-[34px] h-[34px] rounded-[10px] bg-[#e0e7ff] text-[#6366f1] flex items-center justify-center shrink-0">
+                    <HandCoins size={18} strokeWidth={2.5} />
+                  </div>
+                </div>
+                <h3 className="text-[28px] font-extrabold text-[#111827] tracking-tight mt-1 mb-5">{fmt(netTotal)}</h3>
+                <div className="w-full border-t border-gray-100"></div>
+                <div className="pt-4 space-y-2.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] font-medium text-gray-500">Cash :</span>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(netTotals.cash)}</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] font-medium text-gray-500">Card/Bank :</span>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(netTotals.bank + netTotals.rbl)}</strong>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[13px] font-medium text-gray-500">UPI :</span>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(netTotals.upi)}</strong>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
       </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          
-          {/* Daybook Closure Summary */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl border border-rose-100 shadow-sm overflow-hidden flex flex-col">
-              <div className="bg-rose-50/50 p-4 border-b border-rose-100 flex justify-between items-center">
-                <h3 className="font-bold text-rose-800 flex items-center">
-                  <AlertCircle size={18} className="mr-2" />
-                  Daybook Not Closed
-                </h3>
-                <span className="bg-rose-100 text-rose-700 px-2.5 py-0.5 rounded-full text-xs font-bold">{pendingStores.length} Stores</span>
-              </div>
-              <div className="p-4 flex-1 max-h-64 overflow-y-auto">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {pendingStores.map(s => (
-                    <div key={s.locCode} className="flex items-center p-2.5 rounded-xl bg-gray-50 border border-gray-100 hover:border-rose-200 hover:bg-rose-50/30 transition-all">
-                      <div className="w-7 h-7 rounded-lg bg-rose-100 flex items-center justify-center mr-2.5 shrink-0">
-                        <StoreIcon size={14} className="text-rose-600" />
-                      </div>
-                      <span className="text-sm font-medium text-gray-700 truncate">{s.locName}</span>
-                    </div>
-                  ))}
-                  {pendingStores.length === 0 && <p className="text-gray-500 text-sm italic col-span-full py-2">All stores have closed daybooks!</p>}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm overflow-hidden flex flex-col">
-              <div className="bg-emerald-50/50 p-4 border-b border-emerald-100 flex justify-between items-center">
-                <h3 className="font-bold text-emerald-800 flex items-center">
-                  <ShieldCheck size={18} className="mr-2" />
-                  Daybook Closed
-                </h3>
-                <span className="bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full text-xs font-bold">{closedStores.length} Stores</span>
-              </div>
-              <div className="p-4 flex-1 max-h-64 overflow-y-auto">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {closedStores.map(s => (
-                    <div key={s.locCode} className="flex items-center p-2.5 rounded-xl bg-gray-50 border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center mr-2.5 shrink-0">
-                        <StoreIcon size={14} className="text-emerald-600" />
-                      </div>
-                      <span className="text-sm font-medium text-gray-700 truncate">{s.locName}</span>
-                    </div>
-                  ))}
-                  {closedStores.length === 0 && <p className="text-gray-500 text-sm italic col-span-full py-2">No stores have closed daybooks yet.</p>}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Income Expense Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start mb-2">
-                  <p className="text-[15px] font-bold text-gray-800">Total Income</p>
-                  <div className="w-10 h-10 rounded-lg bg-[#dcfce7] text-green-600 flex items-center justify-center shrink-0">
-                    <TrendingUp size={20} />
-                  </div>
-                </div>
-                <h3 className="text-[32px] leading-none font-bold text-gray-900 mb-5">{fmt(incTotal)}</h3>
-              </div>
-              <div className="border-t border-gray-100 pt-3">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-[13px] text-gray-500">
-                    <span>Cash :</span><strong className="text-gray-800">{fmt(incTotals.cash)}</strong>
-                  </div>
-                  <div className="flex justify-between text-[13px] text-gray-500">
-                    <span>Razorpay :</span><strong className="text-gray-800">{fmt(incTotals.rbl)}</strong>
-                  </div>
-                  <div className="flex justify-between text-[13px] text-gray-500">
-                    <span>Card/Bank :</span><strong className="text-gray-800">{fmt(incTotals.bank)}</strong>
-                  </div>
-                  <div className="flex justify-between text-[13px] text-gray-500">
-                    <span>UPI :</span><strong className="text-gray-800">{fmt(incTotals.upi)}</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <Link to="/securityReport" className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow h-full">
-              <div>
-                <div className="flex justify-between items-start mb-2">
-                  <p className="text-[15px] font-bold text-gray-800">Refundable Security</p>
-                  <div className="w-10 h-10 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center shrink-0">
-                    <ShieldCheck size={20} />
-                  </div>
-                </div>
-                <h3 className="text-[32px] leading-none font-bold text-gray-900 mb-5">
-                  {fmt(securityStats.out - securityStats.in)}
-                </h3>
-              </div>
-              <div className="border-t border-gray-100 pt-3">
-                <div className="flex justify-between text-[13px] text-gray-500">
-                  <span>In: <strong className="text-gray-800">{fmt(securityStats.in)}</strong></span>
-                  <span>Out: <strong className="text-gray-800">{fmt(securityStats.out)}</strong></span>
-                </div>
-              </div>
-            </Link>
-
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start mb-2">
-                  <p className="text-[15px] font-bold text-gray-800">Total Expenses</p>
-                  <div className="w-10 h-10 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
-                    <TrendingDown size={20} />
-                  </div>
-                </div>
-                <h3 className="text-[32px] leading-none font-bold text-gray-900 mb-5">{fmt(Math.abs(expTotal))}</h3>
-              </div>
-              <div className="border-t border-gray-100 pt-3">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-[13px] text-gray-500">
-                    <span>Cash :</span><strong className="text-gray-800">{fmt(Math.abs(expTotals.cash))}</strong>
-                  </div>
-                  <div className="flex justify-between text-[13px] text-gray-500">
-                    <span>Razorpay :</span><strong className="text-gray-800">{fmt(Math.abs(expTotals.rbl))}</strong>
-                  </div>
-                  <div className="flex justify-between text-[13px] text-gray-500">
-                    <span>Card/Bank :</span><strong className="text-gray-800">{fmt(Math.abs(expTotals.bank))}</strong>
-                  </div>
-                  <div className="flex justify-between text-[13px] text-gray-500">
-                    <span>UPI :</span><strong className="text-gray-800">{fmt(Math.abs(expTotals.upi))}</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start mb-2">
-                  <p className="text-[15px] font-bold text-gray-800">Returnable Income</p>
-                  <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
-                    <ShieldCheck size={20} />
-                  </div>
-                </div>
-                <h3 className="text-[32px] leading-none font-bold text-gray-900 mb-5">{fmt(retTotal)}</h3>
-              </div>
-              <div className="border-t border-gray-100 pt-3">
-                <p className="text-[13px] text-gray-500">Total returnable income held</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Alert Cards Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link to="/inventory/reorder-alerts" className="bg-white p-5 rounded-2xl border border-orange-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow h-full">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider">Reorder Alerts</p>
-                <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
-                  <Bell size={16} />
-                </div>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                {reorderAlerts}
-              </h3>
-              <div className="text-xs text-gray-500 flex justify-between items-center h-4 mt-auto">
-                {reorderAlerts > 0 ? <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">Action Needed</span> : <span>All Good</span>}
-              </div>
-            </Link>
-
-            <Link to="/purchase/orders" className="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow h-full">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider">Purchase Orders</p>
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
-                  <AlertTriangle size={16} />
-                </div>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                {purchaseOrders}
-              </h3>
-              <div className="text-xs text-gray-500 flex justify-between items-center h-4 mt-auto">
-                <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">Active</span>
-              </div>
-            </Link>
-
-            <Link to="/PendingDaybookClosures" className="bg-white p-5 rounded-2xl border border-red-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow h-full">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider">Late Closures</p>
-                <div className="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0">
-                  <AlertCircle size={16} />
-                </div>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                {lateClosures}
-              </h3>
-              <div className="text-xs text-gray-500 flex justify-between items-center h-4 mt-auto">
-                {lateClosures > 0 ? <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">Action Needed</span> : <span>All Good</span>}
-              </div>
-            </Link>
-
-          </div>
-
-        </div>
-      )}
-    </div>
     </>
   );
 };
 
-export default Home;
+export default Dashboard;

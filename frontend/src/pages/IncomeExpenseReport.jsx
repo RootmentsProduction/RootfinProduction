@@ -107,7 +107,7 @@ export default function IncomeExpenseReport() {
   const [fromDate, setFromDate] = useState(firstOfMonth());
   const [toDate, setToDate] = useState(today());
   const [filterCategory, setFilterCategory] = useState("All Categories");
-  const [selectedStore, setSelectedStore] = useState("all");
+  const [selectedStore, setSelectedStore] = useState("all_stores");
   
   const [incomeRows, setIncomeRows] = useState([]);
   const [returnableIncomeRows, setReturnableIncomeRows] = useState([]);
@@ -120,12 +120,14 @@ export default function IncomeExpenseReport() {
   const [hasSearched, setHasSearched] = useState(false);
   const [expanded, setExpanded] = useState({});
 
-  const locCode = canSelectStore ? selectedStore : (user.locCode || "");
-  const twsLocCode = (locCode === "all" || !locCode) ? (user.locCode || "") : locCode;
-
+  const DEPT_LOC_CODES = ["759", "102", "101", "858", "103"];
   const ALL_LOC_CODES = isClusterManager
     ? clusterAllowedLocCodes
     : STORE_LIST.map(s => s.locCode);
+  const ALL_STORES_ONLY = ALL_LOC_CODES.filter(lc => !DEPT_LOC_CODES.includes(lc));
+  const ALL_DEPTS_ONLY = ALL_LOC_CODES.filter(lc => DEPT_LOC_CODES.includes(lc));
+
+  const locCode = canSelectStore ? selectedStore : (user.locCode || "");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -148,7 +150,14 @@ export default function IncomeExpenseReport() {
         } catch (e) { console.warn("TWS fetch error:", url, e.message); return {}; }
       };
 
-      const locCodesToFetch = (locCode === "all" || !locCode) ? ALL_LOC_CODES : [twsLocCode];
+      let locCodesToFetch = [locCode];
+      if (locCode === "all" || !locCode) {
+        locCodesToFetch = ALL_LOC_CODES;
+      } else if (locCode === "all_stores") {
+        locCodesToFetch = ALL_STORES_ONLY;
+      } else if (locCode === "all_depts") {
+        locCodesToFetch = ALL_DEPTS_ONLY;
+      }
 
       const twsResults = await Promise.all(
         locCodesToFetch.map(lc => Promise.all([
@@ -164,12 +173,10 @@ export default function IncomeExpenseReport() {
       const returnData  = { dataSet: { data: twsResults.flatMap(r => r[2]?.dataSet?.data || []) } };
       const cancelData  = { dataSet: { data: twsResults.flatMap(r => r[3]?.dataSet?.data || []) } };
 
-      const mongoRes  = await fetch(`${API}/user/Getpayment?LocCode=${locCode}&DateFrom=${fromDate}&DateTo=${toDate}`);
-      let mongoJson = mongoRes.ok ? await mongoRes.json() : {};
-
-      if (isClusterManager && (locCode === "all" || !locCode)) {
+      let mongoJson = { data: [] };
+      if (locCode === "all" || locCode === "all_stores" || locCode === "all_depts" || (isClusterManager && (!locCode || locCode === "all"))) {
         const mongoResults = await Promise.all(
-          clusterAllowedLocCodes.map(lc =>
+          locCodesToFetch.map(lc =>
             fetch(`${API}/user/Getpayment?LocCode=${lc}&DateFrom=${fromDate}&DateTo=${toDate}`)
               .then(r => r.ok ? r.json() : {})
               .catch(() => ({}))
@@ -177,6 +184,9 @@ export default function IncomeExpenseReport() {
         );
         const merged = mongoResults.flatMap(r => Array.isArray(r) ? r : (r?.data || []));
         mongoJson = { data: merged };
+      } else {
+        const mongoRes  = await fetch(`${API}/user/Getpayment?LocCode=${locCode}&DateFrom=${fromDate}&DateTo=${toDate}`);
+        mongoJson = mongoRes.ok ? await mongoRes.json() : {};
       }
 
       // Booking -> Income
@@ -372,7 +382,7 @@ export default function IncomeExpenseReport() {
     } finally {
       setLoading(false);
     }
-  }, [fromDate, toDate, locCode, twsLocCode]);
+  }, [fromDate, toDate, locCode]);
 
   // Group: category -> subCategory -> { transactions, totals }
   const buildGrouped = (rows) => {
@@ -906,20 +916,25 @@ export default function IncomeExpenseReport() {
             </div>
 
             {/* Store Dropdown (for admin or cluster manager) */}
+            
+            {/* Store Dropdown */}
             {canSelectStore && (
               <div className="flex-1 min-w-[160px]">
                 <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
                   Store
                 </label>
                 <select
-                  value={selectedStore}
-                  onChange={(e) => setSelectedStore(e.target.value)}
+                  value={DEPT_LOC_CODES.includes(selectedStore) || selectedStore === "all_depts" ? "none" : selectedStore}
+                  onChange={(e) => {
+                     if (e.target.value !== "none") setSelectedStore(e.target.value);
+                  }}
                   className="w-full h-[38px] bg-white border border-gray-300 rounded-lg px-3 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all shadow-sm cursor-pointer"
                 >
-                  <option value="all">{isClusterManager ? "All My Stores" : "All Stores"}</option>
+                  <option value="none" disabled>Select Store</option>
+                  <option value="all_stores">{isClusterManager ? "All My Stores" : "All Stores"}</option>
                   {(isClusterManager
-                    ? STORE_LIST.filter((s) => clusterAllowedLocCodes.includes(s.locCode))
-                    : STORE_LIST
+                    ? STORE_LIST.filter((s) => clusterAllowedLocCodes.includes(s.locCode) && !DEPT_LOC_CODES.includes(s.locCode))
+                    : STORE_LIST.filter((s) => !DEPT_LOC_CODES.includes(s.locCode))
                   ).map((s) => (
                     <option key={s.locCode} value={s.locCode}>
                       {s.locName}
@@ -929,6 +944,34 @@ export default function IncomeExpenseReport() {
               </div>
             )}
 
+            {/* Department Dropdown */}
+            {canSelectStore && (
+              <div className="flex-1 min-w-[160px]">
+                <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
+                  Department
+                </label>
+                <select
+                  value={(!DEPT_LOC_CODES.includes(selectedStore) && selectedStore !== "all_depts" && selectedStore !== "all") ? "none" : selectedStore}
+                  onChange={(e) => {
+                     if (e.target.value !== "none") setSelectedStore(e.target.value);
+                  }}
+                  className="w-full h-[38px] bg-white border border-gray-300 rounded-lg px-3 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all shadow-sm cursor-pointer"
+                >
+                  <option value="none" disabled>Select Department</option>
+                  <option value="all_depts">All Departments</option>
+                  {(isClusterManager
+                    ? STORE_LIST.filter((s) => clusterAllowedLocCodes.includes(s.locCode) && DEPT_LOC_CODES.includes(s.locCode))
+                    : STORE_LIST.filter((s) => DEPT_LOC_CODES.includes(s.locCode))
+                  ).map((s) => (
+                    <option key={s.locCode} value={s.locCode}>
+                      {s.locName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
               <button
@@ -936,7 +979,7 @@ export default function IncomeExpenseReport() {
                   setFromDate(firstOfMonth());
                   setToDate(today());
                   setFilterCategory("All Categories");
-                  setSelectedStore("all");
+                  setSelectedStore("all_stores");
                   setIncomeRows([]);
                   setReturnableIncomeRows([]);
                   setExpenseRows([]);
