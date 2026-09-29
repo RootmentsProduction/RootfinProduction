@@ -44,7 +44,8 @@ const DayBook = () => {
             };
         });
 
-        setAllTransactions(rentoutList);
+        const sortedRentoutList = rentoutList.sort((a, b) => new Date(a.date) - new Date(b.date));
+        setAllTransactions(sortedRentoutList);
     };
 
     const handleFetch = async () => {
@@ -103,7 +104,7 @@ const DayBook = () => {
         const day = date.getDate().toString().padStart(2, '0');
         const month = date.toLocaleString('default', { month: 'short' });
         const year = date.getFullYear();
-        return `${day} ${month}, ${year}`;
+        return `${day} ${month} ${year}`;
     };
 
     const formatNumber = (num) => {
@@ -120,7 +121,7 @@ const DayBook = () => {
         if (!allTransactions || allTransactions.length === 0) return;
         
         const csvRows = [];
-        csvRows.push(['Date', 'Invoice No.', 'Customer Name', 'Quantity', 'Bill Value', 'Cash', 'RBL', 'Card/Bank', 'UPI', 'Total Amount']);
+        csvRows.push(['Date', 'Invoice No.', 'Customer Name', 'Quantity', 'Bill Value', 'Cash', 'Razorpay', 'Card/Bank', 'UPI', 'Total Amount']);
         
         allTransactions.forEach(item => {
             csvRows.push([
@@ -156,7 +157,7 @@ const DayBook = () => {
         link.setAttribute("href", encodedUri);
         const storeName = (currentusers.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_");
         const dateRange = fromDate === toDate ? fromDate : `${fromDate}_to_${toDate}`;
-        link.setAttribute("download", `daybook_${storeName}_${dateRange}.csv`);
+        link.setAttribute("download", `Rentout_Report_${dateRange}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -249,7 +250,7 @@ const DayBook = () => {
                                     <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">Quantity</th>
                                     <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">Bill Value</th>
                                     <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">Cash</th>
-                                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">RBL</th>
+                                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">Razorpay</th>
                                     <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">Card/Bank</th>
                                     <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">UPI</th>
                                     <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">Total Amount</th>

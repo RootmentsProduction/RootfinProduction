@@ -17,14 +17,14 @@ const csvHeaders = [
   { label: "Customer", key: "customer" }, { label: "Category", key: "category" },
   { label: "Sub", key: "sub" },        { label: "Security In", key: "secIn" },
   { label: "Security Out (Cash)", key: "secOutCash" },
-  { label: "Security Out (RBL)", key: "secOutRbl" },
+  { label: "Security Out (Razorpay)", key: "secOutRbl" },
   { label: "Difference", key: "difference" },
 ];
 const csvHeadersAllStores = [
   { label: "Store", key: "store" }, { label: "LocCode", key: "locCode" },
   { label: "Security In", key: "secIn" },
   { label: "Security Out (Cash)", key: "secOutCash" },
-  { label: "Security Out (RBL)", key: "secOutRbl" },
+  { label: "Security Out (Razorpay)", key: "secOutRbl" },
   { label: "Difference", key: "difference" },
 ];
 
@@ -248,6 +248,9 @@ const Security = () => {
         merged:     hasBoth,
       };
     });
+
+    tableRows.sort((a, b) => new Date(a.date) - new Date(b.date));
+
   } else {
     const combined=[...rentAll,...returnAll];
     const acc = {};
@@ -407,7 +410,7 @@ const Security = () => {
                       <th className="px-6 py-4">LocCode</th>
                       <th className="px-6 py-4 text-center">Security In</th>
                       <th className="px-6 py-4 text-center">Security Out (Cash)</th>
-                      <th className="px-6 py-4 text-center">Security Out (RBL)</th>
+                      <th className="px-6 py-4 text-center">Security Out (Razorpay)</th>
                       <th className="px-6 py-4 text-center">Difference</th>
                     </tr>
                   ):(
@@ -419,7 +422,7 @@ const Security = () => {
                       <th className="px-6 py-4">Sub Category</th>
                       <th className="px-6 py-4 text-center">Security In</th>
                       <th className="px-6 py-4 text-center">Security Out (Cash)</th>
-                      <th className="px-6 py-4 text-center">Security Out (RBL)</th>
+                      <th className="px-6 py-4 text-center">Security Out (Razorpay)</th>
                       <th className="px-6 py-4 text-center">Difference</th>
                     </tr>
                   )}
