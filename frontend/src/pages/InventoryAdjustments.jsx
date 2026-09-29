@@ -439,7 +439,7 @@ const InventoryAdjustments = () => {
   return (
     <>
       <Header title="Inventory Adjustments" />
-      <div className={`transition-all duration-300 min-h-screen bg-[#F9FAFB] flex flex-col ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 min-h-screen bg-[#F9FAFB] flex flex-col ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         
         {/* ── Top Header Bar ── */}
         <div className="px-6 pt-5 pb-4 border-b border-[#E5E7EB] bg-white">

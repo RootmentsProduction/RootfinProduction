@@ -108,7 +108,7 @@ const ReorderAlerts = () => {
   return (
     <>
       <Header title="Reorder Alerts" />
-      <div className={`transition-all duration-300 min-h-screen bg-white flex flex-col ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 min-h-screen bg-white flex flex-col ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="px-8 py-8 flex-1">
           
           {/* Header Section */}

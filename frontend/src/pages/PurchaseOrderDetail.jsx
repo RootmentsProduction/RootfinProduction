@@ -157,7 +157,7 @@ const PurchaseOrderDetail = () => {
 
   if (loading) {
     return (
-      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex items-center justify-center ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex items-center justify-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-center">Loading...</div>
       </div>
     );
@@ -165,7 +165,7 @@ const PurchaseOrderDetail = () => {
 
   if (!order) {
     return (
-      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex items-center justify-center ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex items-center justify-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-center">
           <p className="text-lg text-[#64748b] mb-4">Purchase Order not found</p>
           <Link to="/purchase/orders" className="text-[#2563eb] hover:underline">
@@ -251,7 +251,7 @@ const PurchaseOrderDetail = () => {
   });
 
   return (
-    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       {/* Left Sidebar - Orders List */}
       <div className="w-80 bg-white border-r border-[#e6eafb] flex flex-col">
         {/* Header */}

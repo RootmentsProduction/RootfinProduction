@@ -1828,7 +1828,7 @@ const NewVendorCreditForm = ({ creditId, isEditMode = false }) => {
   };
 
   return (
-    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white border-b border-[#e6eafb] px-6 py-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-[#1f2937]">{isEditMode ? "Edit Vendor Credit" : "New Vendor Credit"}</h1>
@@ -2513,7 +2513,7 @@ const VendorCredits = () => {
   };
 
   return (
-    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-6 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">

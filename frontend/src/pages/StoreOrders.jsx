@@ -417,7 +417,7 @@ const StoreOrders = () => {
   return (
     <>
       <Header title="Store Orders" />
-      <div className={`transition-all duration-300 p-6 bg-[#f8fafc] min-h-screen ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f8fafc] min-h-screen ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
 
         {/* Page Title + Actions */}
         <div className="flex items-center justify-between mb-6">

@@ -219,7 +219,7 @@ const PurchaseVendorDetail = () => {
 
   if (!vendor) {
     return (
-      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-6 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-center py-12">Loading...</div>
       </div>
     );
@@ -228,7 +228,7 @@ const PurchaseVendorDetail = () => {
   const tabs = ["Overview", "Comments", "Transactions", "Mails", "Statement"];
 
   return (
-    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-6 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       <div className="rounded-3xl border border-[#e1e5f5] bg-white shadow-[0_30px_90px_-40px_rgba(15,23,42,0.25)]">
         {/* Header */}
         <div className="border-b border-[#e7ebf8] px-8 py-4">

@@ -2400,7 +2400,7 @@ const PurchaseOrderCreate = () => {
   useEnterToSave(() => handleSavePurchaseOrder("sent"), saving);
 
   return (
-    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-6 overflow-visible relative ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-3 sm:p-6 overflow-visible relative ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       <Head
         title={isEditMode ? "Edit Purchase Order" : "New Purchase Order"}
         description=""

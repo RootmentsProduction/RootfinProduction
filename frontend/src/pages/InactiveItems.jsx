@@ -409,7 +409,7 @@ const InactiveItems = () => {
 
   if (loading) {
     return (
-      <div className={`transition-all duration-300 flex min-h-screen items-center justify-center bg-slate-50 p-6 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 flex min-h-screen items-center justify-center bg-slate-50 p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="h-6 w-6 animate-spin rounded-none border-2 border-[#3b82f6] border-t-transparent" />
           <p className="text-xs font-medium text-[#6B7280] uppercase tracking-wider">Loading...</p>
@@ -420,7 +420,7 @@ const InactiveItems = () => {
 
   if (error) {
     return (
-      <div className={`transition-all duration-300 p-6 ${isSidebarOpen ? 'ml-64' : 'ml-0'} bg-slate-50 min-h-screen`}>
+      <div className={`transition-all duration-300 p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'} bg-slate-50 min-h-screen`}>
         <div className="rounded-none border border-red-200 bg-red-50 p-4 text-red-700 text-sm font-medium">{error}</div>
       </div>
     );
@@ -429,7 +429,7 @@ const InactiveItems = () => {
   return (
     <>
       <Header title="Inactive Items Management" />
-      <div className={`transition-all duration-300 min-h-screen bg-slate-50 flex flex-col ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 min-h-screen bg-slate-50 flex flex-col ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
 
         {/* Summary Bar */}
         <div className="bg-white border-b border-gray-200 shadow-sm">

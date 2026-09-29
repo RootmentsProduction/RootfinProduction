@@ -197,7 +197,7 @@ const VendorCreditDetail = () => {
 
   if (loading) {
     return (
-      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex items-center justify-center ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex items-center justify-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-center">Loading...</div>
       </div>
     );
@@ -205,7 +205,7 @@ const VendorCreditDetail = () => {
 
   if (!credit) {
     return (
-      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex items-center justify-center ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex items-center justify-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-center">
           <p className="text-lg text-[#64748b] mb-4">Vendor credit not found</p>
           <Link to="/purchase/vendor-credits" className="text-[#2563eb] hover:underline">
@@ -270,7 +270,7 @@ const VendorCreditDetail = () => {
   });
 
   return (
-    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       {/* Left Sidebar - Vendor Credits List */}
       <div className="w-80 bg-white border-r border-[#e6eafb] flex flex-col">
         {/* Header */}

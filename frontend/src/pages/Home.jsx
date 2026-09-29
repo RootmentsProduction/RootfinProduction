@@ -5,30 +5,30 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import baseUrl from '../api/api.js';
 
 const STORE_LIST = [
-  { locName: "G-Edappal",        locCode: "707" },
-  { locName: "G-Edappally",      locCode: "702" },
-  { locName: "G-Kalpetta",       locCode: "717" },
-  { locName: "G-Kannur",         locCode: "716" },
-  { locName: "G-Kottakkal",      locCode: "711" },
-  { locName: "G-Kottayam",       locCode: "701" },
-  { locName: "G-Manjeri",        locCode: "710" },
-  { locName: "G-Mg Road",        locCode: "718" },
-  { locName: "G-Palakkad",       locCode: "705" },
+  { locName: "G-Edappal", locCode: "707" },
+  { locName: "G-Edappally", locCode: "702" },
+  { locName: "G-Kalpetta", locCode: "717" },
+  { locName: "G-Kannur", locCode: "716" },
+  { locName: "G-Kottakkal", locCode: "711" },
+  { locName: "G-Kottayam", locCode: "701" },
+  { locName: "G-Manjeri", locCode: "710" },
+  { locName: "G-Mg Road", locCode: "718" },
+  { locName: "G-Palakkad", locCode: "705" },
   { locName: "G-Perinthalmanna", locCode: "709" },
-  { locName: "G-Perumbavoor",    locCode: "703" },
-  { locName: "G-Thrissur",       locCode: "704" },
-  { locName: "G-Vadakara",       locCode: "708" },
-  { locName: "G-Chavakkad",      locCode: "706" },
-  { locName: "G-Calicut",        locCode: "712" },
-  { locName: "HEAD OFFICE01",    locCode: "759" },
-  { locName: "Office",           locCode: "102" },
-  { locName: "Production",       locCode: "101" },
-  { locName: "SG-Trivandrum",    locCode: "700" },
-  { locName: "Warehouse",        locCode: "858" },
-  { locName: "WAREHOUSE",        locCode: "103" },
-  { locName: "Z-Edappal",        locCode: "100" },
-  { locName: "Z-Edapally",       locCode: "144" },
-  { locName: "Z-Kottakkal",      locCode: "122" },
+  { locName: "G-Perumbavoor", locCode: "703" },
+  { locName: "G-Thrissur", locCode: "704" },
+  { locName: "G-Vadakara", locCode: "708" },
+  { locName: "G-Chavakkad", locCode: "706" },
+  { locName: "G-Calicut", locCode: "712" },
+  { locName: "HEAD OFFICE01", locCode: "759" },
+  { locName: "Office", locCode: "102" },
+  { locName: "Production", locCode: "101" },
+  { locName: "SG-Trivandrum", locCode: "700" },
+  { locName: "Warehouse", locCode: "858" },
+  { locName: "WAREHOUSE", locCode: "103" },
+  { locName: "Z-Edappal", locCode: "100" },
+  { locName: "Z-Edapally", locCode: "144" },
+  { locName: "Z-Kottakkal", locCode: "122" },
   { locName: "Z-Perinthalmanna", locCode: "133" },
 ];
 
@@ -38,7 +38,7 @@ const Dashboard = ({ isSidebarOpen }) => {
     d.setMonth(d.getMonth() - 1);
     return d.toISOString().split('T')[0];
   });
-  
+
   const [dateTo, setDateTo] = useState(() => {
     return new Date().toISOString().split('T')[0];
   });
@@ -55,7 +55,7 @@ const Dashboard = ({ isSidebarOpen }) => {
   const [chartData, setChartData] = useState([]);
   const [pendingStores, setPendingStores] = useState([]);
   const [closedStores, setClosedStores] = useState([]);
-  
+
   const [reorderAlerts, setReorderAlerts] = useState(0);
   const [purchaseOrders, setPurchaseOrders] = useState(0);
   const [lateClosures, setLateClosures] = useState(0);
@@ -95,12 +95,12 @@ const Dashboard = ({ isSidebarOpen }) => {
     const STORE_LOC_CODES = ALL_LOC_CODES.filter(lc => !DEPT_CODES.includes(lc));
 
     const EXPENSE_CATS = new Set([
-      "petty expenses","staff reimbursement","maintenance expenses","telephone internet",
-      "utility bill","salary","rent","courier charges","asset purchase","promotion_services",
-      "spot incentive","other expenses","shoe sales return","shirt sales return",
-      "dry cleaning","altration","material","travel exp","fuel exp",
-      "waste management","water charges","printing stationary","staff welfare",
-      "staff accommodation","incentive","write off",
+      "petty expenses", "staff reimbursement", "maintenance expenses", "telephone internet",
+      "utility bill", "salary", "rent", "courier charges", "asset purchase", "promotion_services",
+      "spot incentive", "other expenses", "shoe sales return", "shirt sales return",
+      "dry cleaning", "altration", "material", "travel exp", "fuel exp",
+      "waste management", "water charges", "printing stationary", "staff welfare",
+      "staff accommodation", "incentive", "write off",
     ]);
 
     const safeFetch = async (url) => {
@@ -156,26 +156,26 @@ const Dashboard = ({ isSidebarOpen }) => {
 
       const bookingData = twsResults.flatMap(r => r[0]?.dataSet?.data || []);
       const rentoutData = twsResults.flatMap(r => r[1]?.dataSet?.data || []);
-      const returnData  = twsResults.flatMap(r => r[2]?.dataSet?.data || []);
-      const deleteData  = twsResults.flatMap(r => r[3]?.dataSet?.data || []);
+      const returnData = twsResults.flatMap(r => r[2]?.dataSet?.data || []);
+      const deleteData = twsResults.flatMap(r => r[3]?.dataSet?.data || []);
 
-      // Mongo: fetch all stores
-      const mongoResults = await Promise.all(
-        ALL_LOC_CODES.map(lc =>
-          fetch(`${API_URL}/user/Getpayment?LocCode=${lc}&DateFrom=${dateFrom}&DateTo=${dateTo}`)
-            .then(r => r.ok ? r.json() : {})
-            .catch(() => ({}))
-        )
-      );
-      const mongoTxns = mongoResults.flatMap(r => Array.isArray(r) ? r : (r?.data || []));
+      // Mongo: fetch all stores in a single request to optimize load time
+      let mongoTxns = [];
+      try {
+        const mongoRes = await fetch(`${API_URL}user/Getpayment?DateFrom=${dateFrom}&DateTo=${dateTo}`);
+        if (mongoRes.ok) {
+          const mData = await mongoRes.json();
+          mongoTxns = Array.isArray(mData) ? mData : (mData.data || []);
+        }
+      } catch (err) { console.error("Mongo fetch error:", err); }
 
       // ── Booking → Income
       let iCash = 0, iRbl = 0, iBank = 0, iUpi = 0;
       bookingData.forEach(item => {
         iCash += Number(item.bookingCashAmount || 0);
-        iRbl  += Number(item.rblRazorPay || 0);
+        iRbl += Number(item.rblRazorPay || 0);
         iBank += Number(item.bookingBankAmount || 0);
-        iUpi  += Number(item.bookingUPIAmount || 0);
+        iUpi += Number(item.bookingUPIAmount || 0);
       });
 
       // ── RentOut → Income (balance payable) + Returnable (security)
@@ -183,10 +183,10 @@ const Dashboard = ({ isSidebarOpen }) => {
       let retCash = 0;
       rentoutData.forEach(item => {
         const security = Number(item.securityAmount || 0);
-        const cash  = Number(item.rentoutCashAmount || 0);
-        const rbl   = Number(item.rblRazorPay || 0);
-        const bank  = Number(item.rentoutBankAmount || 0);
-        const upi   = Number(item.rentoutUPIAmount || 0);
+        const cash = Number(item.rentoutCashAmount || 0);
+        const rbl = Number(item.rblRazorPay || 0);
+        const bank = Number(item.rentoutBankAmount || 0);
+        const upi = Number(item.rentoutUPIAmount || 0);
         // Income part
         iCash += cash; iRbl += rbl; iBank += bank; iUpi += upi;
         // Returnable income (security)
@@ -197,25 +197,25 @@ const Dashboard = ({ isSidebarOpen }) => {
       let secRefCash = 0, secRefRbl = 0, secRefBank = 0, secRefUpi = 0;
       returnData.forEach(item => {
         secRefCash += -Math.abs(Number(item.returnCashAmount || 0));
-        secRefRbl  += -Math.abs(Number(item.rblRazorPay || 0));
+        secRefRbl += -Math.abs(Number(item.rblRazorPay || 0));
         secRefBank += -Math.abs(Number(item.returnBankAmount || 0));
-        secRefUpi  += -Math.abs(Number(item.returnUPIAmount || 0));
+        secRefUpi += -Math.abs(Number(item.returnUPIAmount || 0));
       });
 
       // ── Delete (Cancel) → Expense
       let eCash = 0, eRbl = 0, eBank = 0, eUpi = 0;
       deleteData.forEach(item => {
         eCash += -Math.abs(Number(item.deleteCashAmount || 0));
-        eRbl  += -Math.abs(Number(item.rblRazorPay || 0));
+        eRbl += -Math.abs(Number(item.rblRazorPay || 0));
         eBank += -Math.abs(Number(item.deleteBankAmount || 0));
-        eUpi  += -Math.abs(Number(item.deleteUPIAmount || 0));
+        eUpi += -Math.abs(Number(item.deleteUPIAmount || 0));
       });
 
       // ── Mongo Transactions
-      let b2cCash=0, b2cRbl=0, b2cBank=0, b2cUpi=0;
-      let c2bCash=0, c2bRbl=0, c2bBank=0, c2bUpi=0;
+      let b2cCash = 0, b2cRbl = 0, b2cBank = 0, b2cUpi = 0;
+      let c2bCash = 0, c2bRbl = 0, c2bBank = 0, c2bUpi = 0;
       mongoTxns.forEach(t => {
-        const tp  = (t.type || "").toLowerCase();
+        const tp = (t.type || "").toLowerCase();
         const cat = (t.category || "").toLowerCase().trim();
         const sub = (t.subCategory || "").toLowerCase().trim();
         const inv = (t.invoiceNo || "").toUpperCase();
@@ -240,35 +240,50 @@ const Dashboard = ({ isSidebarOpen }) => {
       setExpTotals({ cash: Math.abs(eCash), rbl: Math.abs(eRbl), bank: Math.abs(eBank), upi: Math.abs(eUpi) });
 
       const netCash = iCash + eCash + secRefCash;
-      const netRbl  = iRbl  + eRbl  + secRefRbl;
+      const netRbl = iRbl + eRbl + secRefRbl;
       const netBank = iBank + eBank + secRefBank;
-      const netUpi  = iUpi  + eUpi  + secRefUpi;
+      const netUpi = iUpi + eUpi + secRefUpi;
       setNetTotals({ cash: netCash, rbl: netRbl, bank: netBank, upi: netUpi });
 
       // ── 4. Per-store chart data (store-only, no depts) ───────────────────────────
+      const getShortName = (name) => {
+        const map = {
+          "G-Edappal": "G-EDP", "G-Edappally": "G-EDY", "G-Kalpetta": "G-KPT",
+          "G-Kannur": "G-KNR", "G-Kottakkal": "G-KTL", "G-Kottayam": "G-KTM",
+          "G-Manjeri": "G-MNJ", "G-Mg Road": "G-MGR", "G-Palakkad": "G-PKD",
+          "G-Perinthalmanna": "G-PMN", "G-Perumbavoor": "G-PBV", "G-Thrissur": "G-TCR",
+          "G-Vadakara": "G-VDK", "G-Chavakkad": "G-CVD", "G-Calicut": "G-CLT",
+          "SG-Trivandrum": "SG-TVM", "Z-Edappal": "Z-EDP", "Z-Edapally": "Z-EDY",
+          "Z-Kottakkal": "Z-KTL", "Z-Perinthalmanna": "Z-PMN"
+        };
+        return map[name] || name;
+      };
+
       const perStoreData = STORE_LOC_CODES.map(lc => {
         const store = STORE_LIST.find(s => s.locCode === lc);
+        const storeName = store?.locName || lc;
+        const shortName = getShortName(storeName);
+
         const idx = ALL_LOC_CODES.indexOf(lc);
-        if (idx === -1) return { name: store?.locName || lc, income: 0, expense: 0 };
+        if (idx === -1) return { name: shortName, fullName: storeName, income: 0, expense: 0 };
 
         const sBk = twsResults[idx][0]?.dataSet?.data || [];
         const sRt = twsResults[idx][1]?.dataSet?.data || [];
         const sDl = twsResults[idx][3]?.dataSet?.data || [];
-        const sMg = mongoResults[idx];
-        const sMgTxns = Array.isArray(sMg) ? sMg : (sMg?.data || []);
+        const sMgTxns = mongoTxns.filter(t => t.locCode === lc);
 
         let sInc = 0, sExp = 0;
-        sBk.forEach(i => { sInc += Number(i.bookingCashAmount||0) + Number(i.rblRazorPay||0) + Number(i.bookingBankAmount||0) + Number(i.bookingUPIAmount||0); });
-        sRt.forEach(i => { sInc += Number(i.rentoutCashAmount||0) + Number(i.rblRazorPay||0) + Number(i.rentoutBankAmount||0) + Number(i.rentoutUPIAmount||0); });
-        sDl.forEach(i => { sExp += Math.abs(Number(i.deleteCashAmount||0)) + Math.abs(Number(i.rblRazorPay||0)) + Math.abs(Number(i.deleteBankAmount||0)); });
+        sBk.forEach(i => { sInc += Number(i.bookingCashAmount || 0) + Number(i.rblRazorPay || 0) + Number(i.bookingBankAmount || 0) + Number(i.bookingUPIAmount || 0); });
+        sRt.forEach(i => { sInc += Number(i.rentoutCashAmount || 0) + Number(i.rblRazorPay || 0) + Number(i.rentoutBankAmount || 0) + Number(i.rentoutUPIAmount || 0); });
+        sDl.forEach(i => { sExp += Math.abs(Number(i.deleteCashAmount || 0)) + Math.abs(Number(i.rblRazorPay || 0)) + Math.abs(Number(i.deleteBankAmount || 0)); });
         sMgTxns.forEach(t => {
-          const tp = (t.type||"").toLowerCase(), cat = (t.category||"").toLowerCase().trim();
+          const tp = (t.type || "").toLowerCase(), cat = (t.category || "").toLowerCase().trim();
           const isExp = tp === "expense" || EXPENSE_CATS.has(cat);
-          const amt = Number(t.cash||0) + Number(t.rbl||t.rblRazorPay||0) + Number(t.bank||0) + Number(t.upi||0);
+          const amt = Number(t.cash || 0) + Number(t.rbl || t.rblRazorPay || 0) + Number(t.bank || 0) + Number(t.upi || 0);
           if (isExp) sExp += amt;
           else if (tp === "income") sInc += amt;
         });
-        return { name: store?.locName || lc, income: Math.abs(sInc), expense: Math.abs(sExp) };
+        return { name: shortName, fullName: storeName, income: Math.abs(sInc), expense: Math.abs(sExp) };
       });
 
       setChartData(perStoreData); // Keep in STORE_LIST order so names match bars
@@ -290,26 +305,26 @@ const Dashboard = ({ isSidebarOpen }) => {
   const netTotal = sum(netTotals);
 
   let displayedDaybooks = [];
-  if (daybookFilter === "All") displayedDaybooks = [...pendingStores.map(s => ({...s, st: 'not'})), ...closedStores.map(s => ({...s, st: 'closed'}))];
-  if (daybookFilter === "Closed") displayedDaybooks = closedStores.map(s => ({...s, st: 'closed'}));
-  if (daybookFilter === "Not Closed") displayedDaybooks = pendingStores.map(s => ({...s, st: 'not'}));
+  if (daybookFilter === "All") displayedDaybooks = [...pendingStores.map(s => ({ ...s, st: 'not' })), ...closedStores.map(s => ({ ...s, st: 'closed' }))];
+  if (daybookFilter === "Closed") displayedDaybooks = closedStores.map(s => ({ ...s, st: 'closed' }));
+  if (daybookFilter === "Not Closed") displayedDaybooks = pendingStores.map(s => ({ ...s, st: 'not' }));
 
   return (
     <>
       <Header />
-      <div className={`transition-all duration-300 p-6 bg-[#fbfcfd] min-h-screen pb-20 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
-        
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#fbfcfd] min-h-screen pb-20 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
+
         {/* Header */}
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end mb-6 gap-4">
           <div>
             <h1 className="text-[26px] font-semibold text-gray-900 tracking-tight leading-tight">Dashboard</h1>
             <p className="text-[14px] text-gray-400 mt-1">Overview of your stores and financial metrics</p>
           </div>
-                    <div className="flex items-end gap-3">
+          <div className="flex flex-wrap items-end gap-3">
             {/* From Date */}
             <div className="flex flex-col">
               <p className="text-[12px] text-gray-400 mb-2">From Date</p>
-              <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 h-[42px] gap-3 relative" style={{minWidth: '155px'}}>
+              <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 h-[42px] gap-3 relative" style={{ minWidth: '155px' }}>
                 <span className="text-[14px] font-medium text-gray-800 flex-1 select-none">
                   {dateFrom ? dateFrom.split('-').reverse().join('-') : ''}
                 </span>
@@ -328,7 +343,7 @@ const Dashboard = ({ isSidebarOpen }) => {
             {/* To Date */}
             <div className="flex flex-col">
               <p className="text-[12px] text-gray-400 mb-2">To Date</p>
-              <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 h-[42px] gap-3 relative" style={{minWidth: '155px'}}>
+              <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 h-[42px] gap-3 relative" style={{ minWidth: '155px' }}>
                 <span className="text-[14px] font-medium text-gray-800 flex-1 select-none">
                   {dateTo ? dateTo.split('-').reverse().join('-') : ''}
                 </span>
@@ -345,9 +360,9 @@ const Dashboard = ({ isSidebarOpen }) => {
               </div>
             </div>
             <div>
-              <button 
-                onClick={fetchDashboardData} 
-                style={{ 
+              <button
+                onClick={fetchDashboardData}
+                style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   width: '42px', height: '42px', padding: 0, margin: 0,
                   backgroundColor: '#a855f7', border: 'none', borderRadius: '10px',
@@ -365,14 +380,14 @@ const Dashboard = ({ isSidebarOpen }) => {
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#a855f7]"></div>
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-5 items-stretch">
-            
+          <div className="flex flex-col-reverse lg:flex-row gap-5 items-stretch">
+
             {/* Left Column */}
             <div className="flex-1 flex flex-col space-y-5 min-w-0">
-              
+
               {/* Chart */}
-              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col relative" style={{height: '420px'}}>
-                <div className="flex justify-between items-center mb-6 z-10">
+              <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col relative" style={{ height: '420px' }}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 z-10">
                   <h3 className="text-[16px] font-bold text-gray-900 tracking-tight">Store Financial Ranking</h3>
                   <div className="flex p-1 bg-[#f9fafb] rounded-full border border-gray-100 text-[12px] font-medium">
                     <button onClick={() => setChartFilter("All")} className={`px-4 py-1.5 rounded-full transition-all ${chartFilter === "All" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-500 hover:text-gray-700"}`}>All</button>
@@ -384,26 +399,26 @@ const Dashboard = ({ isSidebarOpen }) => {
                     </button>
                   </div>
                 </div>
-                
+
                 {/* Horizontal Dashed Lines positioned absolutely behind chart to ensure they go edge to edge */}
-                <div className="absolute left-6 right-6 top-[85px] bottom-[65px] flex flex-col justify-between pointer-events-none">
+                <div className="absolute left-4 right-4 sm:left-6 sm:right-6 top-[85px] bottom-[65px] flex flex-col justify-between pointer-events-none">
                   {[...Array(5)].map((_, i) => (
                     <div key={i} className="w-full border-t border-dashed border-gray-200 h-0"></div>
                   ))}
                 </div>
-                
+
                 <div className="flex-1 w-full overflow-x-auto relative pb-3 custom-horizontal-scrollbar z-10">
-                  <div className="min-w-[800px] h-full">
+                  <div className="min-w-[1500px] h-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }} barGap={0}>
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280', fontWeight: 500 }} dy={10} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280', fontWeight: 500 }} tickFormatter={(v) => v >= 1000 ? `${v/1000}K` : v} />
-                        <Tooltip content={<CustomTooltip />} cursor={{fill: '#f3f4f6', opacity: 0.4}} />
+                      <BarChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }} barGap={4}>
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6b7280', fontWeight: 500 }} dy={10} interval={0} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280', fontWeight: 500 }} tickFormatter={(v) => v >= 1000 ? `${v / 1000}K` : v} />
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f3f4f6', opacity: 0.4 }} />
                         {(chartFilter === "All" || chartFilter === "Income") && (
-                          <Bar dataKey="income" fill="#dfbbfd" radius={[2, 2, 0, 0]} maxBarSize={12} />
+                          <Bar dataKey="income" fill="#dfbbfd" radius={[4, 4, 0, 0]} maxBarSize={28} />
                         )}
                         {(chartFilter === "All" || chartFilter === "Expense") && (
-                          <Bar dataKey="expense" fill="#6a1e9c" radius={[2, 2, 0, 0]} maxBarSize={12} />
+                          <Bar dataKey="expense" fill="#6a1e9c" radius={[4, 4, 0, 0]} maxBarSize={28} />
                         )}
                       </BarChart>
                     </ResponsiveContainer>
@@ -413,10 +428,10 @@ const Dashboard = ({ isSidebarOpen }) => {
 
               {/* Bottom Row inside left col */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 flex-1">
-                
+
                 {/* Daybook Status */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[360px]">
-                  <div className="flex justify-between items-center mb-6">
+                <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[360px]">
+                  <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-3 xl:gap-0 mb-6">
                     <h3 className="text-[16px] font-bold text-gray-900 tracking-tight">Daybook Status</h3>
                     <div className="flex space-x-1 bg-[#f9fafb] p-1 rounded-full border border-gray-100 text-[12px] font-medium">
                       <button onClick={() => setDaybookFilter("All")} className={`px-4 py-1.5 rounded-full transition-all ${daybookFilter === "All" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-400 hover:text-gray-600"}`}>All</button>
@@ -446,10 +461,10 @@ const Dashboard = ({ isSidebarOpen }) => {
                 </div>
 
                 {/* Quick Overview */}
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[360px]">
+                <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-[360px]">
                   <h3 className="text-[16px] font-bold text-gray-900 tracking-tight mb-5">Quick Overview</h3>
                   <div className="flex flex-col justify-between h-full space-y-1">
-                    
+
                     {/* Reorder Alert */}
                     <div className="flex justify-between items-center pb-5 border-b border-gray-100">
                       <div>
@@ -489,9 +504,9 @@ const Dashboard = ({ isSidebarOpen }) => {
               </div>
             </div>
 
-            {/* Right Column (Span 1/3) */}
-            <div className="w-full lg:w-[320px] xl:w-[340px] shrink-0 flex flex-col gap-4">
-              
+            {/* Right Column (Summary Cards) */}
+            <div className="w-full lg:w-[320px] xl:w-[340px] shrink-0 grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-col gap-4">
+
               {/* Total Income */}
               <div className="bg-white p-5 px-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col">
                 <div className="flex justify-between items-center mb-1">

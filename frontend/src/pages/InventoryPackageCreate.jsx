@@ -11,7 +11,7 @@ const InventoryPackageCreate = () => {
   const isDetailsVisible = useMemo(() => customer && salesOrder, [customer, salesOrder]);
 
   return (
-    <div className={`transition-all duration-300 p-6 bg-[#f5f7fb] min-h-screen ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+    <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       <Head
         title="New Package"
         description="Create a shipment-ready package for your customer."

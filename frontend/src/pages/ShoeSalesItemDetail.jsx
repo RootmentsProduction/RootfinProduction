@@ -1195,7 +1195,7 @@ const ShoeSalesItemDetail = () => {
 
   if (loadingItem) {
     return (
-      <div className={`transition-all duration-300 flex min-h-screen items-center justify-center bg-[#f5f7fb] p-6 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 flex min-h-screen items-center justify-center bg-[#f5f7fb] p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="space-y-3 text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[#cbd5f5] border-t-[#3762f9]" />
           <p className="text-sm font-medium text-[#475569]">Loading item details…</p>
@@ -1206,7 +1206,7 @@ const ShoeSalesItemDetail = () => {
 
   if (error || !item) {
     return (
-      <div className={`transition-all duration-300 flex min-h-screen items-center justify-center bg-[#f5f7fb] p-6 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 flex min-h-screen items-center justify-center bg-[#f5f7fb] p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="max-w-md rounded-2xl border border-red-100 bg-white p-8 text-center shadow-sm">
           <h2 className="text-lg font-semibold text-[#1f2937]">We couldn&apos;t find the item.</h2>
           <p className="mt-2 text-sm text-[#6b7280]">{error || "Please try again or pick a different item."}</p>
@@ -1223,7 +1223,7 @@ const ShoeSalesItemDetail = () => {
   }
 
   return (
-    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-6 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       <div className="flex gap-6">
         <aside className="w-72 shrink-0 rounded-3xl border border-[#e1e5f5] bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-[#edf1ff] px-4 py-3">

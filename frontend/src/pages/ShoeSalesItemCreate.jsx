@@ -964,7 +964,7 @@ const handleCheckboxChange = (field) => (event) => {
   // Early return for loading state - AFTER all hooks
   if (loadingGroup) {
     return (
-      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-6 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="rounded-2xl border border-[#e4e6f2] bg-white shadow-lg p-8 text-center">
           <p className="text-lg font-medium text-[#475569]">Loading item group...</p>
         </div>
@@ -1003,7 +1003,7 @@ const handleCheckboxChange = (field) => (event) => {
     <div className="invoice-page-wrapper min-h-screen bg-[#F9FAFB] text-[#111827]">
       <Header title={isEditMode ? "Edit Item" : (groupId ? "Add Item to Group" : "Create Item")} />
 
-      <div className={`transition-all duration-300 p-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 p-8 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         {/* Top Action Toolbar */}
         <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
