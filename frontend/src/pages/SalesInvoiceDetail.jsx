@@ -497,12 +497,13 @@ const SalesInvoiceDetail = () => {
       const returnTotal = calculateTotalReturnAmountWithTax();
 
       const returnInvoicePayload = {
-        customer: invoice.customer,
-        customerPhone: invoice.customerPhone,
+        customer: invoice.customer || invoice.customerName || "Walk-in Customer",
+        customerPhone: invoice.customerPhone || invoice.phone || "",
         invoiceDate: new Date().toISOString().split("T")[0],
         terms: "Due on Receipt",
-        branch: invoice.branch,
-        salesperson: invoice.salesperson,
+        branch: invoice.branch || invoice.warehouse || invoice.storeName || "",
+        locCode: invoice.locCode || "",
+        salesperson: invoice.salesperson || "",
         category: "Return",
         originalInvoiceId: invoice._id,
         originalInvoiceNumber: invoice.invoiceNumber,
@@ -523,6 +524,8 @@ const SalesInvoiceDetail = () => {
         userId: user?.email,
       };
 
+      console.log("Return invoice payload:", JSON.stringify(returnInvoicePayload, null, 2));
+
       const returnResponse = await fetch(`${API_URL}/api/sales/invoices`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -530,7 +533,12 @@ const SalesInvoiceDetail = () => {
       });
 
       if (!returnResponse.ok) {
-        throw new Error("Failed to create return invoice");
+        let errMsg = `Failed to create return invoice (status ${returnResponse.status})`;
+        try {
+          const errBody = await returnResponse.json();
+          errMsg = errBody.message || errBody.error || errBody.msg || JSON.stringify(errBody);
+        } catch (_) {}
+        throw new Error(errMsg);
       }
 
       const result = await returnResponse.json();
