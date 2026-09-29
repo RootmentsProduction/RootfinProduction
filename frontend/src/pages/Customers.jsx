@@ -30,7 +30,7 @@ const Customers = () => {
     <div className="min-h-screen bg-[#f6f8ff]">
       <Head title="Customers" />
 
-      <div className={`transition-all duration-300 flex min-h-[calc(100vh-6rem)] flex-col gap-6 px-10 pb-16 pt-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 flex min-h-[calc(100vh-6rem)] flex-col gap-3 sm:p-6 px-10 pb-16 pt-8 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <header className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold text-[#111827]">All Customers</h1>
 

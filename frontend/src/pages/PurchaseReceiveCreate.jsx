@@ -1051,7 +1051,7 @@ const PurchaseReceiveCreate = () => {
   // Show loading state while fetching receive data in edit mode
   if (loading && isEditMode) {
     return (
-      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex items-center justify-center ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] flex items-center justify-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-center text-[#64748b]">Loading purchase receive...</div>
       </div>
     );
@@ -1060,7 +1060,7 @@ const PurchaseReceiveCreate = () => {
   return (
     <>
       <Header title={isEditMode ? "Edit Purchase Receive" : "New Purchase Receive"} />
-      <div className={`transition-all duration-300 min-h-screen bg-slate-50 flex flex-col ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 min-h-screen bg-slate-50 flex flex-col ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
 
         {/* Top Bar */}
         <div className="bg-white border-b border-gray-200 shadow-sm">

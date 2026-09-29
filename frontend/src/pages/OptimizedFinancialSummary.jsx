@@ -191,7 +191,7 @@ const OptimizedFinancialSummary = () => {
 
         <Headers title={"Financial Summary Report"} />
         
-        <div className={`transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+        <div className={`transition-all duration-300 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
           <div className="p-6 bg-gray-100 min-h-screen">
             
             {/* Controls */}

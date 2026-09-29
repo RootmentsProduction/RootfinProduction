@@ -253,7 +253,7 @@ const ShoeSalesItemGroupDetail = () => {
     return (
       <div className="invoice-page-wrapper min-h-screen bg-[#F9FAFB] text-[#111827]">
         <Header title="Item Groups" />
-        <div className={`transition-all duration-300 p-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+        <div className={`transition-all duration-300 p-8 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
           <div className="rounded-none border border-[#E5E7EB] bg-white shadow-xs p-8 text-center max-w-md mx-auto mt-12">
             <p className="text-base font-bold text-[#111827] uppercase">Item Group Not Found</p>
             <Link
@@ -588,7 +588,7 @@ const ShoeSalesItemGroupDetail = () => {
     <div className="invoice-page-wrapper min-h-screen bg-[#F9FAFB] text-[#111827]">
       <Header title="Item Groups" />
 
-      <div className={`transition-all duration-300 p-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 p-8 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         {/* Top Action Toolbar */}
         <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">

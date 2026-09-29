@@ -1683,7 +1683,7 @@ const TransferOrderCreate = () => {
   
   if (loading) {
     return (
-      <div className={`transition-all duration-300 p-6 bg-[#f5f7fb] min-h-screen flex items-center justify-center ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen flex items-center justify-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-[#64748b]">Loading transfer order...</div>
       </div>
     );
@@ -1706,7 +1706,7 @@ const TransferOrderCreate = () => {
         }
       />
 
-      <div className={`transition-all duration-300 px-10 pb-16 pt-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 px-10 pb-16 pt-8 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="rounded-3xl border border-[#e6ebfa] bg-white">
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#edf1ff] px-10 py-6">
             <div className="space-y-1">

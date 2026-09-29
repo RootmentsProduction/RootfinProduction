@@ -1435,7 +1435,7 @@ const InventoryAdjustmentCreate = () => {
   
   if (loading) {
     return (
-      <div className={`transition-all duration-300 p-6 bg-[#f5f7fb] min-h-screen flex items-center justify-center ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen flex items-center justify-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-[#64748b]">Loading adjustment...</div>
       </div>
     );
@@ -1444,7 +1444,7 @@ const InventoryAdjustmentCreate = () => {
   return (
     <>
       <Header title={isEditMode ? "Edit Adjustment" : "New Adjustment"} />
-    <div className={`transition-all duration-300 p-6 bg-[#f5f7fb] min-h-screen ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+    <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       <Head
         title={isEditMode ? "Edit Adjustment" : "New Adjustment"}
         description=""

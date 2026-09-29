@@ -18,7 +18,7 @@ const PaymentsReceived = () => {
     <div className="min-h-screen bg-[#f6f8ff]">
       <Head title="Payments Received" />
 
-      <div className={`transition-all duration-300 px-10 pb-16 pt-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 px-10 pb-16 pt-8 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold text-[#111827]">All Received Payments</h1>
           <div className="flex items-center gap-2">

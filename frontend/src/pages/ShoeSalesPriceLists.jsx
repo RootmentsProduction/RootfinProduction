@@ -6,7 +6,7 @@ import useSidebar from "../hooks/useSidebar";
 const ShoeSalesPriceLists = () => {
   const isSidebarOpen = useSidebar();
   return (
-    <div className={`transition-all duration-300 p-6 bg-[#f5f7fb] min-h-screen ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+    <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       <Head
         title="All Price Lists"
         description="Create and manage multiple price lists tailored to different customer segments."

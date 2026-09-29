@@ -179,7 +179,7 @@ const CloseReport = () => {
   return (
     <div className="close-report-wrapper bg-[#fcfcfc] min-h-screen pb-10">
       <Headers title={'Close Report'} />
-      <div className={`transition-all duration-300 pl-[10px] pr-8 pt-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 pl-[10px] pr-8 pt-8 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         
         {/* Top Controls Area */}
         <div className="flex justify-between items-end mb-8">

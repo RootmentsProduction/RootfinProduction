@@ -231,6 +231,7 @@ const Datewisedaybook = () => {
     : AllLoation;
 
   const [selectedStore, setSelectedStore] = useState("current");
+  const [selectedDepartment, setSelectedDepartment] = useState("all_departments"); // ✅ Reverted to single select, defaulting to all_departments
   const [allStoresSummary, setAllStoresSummary] = useState([]);
   const [allStoresTotals, setAllStoresTotals] = useState({ cash: 0, rbl: 0, bank: 0, upi: 0, amount: 0 }); // ✅ Added rbl
   const [selectedStores, setSelectedStores] = useState([]); // stores selected for multi-branch view
@@ -533,12 +534,37 @@ const Datewisedaybook = () => {
       return { cash, rbl, bank, upi, amount: cash + rbl + bank + upi }; // ✅ Added rbl
     }
 
-    if (selectedStore === "all" || selectedStore === "all_departments") {
-      const isDept = selectedStore === "all_departments";
-      const deptLocCodes = ["858", "759", "103"];
-      const filteredLocations = visibleLocations.filter(loc => 
-        isDept ? deptLocCodes.includes(loc.locCode) : !deptLocCodes.includes(loc.locCode)
-      );
+    let locCodesToFetch = [];
+
+    // 1. Process Store Dropdown Selection
+    if (selectedStore === "all") {
+      locCodesToFetch = [...AllLoation.map(loc => loc.locCode).filter(c => !DEPT_LOC_CODES.includes(c))];
+    } else if (selectedStore === "current") {
+      locCodesToFetch = [currentusers.locCode];
+    } else if (selectedStore === "multi") {
+      locCodesToFetch = [...selectedStores];
+    } else if (selectedStore === "all_departments") {
+      locCodesToFetch = DEPT_LOC_CODES;
+    }
+
+    // 2. Add Department Dropdown Selections
+    if (selectedDepartment) {
+      if (selectedDepartment === "all_departments") {
+        locCodesToFetch.push(...DEPT_LOC_CODES);
+      } else {
+        locCodesToFetch.push(selectedDepartment);
+      }
+    }
+
+    // Ensure uniqueness
+    locCodesToFetch = [...new Set(locCodesToFetch)];
+
+    if (locCodesToFetch.length === 0) {
+      locCodesToFetch = [currentusers.locCode];
+    }
+
+    if (selectedStore === "all" || selectedStore === "all_departments" || selectedDepartment) {
+      const filteredLocations = visibleLocations.filter(loc => locCodesToFetch.includes(loc.locCode));
       
       const results = await Promise.all(
         filteredLocations.map(async ({ locCode, locName }) => {
@@ -1702,6 +1728,7 @@ const Datewisedaybook = () => {
                           : []),
                       ]}
                       value={[
+                        { value: "none", label: "None (Departments Only)" },
                         { value: "current", label: `Current Store (${currentusers.locCode})` },
                         { value: "all", label: "All Stores" },
                         { value: "multi", label: "Multiple Branches" }
@@ -1755,7 +1782,7 @@ const Datewisedaybook = () => {
                   <div className="flex flex-col">
                     <label className="text-sm font-medium text-gray-500 mb-1.5">Department</label>
                     <Select
-                      placeholder="All Departments"
+                      placeholder="Select Department"
                       options={[
                         ...(((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager)
                           ? [{ value: "all_departments", label: "All Departments" }]
@@ -1773,9 +1800,9 @@ const Datewisedaybook = () => {
                         { value: "Production", label: "Production" },
                         { value: "858", label: "Warehouse" },
                         { value: "103", label: "WAREHOUSE" }
-                      ].find(o => o.value === selectedStore) || null}
+                      ].find(o => o.value === selectedDepartment) || null}
                       onChange={(opt) => {
-                          if (opt) setSelectedStore(opt.value);
+                          if (opt) setSelectedDepartment(opt.value);
                       }}
                       menuPortalTarget={document.body}
                       styles={{
@@ -1885,8 +1912,8 @@ const Datewisedaybook = () => {
                   {/* Action Buttons Right Side */}
                   <div className="flex items-center gap-3">
                     <CSVLink
-                      data={(selectedStore === "all" || selectedStore === "all_departments") ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
-                      headers={(selectedStore === "all" || selectedStore === "all_departments") ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
+                      data={(selectedStore === "all" || selectedStore === "all_departments" || selectedDepartment) ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
+                      headers={(selectedStore === "all" || selectedStore === "all_departments" || selectedDepartment) ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
                       filename={`financial_summary_${selectedStore === "all" ? "All_Branches" : selectedStore === "all_departments" ? "All_Departments" : selectedStore === "multi" ? "Multiple_Branches" : (AllLoation.find(loc => loc.locCode === currentusers.locCode)?.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_")}_${fromDate === toDate ? fromDate : fromDate + "_to_" + toDate}.csv`}
                     >
                       <button
@@ -1915,7 +1942,7 @@ const Datewisedaybook = () => {
             <div ref={printRef}>
               {/* Loading Screen */}
 
-              {(selectedStore === "all" || selectedStore === "all_departments") ? (
+              {(selectedStore === "all" || selectedStore === "all_departments" || selectedDepartment) ? (
                 <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "500px", overflowY: "auto" }}>
                     <table className="w-full border-collapse min-w-full text-sm">

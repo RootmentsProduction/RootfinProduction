@@ -818,7 +818,7 @@ const SalesInvoiceDetail = () => {
 
         <div className="flex">
           {/* ── LEFT INVOICES LIST SIDEBAR ── */}
-          <div className={`transition-all duration-300 w-80 bg-white border-r border-[#E5E7EB] h-[calc(100vh-65px)] overflow-y-auto shrink-0 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+          <div className={`transition-all duration-300 w-80 bg-white border-r border-[#E5E7EB] h-[calc(100vh-65px)] overflow-y-auto shrink-0 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
             <div className="p-4 border-b border-[#E5E7EB] bg-white sticky top-0 z-10 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-bold tracking-wider text-[#111827] uppercase flex items-center gap-1.5">

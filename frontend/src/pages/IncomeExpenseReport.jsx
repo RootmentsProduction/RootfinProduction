@@ -839,17 +839,7 @@ export default function IncomeExpenseReport() {
       </Helmet>
       <Headers />
       
-      <div 
-        style={{ 
-          marginLeft: isSidebarOpen ? "256px" : "0px", 
-          padding: "24px", 
-          width: isSidebarOpen ? "calc(100% - 256px)" : "100%",
-          maxWidth: isSidebarOpen ? "calc(100% - 256px)" : "100%",
-          minHeight: "100vh",
-          backgroundColor: "#fafbfc",
-          transition: "margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-        }}
-      >
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#fbfcfd] min-h-screen ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         {/* Page Title & Header */}
         <div style={{ marginBottom: "24px" }}>
           <h1 style={{ 

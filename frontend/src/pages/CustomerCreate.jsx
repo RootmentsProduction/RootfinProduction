@@ -296,7 +296,7 @@ const CustomerCreate = () => {
     <div className="min-h-screen bg-[#f6f8ff]">
       <Head title="New Customer" />
 
-      <div className={`transition-all duration-300 flex min-h-[calc(100vh-6rem)] flex-col gap-6 px-10 pb-20 pt-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 flex min-h-[calc(100vh-6rem)] flex-col gap-3 sm:p-6 px-10 pb-20 pt-8 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="rounded-3xl border border-[#e1e6f5] bg-white shadow-sm">
           <div className="border-b border-[#edf1ff] px-8 py-6">
             <div className="flex flex-wrap justify-between gap-4">

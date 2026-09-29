@@ -245,7 +245,7 @@ const ShoeSalesItems = () => {
   return (
     <>
       <Header title="Items" />
-      <div className={`transition-all duration-300 p-6 bg-[#f8fafc] min-h-screen ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f8fafc] min-h-screen ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-[#1f2937]">Items</h1>

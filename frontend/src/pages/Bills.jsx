@@ -2054,7 +2054,7 @@ const NewBillForm = ({ billId, isEditMode = false }) => {
   useEnterToSave(() => handleSaveBill("completed"), saving);
 
   return (
-    <div className={`transition-all duration-300 min-h-screen bg-gradient-to-br from-[#f8f9fc] to-[#f1f5f9] ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+    <div className={`transition-all duration-300 min-h-screen bg-gradient-to-br from-[#f8f9fc] to-[#f1f5f9] ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white border-b border-[#e2e8f0] shadow-sm">
         <div className="px-8 py-5 flex items-center justify-between">
@@ -3655,7 +3655,7 @@ const Bills = () => {
   }
 
   return (
-    <div className={`transition-all duration-300 min-h-screen bg-[#f8fafc] p-8 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+    <div className={`transition-all duration-300 min-h-screen bg-[#f8fafc] p-8 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">

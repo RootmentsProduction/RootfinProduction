@@ -8,7 +8,7 @@ const CreditNotes = () => {
     <div className="min-h-screen bg-[#f7f9ff]">
       <Head title="Credit Notes" />
 
-      <div className={`transition-all duration-300 flex min-h-[calc(100vh-6rem)] flex-col items-center justify-center gap-6 px-10 text-center ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 flex min-h-[calc(100vh-6rem)] flex-col items-center justify-center gap-3 sm:p-6 px-10 text-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold text-[#0f172a]">All Credit Notes</h1>
           <p className="text-sm text-[#6b7280]">
