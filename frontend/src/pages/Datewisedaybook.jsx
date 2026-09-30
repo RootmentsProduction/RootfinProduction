@@ -45,6 +45,7 @@ const headers = [
   { label: "Date", key: "date" },
   { label: "Invoice No", key: "invoiceNo" },
   { label: "Customer Name", key: "customerName" },
+  { label: "QTY", key: "quantity" },
   { label: "Category", key: "Category" },
   { label: "Sub Category", key: "SubCategory" },
   { label: "Remarks", key: "remark" },
@@ -56,6 +57,7 @@ const headers = [
   { label: "Razorpay", key: "rbl" },
   { label: "Card/Bank", key: "bank" },
   { label: "UPI", key: "upi" },
+  { label: "Attachment", key: "attachment" },
 ];
 
 const subCategories = [
@@ -192,6 +194,7 @@ const multiBranchCsvHeaders = [
   { label: "Date", key: "date" },
   { label: "Invoice No", key: "invoiceNo" },
   { label: "Customer Name", key: "customerName" },
+  { label: "QTY", key: "quantity" },
   { label: "Category", key: "Category" },
   { label: "Sub Category", key: "SubCategory" },
   { label: "Remarks", key: "remark" },
@@ -204,6 +207,7 @@ const multiBranchCsvHeaders = [
   { label: "Card/Bank", key: "bank" },
   { label: "UPI", key: "upi" },
   { label: "Branch", key: "branch" },
+  { label: "Attachment", key: "attachment" },
 ];
 
 const Datewisedaybook = () => {
@@ -2105,6 +2109,7 @@ const Datewisedaybook = () => {
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs min-w-[110px]">Date</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Invoice No.</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Customer Name</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">QTY</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Category</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Sub Category</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Remarks</th>
@@ -2116,6 +2121,7 @@ const Datewisedaybook = () => {
                           <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Razorpay</th>
                           <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Card/Bank</th>
                           <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">UPI</th>
+                          <th className="px-3 py-3 text-center font-bold whitespace-nowrap border-r border-[#333333] text-xs">Attachment</th>
                           {showAction && <th className="px-3 py-3 text-center font-bold whitespace-nowrap border-r border-[#333333] text-xs">Action</th>}
                         </tr>
                       </thead>
@@ -2123,13 +2129,14 @@ const Datewisedaybook = () => {
                       <tbody>
                         {/* OPENING BALANCE ROW */}
                         <tr className="bg-white font-bold text-gray-900 border-b border-gray-200">
-                          <td colSpan={10} className="px-3 py-2.5 text-xs uppercase tracking-wide font-bold">
+                          <td colSpan={11} className="px-3 py-2.5 text-xs uppercase tracking-wide font-bold">
                             OPENING BALANCE
                           </td>
                           <td className="px-3 py-2.5 text-right text-xs font-semibold whitespace-nowrap">{openingCash ? Math.round(openingCash).toLocaleString() : "-"}</td>
                           <td className="px-3 py-2.5 text-right text-xs font-semibold whitespace-nowrap">{openingRbl ? Math.round(openingRbl).toLocaleString() : "-"}</td>
                           <td className="px-3 py-2.5 text-right text-xs font-semibold whitespace-nowrap">-</td>
                           <td className="px-3 py-2.5 text-right text-xs font-semibold whitespace-nowrap">-</td>
+                          <td className="px-3 py-2.5"></td>
                           {showAction && <td className="px-3 py-2.5"></td>}
                         </tr>
 
@@ -2162,6 +2169,7 @@ const Datewisedaybook = () => {
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                       {t.customerName || t.customer || t.name || "-"}
                                     </td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.qty || t.quantity || "-"}</td>
                                     <td rowSpan="2" className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                       {t.Category}
                                     </td>
@@ -2193,6 +2201,14 @@ const Datewisedaybook = () => {
                                     <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("bank")}</td>
                                     <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("upi")}</td>
 
+                                    <td rowSpan="2" className="px-3 py-2 text-center border-r border-gray-100 text-xs">
+                                      {(t.attachment || t.file || t.documentUrl || t.image) ? (
+                                        <a href={t.attachment || t.file || t.documentUrl || t.image} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-1">
+                                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                        </a>
+                                      ) : "-"}
+                                    </td>
+
                                     {showAction && (
                                       <td rowSpan="2" className="px-3 py-2 text-center border-r border-gray-100 text-xs">
                                         {isSyncing && editingIndex === index ? (
@@ -2222,6 +2238,7 @@ const Datewisedaybook = () => {
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                       {t.customerName || t.customer || t.name || "-"}
                                     </td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.qty || t.quantity || "-"}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.SubCategory1}</td>
                                     <td className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">{t.remark}</td>
                                     <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
@@ -2253,6 +2270,7 @@ const Datewisedaybook = () => {
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                   {t.customerName || t.customer || t.name || "-"}
                                 </td>
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.qty || t.quantity || "-"}</td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.Category || t.type}</td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                   {[t.SubCategory]
@@ -2272,6 +2290,13 @@ const Datewisedaybook = () => {
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("rbl")}</td>
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("bank")}</td>
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("upi")}</td>
+                                <td className="px-3 py-2 text-center border-r border-gray-100 text-xs">
+                                  {(t.attachment || t.file || t.documentUrl || t.image) ? (
+                                    <a href={t.attachment || t.file || t.documentUrl || t.image} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-1">
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                    </a>
+                                  ) : "-"}
+                                </td>
                                 {showAction && (
                                   <td className="px-3 py-2 text-center border-r border-gray-100 text-xs">
                                     {isSyncing && editingIndex === index ? (
@@ -2311,7 +2336,7 @@ const Datewisedaybook = () => {
                           className="bg-[#e2e8f0] font-bold border-t-2 border-gray-300"
                           style={{ position: "sticky", bottom: 0, zIndex: 2 }}
                         >
-                          <td colSpan="6" className="px-3 py-2.5 text-left text-gray-800 text-xs font-bold uppercase tracking-wider">
+                          <td colSpan="7" className="px-3 py-2.5 text-left text-gray-800 text-xs font-bold uppercase tracking-wider">
                             Total
                           </td>
                           <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totals.amount)).toLocaleString()}</td>
@@ -2322,6 +2347,7 @@ const Datewisedaybook = () => {
                           <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalRblAmount)).toLocaleString()}</td>
                           <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalBankAmount)).toLocaleString()}</td>
                           <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalUpiAmount)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-center text-gray-900 text-xs font-bold"></td>
                           {showAction && <td className="px-3 py-2.5"></td>}
                         </tr>
                       </tfoot>

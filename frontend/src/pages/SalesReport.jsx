@@ -524,60 +524,62 @@ const SalesReport = () => {
                   marginBottom: "40px"
                 }}>
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                     cursor: "default"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.12)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
                   }}>
                     <div style={{ 
-                      fontSize: "13px", 
+                      fontSize: "11px", 
                       color: "#6c757d", 
-                      fontWeight: "500",
-                      marginBottom: "8px",
+                      fontWeight: "600",
+                      marginBottom: "10px",
                       textTransform: "uppercase",
-                      letterSpacing: "0.5px"
+                      letterSpacing: "0.8px"
                     }}>Total Invoices</div>
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#2c3e50",
+                      color: "#1a1f2e",
                       lineHeight: "1"
                     }}>{reportData.summary?.totalInvoices || 0}</div>
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                     cursor: "default"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.12)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
                   }}>
                     <div style={{ 
-                      fontSize: "13px", 
+                      fontSize: "11px", 
                       color: "#6c757d", 
-                      fontWeight: "500",
-                      marginBottom: "8px",
+                      fontWeight: "600",
+                      marginBottom: "10px",
                       textTransform: "uppercase",
-                      letterSpacing: "0.5px"
+                      letterSpacing: "0.8px"
                     }}>Total Sales</div>
                     <div style={{ 
                       fontSize: "32px", 
@@ -588,28 +590,29 @@ const SalesReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                     cursor: "default"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.12)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
                   }}>
                     <div style={{ 
-                      fontSize: "13px", 
+                      fontSize: "11px", 
                       color: "#6c757d", 
-                      fontWeight: "500",
-                      marginBottom: "8px",
+                      fontWeight: "600",
+                      marginBottom: "10px",
                       textTransform: "uppercase",
-                      letterSpacing: "0.5px"
+                      letterSpacing: "0.8px"
                     }}>Total Discount</div>
                     <div style={{ 
                       fontSize: "32px", 
@@ -620,33 +623,34 @@ const SalesReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                     cursor: "default"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.12)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.06)";
                   }}>
                     <div style={{ 
-                      fontSize: "13px", 
+                      fontSize: "11px", 
                       color: "#6c757d", 
-                      fontWeight: "500",
-                      marginBottom: "8px",
+                      fontWeight: "600",
+                      marginBottom: "10px",
                       textTransform: "uppercase",
-                      letterSpacing: "0.5px"
+                      letterSpacing: "0.8px"
                     }}>Net Sales</div>
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#a855f7",
+                      color: "#16a34a",
                       lineHeight: "1"
                     }}>₹{(reportData.summary?.netSales || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                   </div>
@@ -719,20 +723,19 @@ const SalesReport = () => {
                           { label: "UPI", value: reportData.summary?.paymentBreakdown?.upi || 0, color: "#6f42c1" },
                           { label: "RBL", value: reportData.summary?.paymentBreakdown?.rbl || 0, color: "#fd7e14" }
                         ].map((payment, idx) => (
-                          <div 
-                            key={idx} 
-                            style={{ 
-                              backgroundColor: "#1a1f2e", 
-                              padding: "20px", 
-                              borderRadius: "10px",
-                              border: "1px solid #e9ecef",
-                              textAlign: "center",
-                              transition: "transform 0.2s ease",
-                              animation: `slideIn 0.5s ease-out ${idx * 0.1}s both`
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.02)"}
-                            onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-                          >
+                          <div style={{ 
+                            backgroundColor: "#ffffff", 
+                            padding: "20px", 
+                            borderRadius: "10px",
+                            border: "1px solid #e9ecef",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                            textAlign: "center",
+                            transition: "transform 0.2s ease",
+                            animation: `slideIn 0.5s ease-out ${idx * 0.1}s both`
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.02)"}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+                        >
                             <div style={{ 
                               fontSize: "12px", 
                               color: "#6c757d", 
@@ -772,7 +775,7 @@ const SalesReport = () => {
                       backgroundColor: "white"
                     }}>
                       <thead>
-                        <tr style={{ backgroundColor: "#f1f3f4" }}>
+                        <tr style={{ backgroundColor: "#1a1f2e" }}>
                           <th style={{ 
                             padding: "16px 20px", 
                             textAlign: "left", 
@@ -851,7 +854,7 @@ const SalesReport = () => {
                       backgroundColor: "white"
                     }}>
                       <thead>
-                        <tr style={{ backgroundColor: "#f1f3f4" }}>
+                        <tr style={{ backgroundColor: "#1a1f2e" }}>
                           <th style={{ 
                             padding: "16px 20px", 
                             textAlign: "left", 
@@ -1103,7 +1106,7 @@ const SalesReport = () => {
                       minWidth: "800px"
                     }}>
                       <thead>
-                        <tr style={{ backgroundColor: "#f1f3f4" }}>
+                        <tr style={{ backgroundColor: "#1a1f2e" }}>
                           <th style={{ 
                             padding: "16px 20px", 
                             textAlign: "left", 
@@ -1411,7 +1414,7 @@ const SalesReport = () => {
                       backgroundColor: "white"
                     }}>
                       <thead>
-                        <tr style={{ backgroundColor: "#f1f3f4" }}>
+                        <tr style={{ backgroundColor: "#1a1f2e" }}>
                           <th style={{ 
                             padding: "16px 20px", 
                             textAlign: "left", 
@@ -1490,7 +1493,7 @@ const SalesReport = () => {
                       backgroundColor: "white"
                     }}>
                       <thead>
-                        <tr style={{ backgroundColor: "#f1f3f4" }}>
+                        <tr style={{ backgroundColor: "#1a1f2e" }}>
                           <th style={{ 
                             padding: "16px 20px", 
                             textAlign: "left", 

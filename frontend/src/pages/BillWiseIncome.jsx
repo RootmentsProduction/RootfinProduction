@@ -1257,8 +1257,8 @@ const DayBookInc = () => {
                 <style>{`
                     @media print {
                         @page {
-                            size: tabloid landscape;
-                            margin: 5mm;
+                            size: A4 landscape;
+                            margin: 2mm;
                         }
                         * {
                             box-sizing: border-box !important;
@@ -1272,18 +1272,45 @@ const DayBookInc = () => {
                         .no-print { display: none !important; }
                         nav, header, aside, .sidebar { display: none !important; }
                         .ml-\\[240px\\] { margin-left: 0 !important; width: 100% !important; }
+                        
+                        /* Scale the entire wrapper to fit 14 columns */
+                        .print-content-wrapper {
+                            zoom: 0.82; 
+                            page-break-inside: avoid;
+                        }
+                        
                         table { 
                             width: 100% !important; 
+                            max-width: 100% !important;
                             border-collapse: collapse !important; 
-                            font-size: 9px !important;
+                            font-size: 8px !important;
+                            table-layout: auto !important; 
                         }
                         th, td { 
                             border: 1px solid #000 !important; 
-                            padding: 4px 6px !important; 
+                            padding: 2px 3px !important; 
+                            word-wrap: break-word;
                         }
                         th { 
                             background-color: #18181b !important; 
                             color: white !important;
+                            font-size: 7px !important;
+                        }
+                        
+                        /* Ensure the two bottom boxes stay side by side and don't break pages */
+                        .print-summary-grid {
+                            display: flex !important;
+                            flex-direction: row !important;
+                            justify-content: space-between !important;
+                            gap: 10px !important;
+                            page-break-inside: avoid !important;
+                            margin-top: 15px !important;
+                        }
+                        .lg\\:col-span-7 {
+                            width: 58% !important;
+                        }
+                        .lg\\:col-span-5 {
+                            width: 40% !important;
                         }
                     }
                 `}</style>

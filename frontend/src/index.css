@@ -387,7 +387,6 @@ button.action-delete-btn:hover {
 
   /* Page setup */
   @page {
-    size: A4;
     margin: 0;
   }
 }

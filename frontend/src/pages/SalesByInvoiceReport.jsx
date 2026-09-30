@@ -112,18 +112,40 @@ const SalesByInvoiceReport = () => {
       if (!response.ok) { alert(`API Error: ${response.status}`); return; }
       const result = await response.json();
       if (result.success) {
-        setReportData(result.data);
-        const csv = result.data.invoices?.map(inv => ({
+        const allInvoices = result.data.invoices || [];
+
+        // Fix: Exclude returned invoices (itemCount === 0) from summary totals
+        const nonReturned = allInvoices.filter(inv => inv.itemCount > 0);
+        const returnedCount = allInvoices.length - nonReturned.length;
+        const totalSales = nonReturned.reduce((s, inv) => s + (inv.totalAmount || 0), 0);
+        const totalItems = nonReturned.reduce((s, inv) => s + (inv.itemCount || 0), 0);
+        const avgInvoiceValue = nonReturned.length > 0 ? totalSales / nonReturned.length : 0;
+
+        setReportData({
+          ...result.data,
+          summary: {
+            ...(result.data.summary || {}),
+            totalInvoices: nonReturned.length,
+            totalSales,
+            totalItems,
+            avgInvoiceValue,
+            returnedCount
+          }
+        });
+
+        const csv = allInvoices.map(inv => ({
           Date: inv.date, "Invoice No": inv.invoiceNumber, Customer: inv.customer,
           SKU: inv.skus || "N/A", Category: inv.category, "Item Count": inv.itemCount,
           "Total Amount": inv.totalAmount, Discount: inv.discount,
           ...(canSeeCost ? { "Net Amount": inv.netAmount, Profit: inv.profit || 0 } : {}),
-          "Payment Method": inv.paymentMethod, Branch: inv.branch
-        })) || [];
+          "Payment Method": inv.paymentMethod, Branch: inv.branch,
+          "Status": inv.itemCount === 0 ? "RETURNED" : "Active"
+        }));
         setCsvData(csv);
       } else { alert("Failed to fetch report: " + (result.message || "Unknown error")); }
     } catch (error) { alert("Error: " + error.message); }
     finally { setLoading(false); }
+
   };
 
   const clearFilters = () => { setCategoryFilter(null); setSkuSearch(""); setSizeFilter(null); setCustomerSearch(""); };
@@ -267,6 +289,12 @@ const SalesByInvoiceReport = () => {
                     <div className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase mb-1">Avg Invoice Value</div>
                     <div className="text-2xl font-bold text-gray-900">{fmt(reportData.summary?.avgInvoiceValue)}</div>
                   </div>
+                  {reportData.summary?.returnedCount > 0 && (
+                    <div>
+                      <div className="text-[11px] font-semibold tracking-widest text-red-400 uppercase mb-1">Returns (Excluded)</div>
+                      <div className="text-2xl font-bold text-red-500">{fmt(reportData.summary?.returnedCount)}</div>
+                    </div>
+                  )}
                 </div>
                 {csvData.length > 0 && (
                   <CSVLink data={csvData} filename={`sales-by-invoice-${fromDate}-to-${toDate}.csv`}

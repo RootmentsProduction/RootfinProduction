@@ -168,11 +168,11 @@ const DayBook = () => {
         const storeName = (currentusers.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_");
         const dateRange = fromDate === toDate ? fromDate : `${fromDate}_to_${toDate}`;
         const opt = {
-            margin: 0.5,
+            margin: [0.3, 0.3, 0.3, 0.3],
             filename: `daybook_${storeName}_${dateRange}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+            html2canvas: { scale: 1.5, useCORS: true },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
         };
         html2pdf().set(opt).from(element).save();
     };
@@ -238,56 +238,55 @@ const DayBook = () => {
                     </div>
                 </div>
 
-                {/* Table Section */}
-                <div className="px-8 pb-12" id="report-table-container">
+                <div className="px-4 pb-8" id="report-table-container">
                     <div className="border border-gray-200 rounded-md overflow-x-auto bg-white">
-                        <table className="w-full min-w-max">
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
                             <thead className="bg-[#1f2937]">
                                 <tr>
-                                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-white uppercase">Date</th>
-                                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-white uppercase">Invoice No.</th>
-                                    <th className="px-6 py-3.5 text-left text-[11px] font-semibold tracking-wider text-white uppercase">Customer Name</th>
-                                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">Quantity</th>
-                                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">Bill Value</th>
-                                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">Cash</th>
-                                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">Razorpay</th>
-                                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">Card/Bank</th>
-                                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">UPI</th>
-                                    <th className="px-6 py-3.5 text-center text-[11px] font-semibold tracking-wider text-white uppercase">Total Amount</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "left", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Date</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "left", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Invoice No.</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "left", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Customer Name</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Qty</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Bill Value</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Cash</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Razorpay</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Card/Bank</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>UPI</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Total Amount</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {allTransactions.length > 0 ? (
                                     allTransactions.map((transaction, index) => (
-                                        <tr key={index} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                        <tr key={index} style={{ borderBottom: "1px solid #f1f3f4" }}>
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151" }}>
                                                 {formatDate(transaction.date)}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151" }}>
                                                 {transaction.invoiceNo || transaction._id || transaction.locCode || "-"}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151" }}>
                                                 {transaction.customerName || "-"}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
                                                 {transaction.quantity || 1}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
                                                 {formatNumber(transaction.billValue)}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
                                                 {formatNumber(transaction.cash)}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
                                                 {formatNumber(transaction.rbl)}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
                                                 {formatNumber(transaction.bank)}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
                                                 {formatNumber(transaction.upi)}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
                                                 {formatNumber(transaction.amount)}
                                             </td>
                                         </tr>
@@ -303,24 +302,24 @@ const DayBook = () => {
                                 )}
                             </tbody>
                             {allTransactions.length > 0 && (
-                                <tfoot className="bg-[#e5e7eb]">
+                                <tfoot style={{ backgroundColor: "#e5e7eb" }}>
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800 uppercase">
+                                        <td colSpan="5" style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 700, color: "#1f2937", textTransform: "uppercase" }}>
                                             Total
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800 text-center">
+                                        <td style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 700, color: "#1f2937", textAlign: "center" }}>
                                             {formatNumber(calculateTotal('cash'))}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800 text-center">
+                                        <td style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 700, color: "#1f2937", textAlign: "center" }}>
                                             {formatNumber(calculateTotal('rbl'))}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800 text-center">
+                                        <td style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 700, color: "#1f2937", textAlign: "center" }}>
                                             {formatNumber(calculateTotal('bank'))}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800 text-center">
+                                        <td style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 700, color: "#1f2937", textAlign: "center" }}>
                                             {formatNumber(calculateTotal('upi'))}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-800 text-center">
+                                        <td style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 700, color: "#1f2937", textAlign: "center" }}>
                                             {formatNumber(calculateTotal('amount'))}
                                         </td>
                                     </tr>
