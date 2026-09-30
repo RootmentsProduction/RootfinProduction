@@ -280,7 +280,7 @@ const DayBookInc = () => {
         window.print();
     };
 
-    const fetchOptions = useMemo(() => ({}), []);
+    const fetchOptions = useMemo(() => ({ useCache: false }), []);
 
     const { data, loading: l1 } = useFetch(apiUrl, fetchOptions);
     const { data: data1, loading: l2 } = useFetch(apiurl1, fetchOptions);
