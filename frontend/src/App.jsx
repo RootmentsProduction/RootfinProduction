@@ -180,7 +180,7 @@ const App = () => {
   return (
     <div className="">
       {currentuser && <Nav />} {/* Show Nav only if user is logged in */}
-      <div className="w-full">
+      <div className="min-w-0">
         <Routes>
           {/* Login Route */}
           <Route path="/login" element={!currentuser ? <Login /> : <Navigate to="/" />} />

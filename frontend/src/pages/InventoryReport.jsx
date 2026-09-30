@@ -788,7 +788,7 @@ const InventoryReport = () => {
                   padding: "12px 16px", 
                   borderRadius: "8px", 
                   border: "1px solid #dee2e6", 
-                  backgroundColor: "#1a1f2e",
+                  backgroundColor: "#ffffff",
                   color: "#6c757d",
                   fontSize: "14px"
                 }}>
@@ -1156,25 +1156,26 @@ const InventoryReport = () => {
                   marginBottom: "40px"
                 }}>
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
-                    border: "1px solid #e9ecef",
+                    border: "1px solid #e5e7eb",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                     cursor: "default"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.06)";
                   }}>
                     <div style={{ 
-                      fontSize: "13px", 
-                      color: "#6c757d", 
-                      fontWeight: "500",
+                      fontSize: "12px", 
+                      color: "#6b7280", 
+                      fontWeight: "600",
                       marginBottom: "8px",
                       textTransform: "uppercase",
                       letterSpacing: "0.5px"
@@ -1182,31 +1183,32 @@ const InventoryReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#2c3e50",
+                      color: "#111827",
                       lineHeight: "1"
                     }}>{reportData.summary?.totalItems || 0}</div>
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
-                    border: "1px solid #e9ecef",
+                    border: "1px solid #e5e7eb",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                     cursor: "default"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.06)";
                   }}>
                     <div style={{ 
-                      fontSize: "13px", 
-                      color: "#6c757d", 
-                      fontWeight: "500",
+                      fontSize: "12px", 
+                      color: "#6b7280", 
+                      fontWeight: "600",
                       marginBottom: "8px",
                       textTransform: "uppercase",
                       letterSpacing: "0.5px"
@@ -1214,31 +1216,32 @@ const InventoryReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#a855f7",
+                      color: "#111827",
                       lineHeight: "1"
                     }}>{reportData.summary?.totalQuantity || 0}</div>
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
-                    border: "1px solid #e9ecef",
+                    border: "1px solid #e5e7eb",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
                     transition: "transform 0.2s ease, box-shadow 0.2s ease",
                     cursor: "default"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.1)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.06)";
                   }}>
                     <div style={{ 
-                      fontSize: "13px", 
-                      color: "#6c757d", 
-                      fontWeight: "500",
+                      fontSize: "12px", 
+                      color: "#6b7280", 
+                      fontWeight: "600",
                       marginBottom: "8px",
                       textTransform: "uppercase",
                       letterSpacing: "0.5px"
@@ -1246,7 +1249,7 @@ const InventoryReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#a855f7",
+                      color: "#111827",
                       lineHeight: "1"
                     }}>₹{(reportData.summary?.totalStockValue || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                   </div>
@@ -1254,7 +1257,7 @@ const InventoryReport = () => {
 
                 {/* Items Table */}
                 <div style={{ 
-                  backgroundColor: "#1a1f2e",
+                  backgroundColor: "#ffffff",
                   borderRadius: "10px",
                   overflow: "hidden",
                   border: "1px solid #e9ecef"
@@ -1266,7 +1269,7 @@ const InventoryReport = () => {
                     tableLayout: "fixed"
                   }}>
                     <thead>
-                      <tr style={{ backgroundColor: "#f1f3f4" }}>
+                      <tr style={{ backgroundColor: "#1e1e1e" }}>
                         <th style={{ 
                           width: canSeeCost ? "28%" : "35%",
                           padding: "16px 20px", 
@@ -1418,7 +1421,7 @@ const InventoryReport = () => {
                   marginBottom: "40px"
                 }}>
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1450,7 +1453,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1482,7 +1485,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1516,7 +1519,7 @@ const InventoryReport = () => {
 
                 {/* Warehouses Table */}
                 <div style={{ 
-                  backgroundColor: "#1a1f2e",
+                  backgroundColor: "#ffffff",
                   borderRadius: "10px",
                   overflow: "hidden",
                   border: "1px solid #e9ecef"
@@ -1527,7 +1530,7 @@ const InventoryReport = () => {
                     backgroundColor: "white"
                   }}>
                     <thead>
-                      <tr style={{ backgroundColor: "#f1f3f4" }}>
+                      <tr style={{ backgroundColor: "#1e1e1e" }}>
                         <th style={{ 
                           padding: "16px 20px", 
                           textAlign: "left", 
@@ -1643,7 +1646,7 @@ const InventoryReport = () => {
                   marginBottom: "40px"
                 }}>
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1675,7 +1678,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1707,7 +1710,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1788,7 +1791,7 @@ const InventoryReport = () => {
                   </h3>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e",
+                    backgroundColor: "#ffffff",
                     borderRadius: "10px",
                     overflow: "hidden",
                     border: "1px solid #e9ecef"
@@ -1799,7 +1802,7 @@ const InventoryReport = () => {
                       backgroundColor: "white"
                     }}>
                       <thead>
-                        <tr style={{ backgroundColor: "#f1f3f4" }}>
+                        <tr style={{ backgroundColor: "#1e1e1e" }}>
                           <th style={{ 
                             padding: "16px 20px", 
                             textAlign: "left", 
@@ -1941,7 +1944,7 @@ const InventoryReport = () => {
                   }}>Store-wise Opening Stock Summary</h3>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e",
+                    backgroundColor: "#ffffff",
                     borderRadius: "10px",
                     overflow: "hidden",
                     border: "1px solid #e9ecef"
@@ -1952,7 +1955,7 @@ const InventoryReport = () => {
                       backgroundColor: "white"
                     }}>
                       <thead>
-                        <tr style={{ backgroundColor: "#f1f3f4" }}>
+                        <tr style={{ backgroundColor: "#1e1e1e" }}>
                           <th style={{ 
                             padding: "16px 20px", 
                             textAlign: "left", 
@@ -2084,7 +2087,7 @@ const InventoryReport = () => {
                   marginBottom: "40px"
                 }}>
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -2116,7 +2119,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -2148,7 +2151,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -2180,7 +2183,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -2212,7 +2215,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e", 
+                    backgroundColor: "#ffffff", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -2261,7 +2264,7 @@ const InventoryReport = () => {
                   </h3>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e",
+                    backgroundColor: "#ffffff",
                     borderRadius: "10px",
                     overflow: "hidden",
                     border: "1px solid #e9ecef"
@@ -2272,7 +2275,7 @@ const InventoryReport = () => {
                       backgroundColor: "white"
                     }}>
                       <thead>
-                        <tr style={{ backgroundColor: "#f1f3f4" }}>
+                        <tr style={{ backgroundColor: "#1e1e1e" }}>
                           <th style={{ 
                             width: canSeeCost ? "22%" : "26%",
                             padding: "16px 20px", 
@@ -2489,7 +2492,7 @@ const InventoryReport = () => {
                   }}>Warehouse-wise Stock Summary</h3>
                   
                   <div style={{ 
-                    backgroundColor: "#1a1f2e",
+                    backgroundColor: "#ffffff",
                     borderRadius: "10px",
                     overflow: "hidden",
                     border: "1px solid #e9ecef"
@@ -2500,7 +2503,7 @@ const InventoryReport = () => {
                       backgroundColor: "white"
                     }}>
                       <thead>
-                        <tr style={{ backgroundColor: "#f1f3f4" }}>
+                        <tr style={{ backgroundColor: "#1e1e1e" }}>
                           <th style={{ 
                             padding: "16px 20px", 
                             textAlign: "left", 

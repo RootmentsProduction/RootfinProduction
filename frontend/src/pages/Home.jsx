@@ -119,14 +119,15 @@ const Dashboard = ({ isSidebarOpen }) => {
       let closedArr = [];
       let lateArr = [];
       try {
-        const clsRes = await fetch(`${API_URL}/api/user/AdminColseView?date=${dateTo}&role=admin`);
+        const clsRes = await fetch(`${API_URL}/user/AdminColseView?date=${dateTo}&role=admin`);
         if (clsRes.ok) {
           const clsData = await clsRes.json();
           (clsData.data || []).forEach(c => {
              const created = new Date(c.createdAt);
-             const dt = new Date(dateTo);
-             const threshold = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 1, 3, 0, 0);
-             if (created > threshold) {
+             // Get the local date string (YYYY-MM-DD) of when the closure was actually created
+             const createdDateStr = `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, '0')}-${String(created.getDate()).padStart(2, '0')}`;
+             // If closure was created on a later day than the daybook date, it's late
+             if (createdDateStr > dateTo) {
                  lateArr.push(c.locCode);
              } else {
                  closedArr.push(c.locCode);
@@ -138,6 +139,8 @@ const Dashboard = ({ isSidebarOpen }) => {
       setClosedStores(STORE_LOC_CODES.filter(lc => closedArr.includes(lc)).map(lc => STORE_LIST.find(s => s.locCode === lc)).filter(Boolean));
       setLateClosedStores(STORE_LOC_CODES.filter(lc => lateArr.includes(lc)).map(lc => STORE_LIST.find(s => s.locCode === lc)).filter(Boolean));
       setPendingStores(STORE_LOC_CODES.filter(lc => !closedArr.includes(lc) && !lateArr.includes(lc)).map(lc => STORE_LIST.find(s => s.locCode === lc)).filter(Boolean));
+
+      console.log("Daybook debug:", { dateTo, closedArr, lateArr, STORE_LOC_CODES });
 
       // ── 2. Quick Overview: Reorder Alerts, Purchase Orders, Late Closures ──
       let expenseTargets = [];
