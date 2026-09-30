@@ -543,7 +543,7 @@ const InventoryReport = () => {
                       padding: "6px 12px",
                       borderRadius: "4px",
                       border: "1px solid #ddd",
-                      backgroundColor: currentPage === pageNum ? "#007bff" : "white",
+                      backgroundColor: currentPage === pageNum ? "#a855f7" : "white",
                       color: currentPage === pageNum ? "white" : "#333",
                       cursor: "pointer",
                       fontSize: "14px",
@@ -657,7 +657,7 @@ const InventoryReport = () => {
                       padding: "5px 10px",
                       borderRadius: "4px",
                       border: "1px solid #ddd",
-                      backgroundColor: currentBucketPage === pageNum ? "#007bff" : "white",
+                      backgroundColor: currentBucketPage === pageNum ? "#a855f7" : "white",
                       color: currentBucketPage === pageNum ? "white" : "#333",
                       cursor: "pointer",
                       fontSize: "13px",
@@ -697,7 +697,7 @@ const InventoryReport = () => {
         <title>Inventory Report</title>
       </Helmet>
       <Headers />
-      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#fbfcfd] min-h-screen ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-white min-h-screen ${isSidebarOpen ? 'ml-[240px] ml-0' : 'ml-0'}`}>
         {/* Page Header */}
         <div style={{ 
           marginBottom: "32px",
@@ -714,7 +714,7 @@ const InventoryReport = () => {
             alignItems: "center",
             gap: "12px"
           }}>
-            <FiPackage style={{ color: "#007bff" }} />
+            <FiPackage style={{ color: "#a855f7" }} />
             Inventory Report
           </h1>
           <p style={{ 
@@ -767,8 +767,8 @@ const InventoryReport = () => {
                     control: (base, state) => ({
                       ...base,
                       borderRadius: "8px",
-                      borderColor: state.isFocused ? "#007bff" : "#dee2e6",
-                      boxShadow: state.isFocused ? "0 0 0 2px rgba(0,123,255,0.1)" : "none",
+                      borderColor: state.isFocused ? "#a855f7" : "#dee2e6",
+                      boxShadow: state.isFocused ? "0 0 0 2px rgba(168,85,247,0.1)" : "none",
                       padding: "4px 8px",
                       transition: "all 0.2s ease"
                     })
@@ -788,7 +788,7 @@ const InventoryReport = () => {
                   padding: "12px 16px", 
                   borderRadius: "8px", 
                   border: "1px solid #dee2e6", 
-                  backgroundColor: "#f8f9fa",
+                  backgroundColor: "#1a1f2e",
                   color: "#6c757d",
                   fontSize: "14px"
                 }}>
@@ -813,8 +813,8 @@ const InventoryReport = () => {
                   control: (base, state) => ({
                     ...base,
                     borderRadius: "8px",
-                    borderColor: state.isFocused ? "#007bff" : "#dee2e6",
-                    boxShadow: state.isFocused ? "0 0 0 2px rgba(0,123,255,0.1)" : "none",
+                    borderColor: state.isFocused ? "#a855f7" : "#dee2e6",
+                    boxShadow: state.isFocused ? "0 0 0 2px rgba(168,85,247,0.1)" : "none",
                     padding: "4px 8px",
                     transition: "all 0.2s ease"
                   })
@@ -840,8 +840,8 @@ const InventoryReport = () => {
                     control: (base, state) => ({
                       ...base,
                       borderRadius: "8px",
-                      borderColor: state.isFocused ? "#007bff" : "#dee2e6",
-                      boxShadow: state.isFocused ? "0 0 0 2px rgba(0,123,255,0.1)" : "none",
+                      borderColor: state.isFocused ? "#a855f7" : "#dee2e6",
+                      boxShadow: state.isFocused ? "0 0 0 2px rgba(168,85,247,0.1)" : "none",
                       padding: "4px 8px",
                       transition: "all 0.2s ease"
                     })
@@ -875,8 +875,8 @@ const InventoryReport = () => {
                         transition: "all 0.2s ease"
                       }}
                       onFocus={(e) => {
-                        e.target.style.borderColor = "#007bff";
-                        e.target.style.boxShadow = "0 0 0 2px rgba(0,123,255,0.1)";
+                        e.target.style.borderColor = "#a855f7";
+                        e.target.style.boxShadow = "0 0 0 2px rgba(168,85,247,0.1)";
                       }}
                       onBlur={(e) => {
                         e.target.style.borderColor = "#dee2e6";
@@ -942,8 +942,8 @@ const InventoryReport = () => {
                       transition: "all 0.2s ease"
                     }}
                     onFocus={(e) => {
-                      e.target.style.borderColor = "#007bff";
-                      e.target.style.boxShadow = "0 0 0 2px rgba(0,123,255,0.1)";
+                      e.target.style.borderColor = "#a855f7";
+                      e.target.style.boxShadow = "0 0 0 2px rgba(168,85,247,0.1)";
                     }}
                     onBlur={(e) => {
                       e.target.style.borderColor = "#dee2e6";
@@ -982,8 +982,8 @@ const InventoryReport = () => {
                           transition: "all 0.2s ease"
                         }}
                         onFocus={(e) => {
-                          e.target.style.borderColor = "#007bff";
-                          e.target.style.boxShadow = "0 0 0 2px rgba(0,123,255,0.1)";
+                          e.target.style.borderColor = "#a855f7";
+                          e.target.style.boxShadow = "0 0 0 2px rgba(168,85,247,0.1)";
                         }}
                         onBlur={(e) => {
                           e.target.style.borderColor = "#dee2e6";
@@ -999,7 +999,7 @@ const InventoryReport = () => {
                       }}
                       style={{
                         padding: "12px 16px",
-                        backgroundColor: "#007bff",
+                        backgroundColor: "#a855f7",
                         color: "white",
                         border: "none",
                         borderRadius: "8px",
@@ -1009,10 +1009,10 @@ const InventoryReport = () => {
                         whiteSpace: "nowrap"
                       }}
                       onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = "#0056b3";
+                        e.target.style.backgroundColor = "#9333ea";
                       }}
                       onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = "#007bff";
+                        e.target.style.backgroundColor = "#a855f7";
                       }}
                     >
                       Today
@@ -1043,7 +1043,7 @@ const InventoryReport = () => {
             disabled={loading}
             style={{
               padding: "12px 24px",
-              backgroundColor: "#007bff",
+              backgroundColor: "#a855f7",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -1055,20 +1055,20 @@ const InventoryReport = () => {
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              boxShadow: "0 2px 4px rgba(0,123,255,0.2)"
+              boxShadow: "0 2px 4px rgba(168,85,247,0.2)"
             }}
             onMouseEnter={(e) => {
               if (!loading) {
-                e.target.style.backgroundColor = "#0056b3";
+                e.target.style.backgroundColor = "#9333ea";
                 e.target.style.transform = "translateY(-1px)";
-                e.target.style.boxShadow = "0 4px 8px rgba(0,123,255,0.3)";
+                e.target.style.boxShadow = "0 4px 8px rgba(168,85,247,0.3)";
               }
             }}
             onMouseLeave={(e) => {
               if (!loading) {
-                e.target.style.backgroundColor = "#007bff";
+                e.target.style.backgroundColor = "#a855f7";
                 e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "0 2px 4px rgba(0,123,255,0.2)";
+                e.target.style.boxShadow = "0 2px 4px rgba(168,85,247,0.2)";
               }
             }}
           >
@@ -1082,7 +1082,7 @@ const InventoryReport = () => {
               filename={`inventory-report-${new Date().toISOString().split('T')[0]}.csv`}
               style={{
                 padding: "12px 24px",
-                backgroundColor: "#28a745",
+                backgroundColor: "#a855f7",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
@@ -1094,17 +1094,17 @@ const InventoryReport = () => {
                 fontSize: "14px",
                 fontWeight: "500",
                 transition: "all 0.2s ease",
-                boxShadow: "0 2px 4px rgba(40,167,69,0.2)"
+                boxShadow: "0 2px 4px rgba(168,85,247,0.2)"
               }}
               onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "#218838";
+                e.target.style.backgroundColor = "#9333ea";
                 e.target.style.transform = "translateY(-1px)";
-                e.target.style.boxShadow = "0 4px 8px rgba(40,167,69,0.3)";
+                e.target.style.boxShadow = "0 4px 8px rgba(168,85,247,0.3)";
               }}
               onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "#28a745";
+                e.target.style.backgroundColor = "#a855f7";
                 e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "0 2px 4px rgba(40,167,69,0.2)";
+                e.target.style.boxShadow = "0 2px 4px rgba(168,85,247,0.2)";
               }}
             >
               <FiDownload /> Export CSV
@@ -1138,7 +1138,7 @@ const InventoryReport = () => {
                     alignItems: "center",
                     gap: "10px"
                   }}>
-                    <FiBarChart2 style={{ color: "#007bff" }} />
+                    <FiBarChart2 style={{ color: "#a855f7" }} />
                     Inventory Summary
                   </h2>
                   <p style={{ 
@@ -1156,7 +1156,7 @@ const InventoryReport = () => {
                   marginBottom: "40px"
                 }}>
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1188,7 +1188,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1214,13 +1214,13 @@ const InventoryReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#007bff",
+                      color: "#a855f7",
                       lineHeight: "1"
                     }}>{reportData.summary?.totalQuantity || 0}</div>
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1246,7 +1246,7 @@ const InventoryReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#28a745",
+                      color: "#a855f7",
                       lineHeight: "1"
                     }}>₹{(reportData.summary?.totalStockValue || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                   </div>
@@ -1254,7 +1254,7 @@ const InventoryReport = () => {
 
                 {/* Items Table */}
                 <div style={{ 
-                  backgroundColor: "#f8f9fa",
+                  backgroundColor: "#1a1f2e",
                   borderRadius: "10px",
                   overflow: "hidden",
                   border: "1px solid #e9ecef"
@@ -1272,7 +1272,7 @@ const InventoryReport = () => {
                           padding: "16px 20px", 
                           textAlign: "left", 
                           fontWeight: "600",
-                          color: "#495057",
+                          color: "white",
                           fontSize: "14px",
                           borderBottom: "2px solid #dee2e6"
                         }}>Item Name</th>
@@ -1281,7 +1281,7 @@ const InventoryReport = () => {
                           padding: "16px 20px", 
                           textAlign: "left", 
                           fontWeight: "600",
-                          color: "#495057",
+                          color: "white",
                           fontSize: "14px",
                           borderBottom: "2px solid #dee2e6"
                         }}>SKU</th>
@@ -1290,7 +1290,7 @@ const InventoryReport = () => {
                           padding: "16px 20px", 
                           textAlign: "left", 
                           fontWeight: "600",
-                          color: "#495057",
+                          color: "white",
                           fontSize: "14px",
                           borderBottom: "2px solid #dee2e6"
                         }}>Category</th>
@@ -1300,7 +1300,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Cost</th>
@@ -1310,7 +1310,7 @@ const InventoryReport = () => {
                           padding: "16px 20px", 
                           textAlign: "right", 
                           fontWeight: "600",
-                          color: "#495057",
+                          color: "white",
                           fontSize: "14px",
                           borderBottom: "2px solid #dee2e6"
                         }}>Total Stock</th>
@@ -1319,7 +1319,7 @@ const InventoryReport = () => {
                           padding: "16px 20px", 
                           textAlign: "right", 
                           fontWeight: "600",
-                          color: "#495057",
+                          color: "white",
                           fontSize: "14px",
                           borderBottom: "2px solid #dee2e6"
                         }}>Total Value</th>
@@ -1367,13 +1367,13 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right",
                             fontWeight: "600",
-                            color: "#007bff"
+                            color: "#a855f7"
                           }}>{item.totalStock}</td>
                           <td style={{ 
                             padding: "16px 20px", 
                             textAlign: "right",
                             fontWeight: "700",
-                            color: "#28a745"
+                            color: "#a855f7"
                           }}>₹{item.totalValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                         </tr>
                       ))}
@@ -1400,7 +1400,7 @@ const InventoryReport = () => {
                     alignItems: "center",
                     gap: "10px"
                   }}>
-                    <FiBarChart2 style={{ color: "#007bff" }} />
+                    <FiBarChart2 style={{ color: "#a855f7" }} />
                     Stock Summary by Warehouse
                   </h2>
                   <p style={{ 
@@ -1418,7 +1418,7 @@ const InventoryReport = () => {
                   marginBottom: "40px"
                 }}>
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1450,7 +1450,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1476,13 +1476,13 @@ const InventoryReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#007bff",
+                      color: "#a855f7",
                       lineHeight: "1"
                     }}>{reportData.summary?.grandTotalQuantity || 0}</div>
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1508,7 +1508,7 @@ const InventoryReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#28a745",
+                      color: "#a855f7",
                       lineHeight: "1"
                     }}>₹{(reportData.summary?.grandTotalValue || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                   </div>
@@ -1516,7 +1516,7 @@ const InventoryReport = () => {
 
                 {/* Warehouses Table */}
                 <div style={{ 
-                  backgroundColor: "#f8f9fa",
+                  backgroundColor: "#1a1f2e",
                   borderRadius: "10px",
                   overflow: "hidden",
                   border: "1px solid #e9ecef"
@@ -1532,7 +1532,7 @@ const InventoryReport = () => {
                           padding: "16px 20px", 
                           textAlign: "left", 
                           fontWeight: "600",
-                          color: "#495057",
+                          color: "white",
                           fontSize: "14px",
                           borderBottom: "2px solid #dee2e6"
                         }}>Warehouse</th>
@@ -1540,7 +1540,7 @@ const InventoryReport = () => {
                           padding: "16px 20px", 
                           textAlign: "right", 
                           fontWeight: "600",
-                          color: "#495057",
+                          color: "white",
                           fontSize: "14px",
                           borderBottom: "2px solid #dee2e6"
                         }}>Total Quantity</th>
@@ -1548,7 +1548,7 @@ const InventoryReport = () => {
                           padding: "16px 20px", 
                           textAlign: "right", 
                           fontWeight: "600",
-                          color: "#495057",
+                          color: "white",
                           fontSize: "14px",
                           borderBottom: "2px solid #dee2e6"
                         }}>Total Value</th>
@@ -1556,7 +1556,7 @@ const InventoryReport = () => {
                           padding: "16px 20px", 
                           textAlign: "right", 
                           fontWeight: "600",
-                          color: "#495057",
+                          color: "white",
                           fontSize: "14px",
                           borderBottom: "2px solid #dee2e6"
                         }}>Item Count</th>
@@ -1579,13 +1579,13 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right",
                             fontWeight: "600",
-                            color: "#007bff"
+                            color: "#a855f7"
                           }}>{wh.totalQuantity}</td>
                           <td style={{ 
                             padding: "16px 20px", 
                             textAlign: "right",
                             fontWeight: "700",
-                            color: "#28a745"
+                            color: "#a855f7"
                           }}>₹{wh.totalValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                           <td style={{ 
                             padding: "16px 20px", 
@@ -1618,7 +1618,7 @@ const InventoryReport = () => {
                     alignItems: "center",
                     gap: "10px"
                   }}>
-                    <FiPackage style={{ color: "#28a745" }} />
+                    <FiPackage style={{ color: "#a855f7" }} />
                     Opening Stock Report
                   </h2>
                   <p style={{ 
@@ -1643,7 +1643,7 @@ const InventoryReport = () => {
                   marginBottom: "40px"
                 }}>
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1669,13 +1669,13 @@ const InventoryReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#28a745",
+                      color: "#a855f7",
                       lineHeight: "1"
                     }}>{reportData.summary?.totalOpeningStock || 0}</div>
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1701,13 +1701,13 @@ const InventoryReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#007bff",
+                      color: "#a855f7",
                       lineHeight: "1"
                     }}>₹{(reportData.summary?.totalOpeningValue || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1748,7 +1748,7 @@ const InventoryReport = () => {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,123,255,0.1)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(168,85,247,0.1)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
@@ -1781,14 +1781,14 @@ const InventoryReport = () => {
                   }}>
                     Opening Stock Items Added
                     {reportData?.summary?.period && reportData.summary.period !== "All time" && (
-                      <span style={{ color: "#007bff", fontWeight: "500" }}>
+                      <span style={{ color: "#a855f7", fontWeight: "500" }}>
                         {" "}in {reportData.summary.period}
                       </span>
                     )}
                   </h3>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa",
+                    backgroundColor: "#1a1f2e",
                     borderRadius: "10px",
                     overflow: "hidden",
                     border: "1px solid #e9ecef"
@@ -1804,7 +1804,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Item Name</th>
@@ -1812,7 +1812,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>SKU</th>
@@ -1820,7 +1820,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Store</th>
@@ -1828,7 +1828,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Opening Stock</th>
@@ -1836,7 +1836,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Opening Value</th>
@@ -1844,7 +1844,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Date Added</th>
@@ -1904,13 +1904,13 @@ const InventoryReport = () => {
                                 padding: "16px 20px", 
                                 textAlign: "right",
                                 fontWeight: "600",
-                                color: "#28a745"
+                                color: "#a855f7"
                               }}>{item.openingStock}</td>
                               <td style={{ 
                                 padding: "16px 20px", 
                                 textAlign: "right",
                                 fontWeight: "700",
-                                color: "#007bff"
+                                color: "#a855f7"
                               }}>₹{item.openingValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                               <td style={{ 
                                 padding: "16px 20px",
@@ -1941,7 +1941,7 @@ const InventoryReport = () => {
                   }}>Store-wise Opening Stock Summary</h3>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa",
+                    backgroundColor: "#1a1f2e",
                     borderRadius: "10px",
                     overflow: "hidden",
                     border: "1px solid #e9ecef"
@@ -1957,7 +1957,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Store</th>
@@ -1965,7 +1965,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Total Opening Stock</th>
@@ -1973,7 +1973,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Total Opening Value</th>
@@ -1981,7 +1981,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Item Count</th>
@@ -2019,13 +2019,13 @@ const InventoryReport = () => {
                                 padding: "16px 20px", 
                                 textAlign: "right",
                                 fontWeight: "600",
-                                color: "#28a745"
+                                color: "#a855f7"
                               }}>{store.totalStock}</td>
                               <td style={{ 
                                 padding: "16px 20px", 
                                 textAlign: "right",
                                 fontWeight: "700",
-                                color: "#007bff"
+                                color: "#a855f7"
                               }}>₹{store.totalValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                               <td style={{ 
                                 padding: "16px 20px", 
@@ -2084,7 +2084,7 @@ const InventoryReport = () => {
                   marginBottom: "40px"
                 }}>
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -2116,7 +2116,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -2142,13 +2142,13 @@ const InventoryReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#28a745",
+                      color: "#a855f7",
                       lineHeight: "1"
                     }}>{reportData.summary?.totalStockIn || 0}</div>
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -2180,7 +2180,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -2212,7 +2212,7 @@ const InventoryReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -2238,7 +2238,7 @@ const InventoryReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#28a745",
+                      color: "#a855f7",
                       lineHeight: "1"
                     }}>₹{(reportData.summary?.totalStockValue || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                   </div>
@@ -2261,7 +2261,7 @@ const InventoryReport = () => {
                   </h3>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa",
+                    backgroundColor: "#1a1f2e",
                     borderRadius: "10px",
                     overflow: "hidden",
                     border: "1px solid #e9ecef"
@@ -2278,7 +2278,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Item Name</th>
@@ -2287,7 +2287,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>SKU</th>
@@ -2296,7 +2296,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Category</th>
@@ -2305,7 +2305,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Warehouse</th>
@@ -2314,7 +2314,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Opening Stock</th>
@@ -2323,7 +2323,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Stock In</th>
@@ -2332,7 +2332,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Stock Out</th>
@@ -2341,7 +2341,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Closing Stock</th>
@@ -2351,7 +2351,7 @@ const InventoryReport = () => {
                               padding: "16px 20px", 
                               textAlign: "right", 
                               fontWeight: "600",
-                              color: "#495057",
+                              color: "white",
                               fontSize: "14px",
                               borderBottom: "2px solid #dee2e6"
                             }}>Cost Price</th>
@@ -2361,7 +2361,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Stock Value</th>
@@ -2439,7 +2439,7 @@ const InventoryReport = () => {
                                 padding: "16px 20px", 
                                 textAlign: "right",
                                 fontWeight: "600",
-                                color: "#28a745"
+                                color: "#a855f7"
                               }}>{item.stockIn || 0}</td>
                               <td style={{ 
                                 padding: "16px 20px", 
@@ -2464,7 +2464,7 @@ const InventoryReport = () => {
                                 padding: "16px 20px", 
                                 textAlign: "right",
                                 fontWeight: "700",
-                                color: "#28a745"
+                                color: "#a855f7"
                               }}>₹{(item.stockValue || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                             </tr>
                           ))
@@ -2489,7 +2489,7 @@ const InventoryReport = () => {
                   }}>Warehouse-wise Stock Summary</h3>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa",
+                    backgroundColor: "#1a1f2e",
                     borderRadius: "10px",
                     overflow: "hidden",
                     border: "1px solid #e9ecef"
@@ -2505,7 +2505,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Warehouse</th>
@@ -2513,7 +2513,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Total Stock</th>
@@ -2521,7 +2521,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Total Value</th>
@@ -2529,7 +2529,7 @@ const InventoryReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Item Count</th>
@@ -2573,7 +2573,7 @@ const InventoryReport = () => {
                                 padding: "16px 20px", 
                                 textAlign: "right",
                                 fontWeight: "700",
-                                color: "#28a745"
+                                color: "#a855f7"
                               }}>₹{warehouse.totalValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                               <td style={{ 
                                 padding: "16px 20px", 

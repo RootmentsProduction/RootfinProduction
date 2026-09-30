@@ -208,51 +208,51 @@ const App = () => {
           <Route path="/manage-users/edit-user/:id" element={currentuser?.power === 'admin' ? <EditUser /> : <Navigate to='/' />} />
           <Route path="/manage-users/reset-password" element={currentuser?.power === 'admin' ? <ResetUserPassword /> : <Navigate to='/' />} />
 
-          <Route path="/shoe-sales/items" element={currentuser ? <ShoeSalesItems /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/inactive-items" element={currentuser ? <InactiveItems /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/items/:itemId/stocks" element={(currentuser?.power === 'admin' || currentuser?.power === 'warehouse') ? <StandaloneItemStockManagement /> : <Navigate to="/" />} />
-          <Route path="/shoe-sales/items/:itemId/edit" element={currentuser ? <ShoeSalesItemCreate /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/items/:itemId" element={currentuser ? <ShoeSalesItemDetail /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/items/new" element={currentuser ? <ShoeSalesItemCreate /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/item-groups" element={currentuser ? <ShoeSalesItemGroups /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/item-groups/new" element={currentuser ? <ShoeSalesItemGroupCreate /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/item-groups/:id/items/new" element={currentuser ? <ShoeSalesItemCreate /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/item-groups/:id/items/:itemId/edit" element={currentuser ? <ShoeSalesItemCreate /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/item-groups/:id/items/:itemId/stocks" element={(currentuser?.power === 'admin' || currentuser?.power === 'warehouse') ? <ItemStockManagement /> : <Navigate to="/" />} />
-          <Route path="/shoe-sales/item-groups/:id/items/:itemId" element={currentuser ? <ShoeSalesItemDetailFromGroup /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/item-groups/:id/edit" element={currentuser ? <ShoeSalesItemGroupCreate /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/item-groups/:id" element={currentuser ? <ShoeSalesItemGroupDetail /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/price-lists" element={currentuser ? <ShoeSalesPriceLists /> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/price-lists/new" element={currentuser ? <ShoeSalesPriceListCreate /> : <Navigate to="/login" />} />
-          <Route path="/inventory/adjustments" element={currentuser ? <InventoryAdjustments /> : <Navigate to="/login" />} />
-          <Route path="/inventory/adjustments/new" element={currentuser ? <InventoryAdjustmentCreate /> : <Navigate to="/login" />} />
-          <Route path="/inventory/adjustments/:id" element={currentuser ? <InventoryAdjustmentDetail /> : <Navigate to="/login" />} />
-          <Route path="/inventory/adjustments/:id/edit" element={currentuser ? <InventoryAdjustmentCreate /> : <Navigate to="/login" />} />
-          <Route path="/inventory/packages" element={currentuser ? <InventoryPackages /> : <Navigate to="/login" />} />
-          <Route path="/inventory/packages/new" element={currentuser ? <InventoryPackageCreate /> : <Navigate to="/login" />} />
-          <Route path="/inventory/transfer-orders" element={currentuser ? <TransferOrders /> : <Navigate to="/login" />} />
-          <Route path="/inventory/transfer-orders/new" element={currentuser ? <TransferOrderCreate /> : <Navigate to="/login" />} />
-          <Route path="/inventory/transfer-orders/:id" element={currentuser ? <TransferOrderView /> : <Navigate to="/login" />} />
-          <Route path="/inventory/transfer-orders/:id/edit" element={currentuser ? <TransferOrderCreate /> : <Navigate to="/login" />} />
-          <Route path="/inventory/store-orders" element={currentuser ? <StoreOrders /> : <Navigate to="/login" />} />
-          <Route path="/inventory/store-orders/new" element={currentuser ? <StoreOrderCreate /> : <Navigate to="/login" />} />
-          <Route path="/inventory/store-orders/:id" element={currentuser ? <StoreOrderView /> : <Navigate to="/login" />} />
-          <Route path="/inventory/store-orders/:id/edit" element={currentuser ? <StoreOrderCreate /> : <Navigate to="/login" />} />
-          <Route path="/sales/customers" element={currentuser ? <Customers /> : <Navigate to="/login" />} />
-          <Route path="/sales/customers/new" element={currentuser ? <CustomerCreate /> : <Navigate to="/login" />} />
-          <Route path="/sales/orders" element={currentuser ? <SalesOrders /> : <Navigate to="/login" />} />
-          <Route path="/sales/invoices" element={currentuser ? <SalesInvoices /> : <Navigate to="/login" />} />
-          <Route path="/sales/invoices/returns" element={currentuser ? <SalesInvoiceReturns /> : <Navigate to="/login" />} />
-          <Route path="/sales/invoices/new" element={currentuser ? <SalesInvoiceCreate /> : <Navigate to="/login" />} />
-          <Route path="/sales/invoices/:id/edit" element={currentuser ? <SalesInvoiceCreate /> : <Navigate to="/login" />} />
-          <Route path="/sales/invoices/:id" element={currentuser ? <SalesInvoiceDetail /> : <Navigate to="/login" />} />
-          <Route path="/sales/delivery-challans" element={currentuser ? <DeliveryChallans /> : <Navigate to="/login" />} />
-          <Route path="/sales/payments-received" element={currentuser ? <PaymentsReceived /> : <Navigate to="/login" />} />
-          <Route path="/sales/returns" element={currentuser ? <SalesReturns /> : <Navigate to="/login" />} />
-          <Route path="/sales/credit-notes" element={currentuser ? <CreditNotes /> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/items" element={currentuser ? <DaybookGuard><ShoeSalesItems /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/inactive-items" element={currentuser ? <DaybookGuard><InactiveItems /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/items/:itemId/stocks" element={(currentuser?.power === 'admin' || currentuser?.power === 'warehouse') ? <DaybookGuard><StandaloneItemStockManagement /></DaybookGuard> : <Navigate to="/" />} />
+          <Route path="/shoe-sales/items/:itemId/edit" element={currentuser ? <DaybookGuard><ShoeSalesItemCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/items/:itemId" element={currentuser ? <DaybookGuard><ShoeSalesItemDetail /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/items/new" element={currentuser ? <DaybookGuard><ShoeSalesItemCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/item-groups" element={currentuser ? <DaybookGuard><ShoeSalesItemGroups /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/item-groups/new" element={currentuser ? <DaybookGuard><ShoeSalesItemGroupCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/item-groups/:id/items/new" element={currentuser ? <DaybookGuard><ShoeSalesItemCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/item-groups/:id/items/:itemId/edit" element={currentuser ? <DaybookGuard><ShoeSalesItemCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/item-groups/:id/items/:itemId/stocks" element={(currentuser?.power === 'admin' || currentuser?.power === 'warehouse') ? <DaybookGuard><ItemStockManagement /></DaybookGuard> : <Navigate to="/" />} />
+          <Route path="/shoe-sales/item-groups/:id/items/:itemId" element={currentuser ? <DaybookGuard><ShoeSalesItemDetailFromGroup /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/item-groups/:id/edit" element={currentuser ? <DaybookGuard><ShoeSalesItemGroupCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/item-groups/:id" element={currentuser ? <DaybookGuard><ShoeSalesItemGroupDetail /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/price-lists" element={currentuser ? <DaybookGuard><ShoeSalesPriceLists /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/price-lists/new" element={currentuser ? <DaybookGuard><ShoeSalesPriceListCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/adjustments" element={currentuser ? <DaybookGuard><InventoryAdjustments /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/adjustments/new" element={currentuser ? <DaybookGuard><InventoryAdjustmentCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/adjustments/:id" element={currentuser ? <DaybookGuard><InventoryAdjustmentDetail /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/adjustments/:id/edit" element={currentuser ? <DaybookGuard><InventoryAdjustmentCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/packages" element={currentuser ? <DaybookGuard><InventoryPackages /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/packages/new" element={currentuser ? <DaybookGuard><InventoryPackageCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/transfer-orders" element={currentuser ? <DaybookGuard><TransferOrders /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/transfer-orders/new" element={currentuser ? <DaybookGuard><TransferOrderCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/transfer-orders/:id" element={currentuser ? <DaybookGuard><TransferOrderView /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/transfer-orders/:id/edit" element={currentuser ? <DaybookGuard><TransferOrderCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/store-orders" element={currentuser ? <DaybookGuard><StoreOrders /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/store-orders/new" element={currentuser ? <DaybookGuard><StoreOrderCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/store-orders/:id" element={currentuser ? <DaybookGuard><StoreOrderView /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/inventory/store-orders/:id/edit" element={currentuser ? <DaybookGuard><StoreOrderCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/sales/customers" element={currentuser ? <DaybookGuard><Customers /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/sales/customers/new" element={currentuser ? <DaybookGuard><CustomerCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/sales/orders" element={currentuser ? <DaybookGuard><SalesOrders /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/sales/invoices" element={currentuser ? <DaybookGuard><SalesInvoices /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/sales/invoices/returns" element={currentuser ? <DaybookGuard><SalesInvoiceReturns /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/sales/invoices/new" element={currentuser ? <DaybookGuard><SalesInvoiceCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/sales/invoices/:id/edit" element={currentuser ? <DaybookGuard><SalesInvoiceCreate /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/sales/invoices/:id" element={currentuser ? <DaybookGuard><SalesInvoiceDetail /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/sales/delivery-challans" element={currentuser ? <DaybookGuard><DeliveryChallans /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/sales/payments-received" element={currentuser ? <DaybookGuard><PaymentsReceived /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/sales/returns" element={currentuser ? <DaybookGuard><SalesReturns /></DaybookGuard> : <Navigate to="/login" />} />
+          <Route path="/sales/credit-notes" element={currentuser ? <DaybookGuard><CreditNotes /></DaybookGuard> : <Navigate to="/login" />} />
 
           <Route path="/Revenuereport" element={currentuser ? <DaybookGuard><Revenuereport /></DaybookGuard> : <Navigate to="/login" />} />
-          <Route path="/shoe-sales/inactive" element={currentuser ? <InactiveItems /> : <Navigate to="/login" />} />
+          <Route path="/shoe-sales/inactive" element={currentuser ? <DaybookGuard><InactiveItems /></DaybookGuard> : <Navigate to="/login" />} />
 
           {/* Purchase */}
           <Route path="/purchase/orders" element={currentuser ? <PurchaseOrders /> : <Navigate to="/login" />} />
@@ -285,7 +285,7 @@ const App = () => {
           <Route path="/reports/income-expense" element={currentuser ? <DaybookGuard><IncomeExpenseReport /></DaybookGuard> : <Navigate to="/login" />} />
 
           {/* Reorder Alerts */}
-          <Route path="/inventory/reorder-alerts" element={currentuser ? <ReorderAlerts /> : <Navigate to="/login" />} />
+          <Route path="/inventory/reorder-alerts" element={currentuser ? <DaybookGuard><ReorderAlerts /></DaybookGuard> : <Navigate to="/login" />} />
 
         </Routes>
       </div>

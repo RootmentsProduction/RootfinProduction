@@ -1,3 +1,4 @@
+import { customConfirm } from '../utils/customConfirm';
 import { useState, useEffect } from "react";
 import { Trash2, Bell, Mail, MapPin, Search, Check } from "lucide-react";
 import Header from "../components/Header";
@@ -47,7 +48,7 @@ const ReorderAlerts = () => {
   };
 
   const handleDelete = async (alertId) => {
-    if (!window.confirm("Delete this alert?")) return;
+    if (!await customConfirm("Delete this alert?")) return;
     try {
       const response = await fetch(`${API_URL}/api/reorder-alerts/${alertId}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Failed to delete alert");

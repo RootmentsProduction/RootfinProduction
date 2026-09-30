@@ -1,3 +1,4 @@
+import { customConfirm } from '../utils/customConfirm';
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Head from "../components/Head";
@@ -265,7 +266,7 @@ const PurchaseVendorDetail = () => {
                     <button
                       onClick={async () => {
                         setShowMoreMenu(false);
-                        if (confirm(`Are you sure you want to mark "${vendor.displayName || vendor.companyName}" as inactive?`)) {
+                        if (await customConfirm(`Are you sure you want to mark "${vendor.displayName || vendor.companyName}" as inactive?`)) {
                           try {
                             const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
                             const response = await fetch(`${API_URL}/api/purchase/vendors/${id}`, {
@@ -316,7 +317,7 @@ const PurchaseVendorDetail = () => {
                       onClick={async () => {
                         setShowMoreMenu(false);
                         const vendorName = vendor.displayName || vendor.companyName || "this vendor";
-                        if (confirm(`Are you sure you want to delete "${vendorName}"? This action cannot be undone.`)) {
+                        if (await customConfirm(`Are you sure you want to delete "${vendorName}"? This action cannot be undone.`)) {
                           try {
                             const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
                             const response = await fetch(`${API_URL}/api/purchase/vendors/${id}`, {

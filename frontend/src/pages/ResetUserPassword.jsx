@@ -91,7 +91,7 @@ const ResetUserPassword = () => {
             {/* Header */}
             <div className="bg-white px-10 py-7 border-b border-gray-200">
                 <div className="flex items-center gap-4">
-                    <div className="bg-blue-600 p-4 rounded-xl">
+                    <div className="bg-purple-600 p-4 rounded-xl">
                         <ShieldCheck className="text-white" size={28} />
                     </div>
                     <div>
@@ -121,7 +121,7 @@ const ResetUserPassword = () => {
                                 onFocus={() => setShowUserDropdown(true)}
                                 placeholder="Enter mail id or username..."
                                 autoComplete="off"
-                                className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-purple-500"
                             />
                             <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                             {showUserDropdown && filteredUsers.length > 0 && (
@@ -130,7 +130,7 @@ const ResetUserPassword = () => {
                                         <div
                                             key={u._id}
                                             onMouseDown={(e) => { e.preventDefault(); handleSelectUser(u); }}
-                                            className="px-4 py-3 hover:bg-blue-50 cursor-pointer text-gray-700 text-sm border-b border-gray-100 last:border-0"
+                                            className="px-4 py-3 hover:bg-purple-50 cursor-pointer text-gray-700 text-sm border-b border-gray-100 last:border-0"
                                         >
                                             <span className="font-semibold text-gray-800">{u.username}</span>
                                             <span className="text-gray-400 ml-2 text-xs">— {u.email}</span>
@@ -153,10 +153,10 @@ const ResetUserPassword = () => {
                                 onChange={(e) => setNewPassword(e.target.value)}
                                 placeholder="Enter new password"
                                 autoComplete="new-password"
-                                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-purple-500"
                             />
                             <span onClick={() => setShowNewPassword(!showNewPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 cursor-pointer">
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-600 cursor-pointer">
                                 {showNewPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
                             </span>
                         </div>
@@ -174,10 +174,10 @@ const ResetUserPassword = () => {
                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                 placeholder="Confirm new password"
                                 autoComplete="new-password"
-                                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-purple-500"
                             />
                             <span onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 cursor-pointer">
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-600 cursor-pointer">
                                 {showConfirmPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
                             </span>
                         </div>
@@ -191,7 +191,7 @@ const ResetUserPassword = () => {
                             CANCEL
                         </button>
                         <button type="submit" disabled={loading}
-                            className={`px-8 py-3 rounded-xl font-semibold text-white ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}>
+                            className={`px-8 py-3 rounded-xl font-semibold text-white ${loading ? "bg-gray-400 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"}`}>
                             {loading ? "RESETTING..." : "RESET PASSWORD"}
                         </button>
                     </div>

@@ -234,8 +234,8 @@ const ManageStores = () => {
                         </h2>
                         
                         {isEditMode && (
-                            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                <p className="text-sm text-blue-800">
+                            <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                                <p className="text-sm text-purple-800">
                                     Editing: <span className="font-semibold">{username}</span>
                                 </p>
                             </div>
@@ -568,7 +568,7 @@ const ManageStores = () => {
                                                 <span className={`px-2 py-1 rounded text-xs ${
                                                     store.power === 'admin' 
                                                         ? 'bg-purple-100 text-purple-800' 
-                                                        : 'bg-blue-100 text-blue-800'
+                                                        : 'bg-purple-100 text-purple-800'
                                                 }`}>
                                                     {store.power}
                                                 </span>
@@ -588,7 +588,7 @@ const ManageStores = () => {
                                             <td className="border p-3 text-center">
                                                 <button
                                                     onClick={() => handleEdit(store)}
-                                                    className="text-blue-600 hover:text-blue-800 p-2"
+                                                    className="text-purple-600 hover:text-purple-800 p-2"
                                                     title="Edit Store"
                                                 >
                                                     <FaEdit size={18} />

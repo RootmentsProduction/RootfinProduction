@@ -70,7 +70,7 @@ const Revenuereport = () => {
         return list.sort((a, b) => {
             const dateA = new Date(a.date).getTime() || 0;
             const dateB = new Date(b.date).getTime() || 0;
-            return dateB - dateA;
+            return dateA - dateB;
         });
     }, [rentOutTransactions, bookingTransactions]);
 

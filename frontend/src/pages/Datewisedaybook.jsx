@@ -1180,7 +1180,15 @@ const Datewisedaybook = () => {
 
   const toNumber = (v) => (isNaN(+v) ? 0 : +v);
 
-  const displayedRows = mergedTransactions.filter(filterTransaction);
+  const displayedRows = mergedTransactions
+    .filter(filterTransaction)
+    .sort((a, b) => {
+      const dateAStr = a.date ? a.date.replace(/-/g, '/') + (a.time ? " " + a.time : "") : "";
+      const dateBStr = b.date ? b.date.replace(/-/g, '/') + (b.time ? " " + b.time : "") : "";
+      const dateA = new Date(dateAStr).getTime() || 0;
+      const dateB = new Date(dateBStr).getTime() || 0;
+      return dateB - dateA;
+    });
 
   // ✅ CRITICAL FIX: Use 'cash' field (calculated closing cash) for opening balance, not 'Closecash' (physical cash)
   // The 'cash' field contains the previous day's total closing cash, which should be today's opening
@@ -1237,8 +1245,7 @@ const Datewisedaybook = () => {
       attachment: "",
     },
 
-    ...(mergedTransactions)
-      .filter(filterTransaction)
+    ...(displayedRows)
       .map((t) => {
         const isReturn = t.Category === "Return";
         const isCancel = t.Category === "Cancel";
@@ -2156,8 +2163,7 @@ const Datewisedaybook = () => {
                           {showAction && <td className="px-3 py-2.5"></td>}
                         </tr>
 
-                        {mergedTransactions
-                          .filter(filterTransaction)
+                        {displayedRows
                           .map((transaction, index) => {
                             const isEditing = editingIndex === index;
                             const t = isEditing ? editedTransaction : transaction;

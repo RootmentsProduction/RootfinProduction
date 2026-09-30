@@ -1,3 +1,4 @@
+import { customConfirm } from '../utils/customConfirm';
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useEnterToSave } from "../hooks/useEnterToSave";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -1146,7 +1147,7 @@ const ShoeSalesItemGroupCreate = () => {
                       Create Attributes and Options
                     </label>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         setAttributeRows([...attributeRows, { id: Date.now(), attribute: "", options: [], optionInput: "" }]);
                       }}
                       className="text-sm font-medium text-[#2563eb] hover:text-[#1d4ed8]"
@@ -1187,7 +1188,7 @@ const ShoeSalesItemGroupCreate = () => {
                                   >
                                     {opt}
                                     <button
-                                      onClick={() => {
+                                      onClick={async () => {
                                         const updated = [...attributeRows];
                                         updated[rowIndex].options = updated[rowIndex].options.filter((_, i) => i !== idx);
                                         setAttributeRows(updated);
@@ -1221,7 +1222,7 @@ const ShoeSalesItemGroupCreate = () => {
                                 />
                               </div>
                               <button
-                                onClick={() => {
+                                onClick={async () => {
                                   setAttributeRows(attributeRows.filter((_, i) => i !== rowIndex));
                                 }}
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#f1b5b5] bg-[#fff5f5] text-[#c2410c] hover:bg-[#fee2e2]"
@@ -1248,7 +1249,7 @@ const ShoeSalesItemGroupCreate = () => {
                       Create Attributes and Options
                     </label>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         setAttributeRows([...attributeRows, { id: Date.now(), attribute: "", options: [], optionInput: "" }]);
                       }}
                       className="text-sm font-medium text-[#2563eb] hover:text-[#1d4ed8]"
@@ -1289,7 +1290,7 @@ const ShoeSalesItemGroupCreate = () => {
                                   >
                                     {opt}
                                     <button
-                                      onClick={() => {
+                                      onClick={async () => {
                                         const updated = [...attributeRows];
                                         updated[rowIndex].options = updated[rowIndex].options.filter((_, i) => i !== idx);
                                         setAttributeRows(updated);
@@ -1323,7 +1324,7 @@ const ShoeSalesItemGroupCreate = () => {
                                 />
                               </div>
                               <button
-                                onClick={() => {
+                                onClick={async () => {
                                   setAttributeRows(attributeRows.filter((_, i) => i !== rowIndex));
                                 }}
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#f1b5b5] bg-[#fff5f5] text-[#c2410c] hover:bg-[#fee2e2]"
@@ -1604,8 +1605,8 @@ const ShoeSalesItemGroupCreate = () => {
                           </td>
                           <td className="px-4 py-3">
                             <button
-                              onClick={() => {
-                                const confirmDelete = window.confirm(`Are you sure you want to delete "${item.name || "this item"}"?`);
+                              onClick={async () => {
+                                const confirmDelete = await customConfirm(`Are you sure you want to delete "${item.name || "this item"}"?`);
                                 if (confirmDelete) {
                                   setItemRows(itemRows.filter((_, i) => i !== idx));
                                 }
@@ -1643,7 +1644,7 @@ const ShoeSalesItemGroupCreate = () => {
                           <div className="flex items-center gap-2">
                             <span>{displayName}</span>
                             <button
-                              onClick={() => {
+                              onClick={async () => {
                                 const newName = window.prompt("Enter item name", item.name);
                                 if (newName !== null) {
                                   const trimmedName = newName.trim();
@@ -1798,8 +1799,8 @@ const ShoeSalesItemGroupCreate = () => {
                         </td>
                         <td className="px-4 py-3">
                           <button 
-                            onClick={() => {
-                              const confirmDelete = window.confirm(`Are you sure you want to delete "${displayName}"?`);
+                            onClick={async () => {
+                              const confirmDelete = await customConfirm(`Are you sure you want to delete "${displayName}"?`);
                               if (confirmDelete) {
                                 const updated = generatedItems.filter((_, i) => i !== idx);
                                 setGeneratedItems(updated);
@@ -2031,7 +2032,7 @@ const InventoryValuationSelect = ({ label, value, onChange }) => {
                 return (
                   <div
                     key={option}
-                    onClick={() => {
+                    onClick={async () => {
                       onChange(option);
                       setOpen(false);
                       setSearch("");
@@ -2223,7 +2224,7 @@ const UnitSelect = ({ label, placeholder, value, onChange, options = [] }) => {
             `}</style>
             {filteredOptions.length === 0 && search.trim() ? (
               <div
-                onClick={() => {
+                onClick={async () => {
                   onChange(search.trim());
                   setOpen(false);
                   setSearch("");
@@ -2238,7 +2239,7 @@ const UnitSelect = ({ label, placeholder, value, onChange, options = [] }) => {
               <>
                 {search.trim() && !filteredOptions.includes(search.trim()) && (
                   <div
-                    onClick={() => {
+                    onClick={async () => {
                       onChange(search.trim());
                       setOpen(false);
                       setSearch("");
@@ -2253,7 +2254,7 @@ const UnitSelect = ({ label, placeholder, value, onChange, options = [] }) => {
                   return (
                     <div
                       key={option}
-                      onClick={() => {
+                      onClick={async () => {
                         onChange(option);
                         setOpen(false);
                         setSearch("");
@@ -2359,7 +2360,7 @@ const ManufacturerSelect = ({ label, placeholder, value, onChange, manufacturers
                   <button
                     key={manufacturer}
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       onChange(manufacturer);
                       setOpen(false);
                       setSearch("");
@@ -2534,7 +2535,7 @@ const BrandSelect = ({ label, placeholder, value, onChange, brands, onManageClic
                 return (
                   <div
                     key={brand}
-                    onClick={() => {
+                    onClick={async () => {
                       onChange(brand);
                       setOpen(false);
                       setSearch("");
@@ -2736,7 +2737,7 @@ const TaxRateSelect = ({ label, value, onChange, type }) => {
                   return (
                     <div
                       key={option}
-                      onClick={() => {
+                      onClick={async () => {
                         onChange(option);
                         setOpen(false);
                         setSearch("");

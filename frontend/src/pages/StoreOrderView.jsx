@@ -1,3 +1,4 @@
+import { customConfirm } from '../utils/customConfirm';
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Head from "../components/Head";
@@ -206,7 +207,7 @@ const StoreOrderView = () => {
   const handleReject = async () => {
     if (!storeOrder) return;
     
-    const confirmReject = window.confirm(
+    const confirmReject = await customConfirm(
       `Are you sure you want to reject Store Order ${storeOrder.orderNumber}?\n\nThis action cannot be undone.`
     );
     

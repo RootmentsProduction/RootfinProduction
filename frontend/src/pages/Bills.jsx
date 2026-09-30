@@ -1,3 +1,4 @@
+import { customConfirm } from '../utils/customConfirm';
 import { useState, useEffect, useRef } from "react";
 import { useEnterToSave } from "../hooks/useEnterToSave";
 import { createPortal } from "react-dom";
@@ -3429,7 +3430,7 @@ const Bills = () => {
       return;
     }
 
-    if (!confirm(`Create Purchase Receive entries for ${selected.length} selected bill(s)? This will increase stock.`)) {
+    if (!await customConfirm(`Create Purchase Receive entries for ${selected.length} selected bill(s)? This will increase stock.`)) {
       return;
     }
 
@@ -3544,7 +3545,7 @@ const Bills = () => {
       return;
     }
 
-    if (!confirm(`Undo receive for ${selected.length} selected bill(s)? This will decrease stock.`)) {
+    if (!await customConfirm(`Undo receive for ${selected.length} selected bill(s)? This will decrease stock.`)) {
       return;
     }
 
@@ -3609,7 +3610,7 @@ const Bills = () => {
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${selected.length} bill(s)? This action cannot be undone and will affect payments, stock, and purchase orders.`)) {
+    if (!await customConfirm(`Are you sure you want to delete ${selected.length} bill(s)? This action cannot be undone and will affect payments, stock, and purchase orders.`)) {
       return;
     }
 

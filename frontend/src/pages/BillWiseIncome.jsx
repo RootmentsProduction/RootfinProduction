@@ -1,6 +1,7 @@
 import { CSVLink } from "react-csv";
 import Headers from '../components/Header.jsx';
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { customConfirm } from '../utils/customConfirm';
 import html2pdf from 'html2pdf.js';
 import Select, { components } from "react-select";
 import useFetch from '../hooks/useFetch.jsx';
@@ -755,7 +756,7 @@ const DayBookInc = () => {
 
     const CreateCashBank = async () => {
         if (savedData.totalAmount === 0) {
-            const confirmed = window.confirm(
+            const confirmed = await customConfirm(
                 'Physical cash count is 0. Are you sure you want to close the day with zero cash? Click OK to proceed or Cancel to go back and enter the denomination count.'
             );
             if (!confirmed) return;

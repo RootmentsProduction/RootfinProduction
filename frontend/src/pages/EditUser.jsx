@@ -105,8 +105,8 @@ const EditUser = () => {
                         Edit User
                     </h2>
                     
-                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm text-blue-800">
+                    <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <p className="text-sm text-purple-800">
                             Editing: <span className="font-semibold">{username}</span>
                         </p>
                     </div>

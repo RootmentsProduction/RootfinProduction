@@ -1,3 +1,4 @@
+import { customConfirm } from '../utils/customConfirm';
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Edit, Printer, Download, PackageCheck, Scan, X, CheckCircle } from "lucide-react";
@@ -513,7 +514,7 @@ const TransferOrderView = () => {
       return;
     }
     
-    if (!confirm("Are you sure you want to receive this transfer order? This will update the stock in your warehouse.")) {
+    if (!await customConfirm("Are you sure you want to receive this transfer order? This will update the stock in your warehouse.")) {
       return;
     }
     

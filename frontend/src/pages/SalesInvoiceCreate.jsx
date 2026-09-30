@@ -1,3 +1,4 @@
+import { customConfirm } from '../utils/customConfirm';
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useEnterToSave } from "../hooks/useEnterToSave";
 import { createPortal } from "react-dom";
@@ -2495,7 +2496,7 @@ Customer Service Available`;
 
   // Handle deleting sales person
   const handleDeleteSalesPerson = async (salesPersonId, salesPersonName) => {
-    if (!confirm(`Are you sure you want to delete sales person "${salesPersonName}"?`)) {
+    if (!await customConfirm(`Are you sure you want to delete sales person "${salesPersonName}"?`)) {
       return;
     }
 

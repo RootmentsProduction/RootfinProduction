@@ -544,16 +544,15 @@ const SalesInvoiceDetail = () => {
       const result = await returnResponse.json();
 
       const updatedLineItems = invoice.lineItems
-        .map((originalItem) => {
-          const returnedItem = itemsToReturn.find(
-            (ret) => (ret.itemData?._id || ret.item) === (originalItem.itemData?._id || originalItem.item)
-          );
+        .map((originalItem, index) => {
+          const returnItem = returnItems[index];
+          const returnQty = returnItem ? (returnItem.returnQuantity || 0) : 0;
 
-          if (!returnedItem) {
+          if (returnQty <= 0) {
             return originalItem;
           }
 
-          const remainingQty = (originalItem.quantity || 0) - returnedItem.returnQuantity;
+          const remainingQty = (originalItem.quantity || 0) - returnQty;
           if (remainingQty <= 0) {
             return null;
           }

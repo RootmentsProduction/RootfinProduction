@@ -229,7 +229,7 @@ const SalesReport = () => {
         <title>Sales Report</title>
       </Helmet>
       <Headers />
-      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#fbfcfd] min-h-screen ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-white min-h-screen ${isSidebarOpen ? 'ml-[240px] ml-0' : 'ml-0'}`}>
         {/* Page Header */}
         <div style={{ 
           marginBottom: "32px",
@@ -293,7 +293,7 @@ const SalesReport = () => {
                   transition: "border-color 0.2s ease, box-shadow 0.2s ease",
                   outline: "none"
                 }}
-                onFocus={(e) => e.target.style.borderColor = "#007bff"}
+                onFocus={(e) => e.target.style.borderColor = "#a855f7"}
                 onBlur={(e) => e.target.style.borderColor = "#dee2e6"}
               />
             </div>
@@ -319,7 +319,7 @@ const SalesReport = () => {
                   transition: "border-color 0.2s ease, box-shadow 0.2s ease",
                   outline: "none"
                 }}
-                onFocus={(e) => e.target.style.borderColor = "#007bff"}
+                onFocus={(e) => e.target.style.borderColor = "#a855f7"}
                 onBlur={(e) => e.target.style.borderColor = "#dee2e6"}
               />
             </div>
@@ -348,8 +348,8 @@ const SalesReport = () => {
                     control: (base, state) => ({
                       ...base,
                       borderRadius: "8px",
-                      borderColor: state.isFocused ? "#007bff" : "#dee2e6",
-                      boxShadow: state.isFocused ? "0 0 0 2px rgba(0,123,255,0.1)" : "none",
+                      borderColor: state.isFocused ? "#a855f7" : "#dee2e6",
+                      boxShadow: state.isFocused ? "0 0 0 2px rgba(168,85,247,0.1)" : "none",
                       padding: "4px 8px",
                       transition: "all 0.2s ease"
                     })
@@ -369,7 +369,7 @@ const SalesReport = () => {
                   padding: "12px 16px", 
                   borderRadius: "8px", 
                   border: "1px solid #dee2e6", 
-                  backgroundColor: "#f8f9fa",
+                  backgroundColor: "#1a1f2e",
                   color: "#6c757d",
                   fontSize: "14px"
                 }}>
@@ -394,8 +394,8 @@ const SalesReport = () => {
                   control: (base, state) => ({
                     ...base,
                     borderRadius: "8px",
-                    borderColor: state.isFocused ? "#007bff" : "#dee2e6",
-                    boxShadow: state.isFocused ? "0 0 0 2px rgba(0,123,255,0.1)" : "none",
+                    borderColor: state.isFocused ? "#a855f7" : "#dee2e6",
+                    boxShadow: state.isFocused ? "0 0 0 2px rgba(168,85,247,0.1)" : "none",
                     padding: "4px 8px",
                     transition: "all 0.2s ease"
                   })
@@ -417,7 +417,7 @@ const SalesReport = () => {
             disabled={loading}
             style={{
               padding: "12px 24px",
-              backgroundColor: "#007bff",
+              backgroundColor: "#a855f7",
               color: "white",
               border: "none",
               borderRadius: "8px",
@@ -429,20 +429,20 @@ const SalesReport = () => {
               display: "flex",
               alignItems: "center",
               gap: "8px",
-              boxShadow: "0 2px 4px rgba(0,123,255,0.2)"
+              boxShadow: "0 2px 4px rgba(168,85,247,0.2)"
             }}
             onMouseEnter={(e) => {
               if (!loading) {
-                e.target.style.backgroundColor = "#0056b3";
+                e.target.style.backgroundColor = "#9333ea";
                 e.target.style.transform = "translateY(-1px)";
-                e.target.style.boxShadow = "0 4px 8px rgba(0,123,255,0.3)";
+                e.target.style.boxShadow = "0 4px 8px rgba(168,85,247,0.3)";
               }
             }}
             onMouseLeave={(e) => {
               if (!loading) {
-                e.target.style.backgroundColor = "#007bff";
+                e.target.style.backgroundColor = "#a855f7";
                 e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "0 2px 4px rgba(0,123,255,0.2)";
+                e.target.style.boxShadow = "0 2px 4px rgba(168,85,247,0.2)";
               }
             }}
           >
@@ -456,7 +456,7 @@ const SalesReport = () => {
               filename={`sales-report-${fromDate}-to-${toDate}.csv`}
               style={{
                 padding: "12px 24px",
-                backgroundColor: "#28a745",
+                backgroundColor: "#a855f7",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
@@ -468,17 +468,17 @@ const SalesReport = () => {
                 fontSize: "14px",
                 fontWeight: "500",
                 transition: "all 0.2s ease",
-                boxShadow: "0 2px 4px rgba(40,167,69,0.2)"
+                boxShadow: "0 2px 4px rgba(168,85,247,0.2)"
               }}
               onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "#218838";
+                e.target.style.backgroundColor = "#9333ea";
                 e.target.style.transform = "translateY(-1px)";
-                e.target.style.boxShadow = "0 4px 8px rgba(40,167,69,0.3)";
+                e.target.style.boxShadow = "0 4px 8px rgba(168,85,247,0.3)";
               }}
               onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "#28a745";
+                e.target.style.backgroundColor = "#a855f7";
                 e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "0 2px 4px rgba(40,167,69,0.2)";
+                e.target.style.boxShadow = "0 2px 4px rgba(168,85,247,0.2)";
               }}
             >
               <FiDownload /> Export CSV
@@ -524,7 +524,7 @@ const SalesReport = () => {
                   marginBottom: "40px"
                 }}>
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -556,7 +556,7 @@ const SalesReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -582,13 +582,13 @@ const SalesReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#28a745",
+                      color: "#a855f7",
                       lineHeight: "1"
                     }}>₹{(reportData.summary?.totalSales || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -620,7 +620,7 @@ const SalesReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -646,7 +646,7 @@ const SalesReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#007bff",
+                      color: "#a855f7",
                       lineHeight: "1"
                     }}>₹{(reportData.summary?.netSales || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                   </div>
@@ -674,7 +674,7 @@ const SalesReport = () => {
                         alignItems: "center",
                         gap: "8px",
                         padding: "8px 16px",
-                        backgroundColor: showPaymentBreakdown ? "#007bff" : "#f8f9fa",
+                        backgroundColor: showPaymentBreakdown ? "#a855f7" : "#f8f9fa",
                         color: showPaymentBreakdown ? "white" : "#495057",
                         border: "1px solid #dee2e6",
                         borderRadius: "8px",
@@ -714,15 +714,15 @@ const SalesReport = () => {
                         gap: "16px"
                       }}>
                         {[
-                          { label: "Cash", value: reportData.summary?.paymentBreakdown?.cash || 0, color: "#28a745" },
-                          { label: "Bank", value: reportData.summary?.paymentBreakdown?.bank || 0, color: "#007bff" },
+                          { label: "Cash", value: reportData.summary?.paymentBreakdown?.cash || 0, color: "#a855f7" },
+                          { label: "Bank", value: reportData.summary?.paymentBreakdown?.bank || 0, color: "#a855f7" },
                           { label: "UPI", value: reportData.summary?.paymentBreakdown?.upi || 0, color: "#6f42c1" },
                           { label: "RBL", value: reportData.summary?.paymentBreakdown?.rbl || 0, color: "#fd7e14" }
                         ].map((payment, idx) => (
                           <div 
                             key={idx} 
                             style={{ 
-                              backgroundColor: "#f8f9fa", 
+                              backgroundColor: "#1a1f2e", 
                               padding: "20px", 
                               borderRadius: "10px",
                               border: "1px solid #e9ecef",
@@ -761,7 +761,7 @@ const SalesReport = () => {
                     color: "#495057"
                   }}>Sales by Category</h3>
                   <div style={{ 
-                    backgroundColor: "#f8f9fa",
+                    backgroundColor: "#1a1f2e",
                     borderRadius: "10px",
                     overflow: "hidden",
                     border: "1px solid #e9ecef"
@@ -777,7 +777,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Category</th>
@@ -785,7 +785,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Count</th>
@@ -793,7 +793,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Amount</th>
@@ -822,7 +822,7 @@ const SalesReport = () => {
                               padding: "16px 20px", 
                               textAlign: "right",
                               fontWeight: "600",
-                              color: "#28a745"
+                              color: "#a855f7"
                             }}>₹{cat.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                           </tr>
                         ))}
@@ -840,7 +840,7 @@ const SalesReport = () => {
                     color: "#495057"
                   }}>Top Sales Persons</h3>
                   <div style={{ 
-                    backgroundColor: "#f8f9fa",
+                    backgroundColor: "#1a1f2e",
                     borderRadius: "10px",
                     overflow: "hidden",
                     border: "1px solid #e9ecef"
@@ -856,7 +856,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Name</th>
@@ -864,7 +864,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Number of Sales</th>
@@ -872,7 +872,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Store</th>
@@ -880,7 +880,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Sales Amount</th>
@@ -908,7 +908,7 @@ const SalesReport = () => {
                                   width: "32px",
                                   height: "32px",
                                   borderRadius: "50%",
-                                  backgroundColor: "#007bff",
+                                  backgroundColor: "#a855f7",
                                   color: "white",
                                   display: "flex",
                                   alignItems: "center",
@@ -947,7 +947,7 @@ const SalesReport = () => {
                               padding: "16px 20px", 
                               textAlign: "right",
                               fontWeight: "700",
-                              color: "#28a745",
+                              color: "#a855f7",
                               fontSize: "16px"
                             }}>₹{person.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                           </tr>
@@ -987,7 +987,7 @@ const SalesReport = () => {
                   marginBottom: "40px"
                 }}>
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1019,7 +1019,7 @@ const SalesReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1045,13 +1045,13 @@ const SalesReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#007bff",
+                      color: "#a855f7",
                       lineHeight: "1"
                     }}>{reportData.totalQuantity || 0}</div>
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1077,7 +1077,7 @@ const SalesReport = () => {
                     <div style={{ 
                       fontSize: "32px", 
                       fontWeight: "700",
-                      color: "#28a745",
+                      color: "#a855f7",
                       lineHeight: "1"
                     }}>₹{(reportData.totalAmount || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                   </div>
@@ -1090,7 +1090,7 @@ const SalesReport = () => {
                   color: "#495057"
                 }}>Item Details</h3>
                 <div style={{ 
-                  backgroundColor: "#f8f9fa",
+                  backgroundColor: "#1a1f2e",
                   borderRadius: "10px",
                   overflow: "hidden",
                   border: "1px solid #e9ecef"
@@ -1108,7 +1108,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6",
                             whiteSpace: "nowrap"
@@ -1117,7 +1117,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6",
                             whiteSpace: "nowrap"
@@ -1126,7 +1126,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6",
                             whiteSpace: "nowrap"
@@ -1135,7 +1135,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "center", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6",
                             whiteSpace: "nowrap"
@@ -1144,7 +1144,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6",
                             whiteSpace: "nowrap"
@@ -1153,7 +1153,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6",
                             whiteSpace: "nowrap"
@@ -1162,7 +1162,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6",
                             whiteSpace: "nowrap"
@@ -1171,7 +1171,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "center", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6",
                             whiteSpace: "nowrap"
@@ -1200,7 +1200,7 @@ const SalesReport = () => {
                               fontFamily: "monospace", 
                               fontSize: "13px",
                               color: "#6c757d",
-                              backgroundColor: "#f8f9fa",
+                              backgroundColor: "#1a1f2e",
                               borderRadius: "4px"
                             }}>{item.sku}</td>
                             <td style={{ padding: "16px 20px" }}>
@@ -1218,7 +1218,7 @@ const SalesReport = () => {
                             <td style={{ padding: "16px 20px", textAlign: "center" }}>
                               <span style={{ 
                                 padding: "4px 8px", 
-                                backgroundColor: "#f8f9fa", 
+                                backgroundColor: "#1a1f2e", 
                                 border: "1px solid #dee2e6",
                                 borderRadius: "6px", 
                                 fontSize: "12px",
@@ -1232,7 +1232,7 @@ const SalesReport = () => {
                               padding: "16px 20px", 
                               textAlign: "right", 
                               fontWeight: "600",
-                              color: "#007bff"
+                              color: "#a855f7"
                             }}>{item.quantity}</td>
                             <td style={{ 
                               padding: "16px 20px", 
@@ -1243,7 +1243,7 @@ const SalesReport = () => {
                               padding: "16px 20px", 
                               textAlign: "right", 
                               fontWeight: "700", 
-                              color: "#28a745",
+                              color: "#a855f7",
                               fontSize: "15px"
                             }}>₹{item.totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                             <td style={{ padding: "16px 20px", textAlign: "center" }}>
@@ -1295,7 +1295,7 @@ const SalesReport = () => {
                   marginBottom: "40px"
                 }}>
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1327,7 +1327,7 @@ const SalesReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1359,7 +1359,7 @@ const SalesReport = () => {
                   </div>
                   
                   <div style={{ 
-                    backgroundColor: "#f8f9fa", 
+                    backgroundColor: "#1a1f2e", 
                     padding: "24px", 
                     borderRadius: "12px", 
                     border: "1px solid #e9ecef",
@@ -1400,7 +1400,7 @@ const SalesReport = () => {
                     color: "#495057"
                   }}>Returns by Reason</h3>
                   <div style={{ 
-                    backgroundColor: "#f8f9fa",
+                    backgroundColor: "#1a1f2e",
                     borderRadius: "10px",
                     overflow: "hidden",
                     border: "1px solid #e9ecef"
@@ -1416,7 +1416,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Reason</th>
@@ -1424,7 +1424,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Count</th>
@@ -1432,7 +1432,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Amount</th>
@@ -1479,7 +1479,7 @@ const SalesReport = () => {
                     color: "#495057"
                   }}>Return Details</h3>
                   <div style={{ 
-                    backgroundColor: "#f8f9fa",
+                    backgroundColor: "#1a1f2e",
                     borderRadius: "10px",
                     overflow: "hidden",
                     border: "1px solid #e9ecef"
@@ -1495,7 +1495,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Date</th>
@@ -1503,7 +1503,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Invoice No</th>
@@ -1511,7 +1511,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Customer</th>
@@ -1519,7 +1519,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "right", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Amount</th>
@@ -1527,7 +1527,7 @@ const SalesReport = () => {
                             padding: "16px 20px", 
                             textAlign: "left", 
                             fontWeight: "600",
-                            color: "#495057",
+                            color: "white",
                             fontSize: "14px",
                             borderBottom: "2px solid #dee2e6"
                           }}>Reason</th>
