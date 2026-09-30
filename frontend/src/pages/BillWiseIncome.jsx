@@ -1,5 +1,6 @@
 import { CSVLink } from "react-csv";
 import Headers from '../components/Header.jsx';
+import { customAlert } from '../utils/customAlert.jsx';
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { customConfirm } from '../utils/customConfirm';
 import html2pdf from 'html2pdf.js';
@@ -371,7 +372,7 @@ const DayBookInc = () => {
             return {
                 ...transaction,
                 date: transaction?.bookingDate || null,
-                time: transaction?.time || transaction?.bookingTime || (transaction?.bookingDate && transaction.bookingDate.includes("T") ? new Date(transaction.bookingDate + (transaction.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am"),
+                time: transaction?.time || transaction?.bookingTime || (transaction?.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction?.bookingDate && transaction.bookingDate.includes("T") ? new Date(transaction.bookingDate + (transaction.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
                 customerName: transaction?.customerName || transaction?.customer || "Customer",
                 bookingCashAmount,
                 bookingBankAmount,
@@ -406,7 +407,7 @@ const DayBookInc = () => {
             return {
                 ...transaction,
                 date: transaction?.rentOutDate ?? "",
-                time: transaction?.time || transaction?.rentOutTime || (transaction?.rentOutDate && transaction.rentOutDate.includes("T") ? new Date(transaction.rentOutDate + (transaction.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am"),
+                time: transaction?.time || transaction?.rentOutTime || (transaction?.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction?.rentOutDate && transaction.rentOutDate.includes("T") ? new Date(transaction.rentOutDate + (transaction.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
                 customerName: transaction?.customerName || transaction?.customer || "Customer",
                 rentoutCashAmount,
                 rentoutBankAmount,
@@ -444,7 +445,7 @@ const DayBookInc = () => {
             return {
                 ...transaction,
                 date: transaction?.returnedDate || null,
-                time: transaction?.time || transaction?.returnedTime || (transaction?.returnedDate && transaction.returnedDate.includes("T") ? new Date(transaction.returnedDate + (transaction.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am"),
+                time: transaction?.time || transaction?.returnedTime || (transaction?.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction?.returnedDate && transaction.returnedDate.includes("T") ? new Date(transaction.returnedDate + (transaction.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
                 customerName: transaction?.customerName || transaction?.customer || "Customer",
                 returnBankAmount,
                 returnCashAmount,
@@ -478,7 +479,7 @@ const DayBookInc = () => {
             return {
                 ...transaction,
                 date: transaction.cancelDate,
-                time: transaction?.time || transaction?.cancelTime || (transaction?.cancelDate && transaction.cancelDate.includes("T") ? new Date(transaction.cancelDate + (transaction.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am"),
+                time: transaction?.time || transaction?.cancelTime || (transaction?.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction?.cancelDate && transaction.cancelDate.includes("T") ? new Date(transaction.cancelDate + (transaction.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
                 customerName: transaction?.customerName || transaction?.customer || "Customer",
                 Category: "Cancel",
                 SubCategory: "cancellation Refund",
@@ -528,7 +529,7 @@ const DayBookInc = () => {
                 ...transaction,
                 locCode: currentusers?.locCode,
                 date: transaction.date ? transaction.date.split("T")[0] : transaction.date,
-                time: transaction.time || (transaction.date && transaction.date.includes("T") ? new Date(transaction.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am"),
+                time: transaction.time || (transaction.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction.date && transaction.date.includes("T") ? new Date(transaction.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
                 Category: inferType(transaction),
                 SubCategory: subCatLabel,
                 invoiceNo: transaction.invoiceNo || transaction.invoiceNumber || transaction.invoiceId || transaction.locCode,
@@ -773,16 +774,16 @@ const DayBookInc = () => {
 
             if (response.status === 401) {
                 setLoading(false);
-                return alert("Error: Data already saved for today.");
+                return customAlert("Error: Data already saved for today.", "error");
             } else if (!response.ok) {
                 setLoading(false);
-                return alert(JSON.stringify(response), null, 2);
+                return customAlert("Error saving data.", "error");
             }
 
             const data = await response.json();
             localStorage.setItem(`denominations_${currentDate}_${locCode}`, JSON.stringify(quantities));
 
-            alert("Data saved successfully");
+            customAlert("Data saved successfully", "success");
             setIsSaved(true);
             setLoading(false);
             
@@ -802,7 +803,7 @@ const DayBookInc = () => {
             takeCreateCashBank();
         } catch (error) {
             console.error("Error saving data:", error);
-            alert("An unexpected error occurred.");
+            customAlert("An unexpected error occurred.", "error");
             setLoading(false);
         }
     };
@@ -957,7 +958,7 @@ const DayBookInc = () => {
                 const result = await response.json();
 
                 if (!response.ok) {
-                    alert("❌ Failed to sync transaction.\n" + (result?.error || 'Unknown error'));
+                    customAlert("Failed to sync transaction.\n" + (result?.error || 'Unknown error'), "error");
                     setIsSyncing(false);
                     return;
                 }
@@ -965,7 +966,7 @@ const DayBookInc = () => {
                 transaction._id = result.data._id;
                 filteredTransactions[index]._id = result.data._id;
             } catch (err) {
-                alert("❌ Sync error: " + err.message);
+                customAlert("Sync error: " + err.message, "error");
                 setIsSyncing(false);
                 return;
             }
@@ -1048,7 +1049,7 @@ const DayBookInc = () => {
         } = editedTransaction;
 
         if (!_id) {
-            alert("❌ Cannot update: missing transaction ID.");
+            customAlert("Cannot update: missing transaction ID.", "error");
             return;
         }
 
@@ -1112,10 +1113,10 @@ const DayBookInc = () => {
             const json = await res.json();
 
             if (!res.ok) {
-                alert("❌ Update failed: " + (json?.message || "Unknown error"));
+                customAlert("Update failed: " + (json?.message || "Unknown error"), "error");
                 return;
             }
-            alert("✅ Transaction updated.");
+            customAlert("Transaction updated.", "success");
 
             const updatedRow = {
                 _id,
@@ -1142,7 +1143,7 @@ const DayBookInc = () => {
 
         } catch (err) {
             console.error("Update error:", err);
-            alert("❌ Update failed: " + err.message);
+            customAlert("Update failed: " + err.message, "error");
         }
     };
 

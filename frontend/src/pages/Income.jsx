@@ -55,6 +55,7 @@ const Income = () => {
       paymentMethod: splitPayment ? "split" : paymentMethod,
       quantity: selectedCategory.value === "shoe sales" ? quantity : "",
       date: new Date().toISOString().split("T")[0],
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }).toLowerCase(),
       attachment: attachmentFile?.base64 || null,
     };
 

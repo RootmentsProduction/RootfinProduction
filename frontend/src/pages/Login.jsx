@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import loginBg from '../assets/login-bg.png';
 import rootfinLogo from '../assets/rootfin-logo.png';
 import LoadingScreen from '../components/LoadingScreen.jsx';
+import { customAlert } from '../utils/customAlert.jsx';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -29,14 +30,13 @@ const Login = () => {
 
       if (response.ok) {
         localStorage.setItem("rootfinuser", JSON.stringify(data.user));
-        alert('Login successful');
         navigate('/');
       } else {
-        alert('Login failed: ' + (data.message || 'Unknown error'));
+        await customAlert('Login failed: ' + (data.message || 'Unknown error'), 'error');
       }
     } catch (error) {
       console.error('Error during login:', error);
-      alert('An error occurred during login');
+      await customAlert('An error occurred during login', 'error');
     } finally {
       setLoading(false);
     }

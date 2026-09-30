@@ -1,4 +1,5 @@
 import Headers from '../components/Header.jsx';
+import { customAlert } from '../utils/customAlert.jsx';
 import React, { useEffect, useRef, useState } from "react";
 import { useEnterToSave } from "../hooks/useEnterToSave";
 import Select, { components } from "react-select";
@@ -37,26 +38,19 @@ const categories = [
   { value: "money transfer", label: "Cash to Bank" },
 ];
 
+const DEPT_LOC_CODES = ["759", "102", "101", "858", "103"];
+
+
 const headers = [
   { label: "Date", key: "date" },
   { label: "Invoice No", key: "invoiceNo" },
   { label: "Customer Name", key: "customerName" },
-  { label: "Quantity", key: "quantity" },
   { label: "Category", key: "Category" },
   { label: "Sub Category", key: "SubCategory" },
-  { label: "Balance Payable", key: "SubCategory1" },
+  { label: "Remarks", key: "remark" },
   { label: "Amount", key: "amount" },
-  { label: "Total Transaction", key: "totalTransaction" },
-  { label: "security", key: "securityAmount" },
-  { label: "Balance Payable", key: "Balance" },
-  { label: "Remark", key: "remark" },
+  { label: "Total Txn", key: "totalTransaction" },
   { label: "Discount", key: "discountAmount" },
-  { label: "Bill Value", key: "billValue" },
-  { label: "Cash", key: "cash" },
-  { label: "Razorpay", key: "rbl" }, // ✅ Added RBL to headers
-  { label: "Card/Bank", key: "bank" },
-  { label: "UPI", key: "upi" },
-  { label: "Attachment", key: "attachment" },
 ];
 
 const subCategories = [
@@ -193,22 +187,12 @@ const multiBranchCsvHeaders = [
   { label: "Date", key: "date" },
   { label: "Invoice No", key: "invoiceNo" },
   { label: "Customer Name", key: "customerName" },
-  { label: "Quantity", key: "quantity" },
   { label: "Category", key: "Category" },
   { label: "Sub Category", key: "SubCategory" },
-  { label: "Balance Payable", key: "SubCategory1" },
+  { label: "Remarks", key: "remark" },
   { label: "Amount", key: "amount" },
-  { label: "Total Transaction", key: "totalTransaction" },
-  { label: "security", key: "securityAmount" },
-  { label: "Balance Payable", key: "Balance" },
-  { label: "Remark", key: "remark" },
+  { label: "Total Txn", key: "totalTransaction" },
   { label: "Discount", key: "discountAmount" },
-  { label: "Bill Value", key: "billValue" },
-  { label: "Cash", key: "cash" },
-  { label: "Razorpay", key: "rbl" },
-  { label: "Card/Bank", key: "bank" },
-  { label: "UPI", key: "upi" },
-  { label: "Attachment", key: "attachment" },
   { label: "Branch", key: "branch" },
 ];
 
@@ -319,7 +303,7 @@ const Datewisedaybook = () => {
       const bookingList = (bookingData?.dataSet?.data || []).map(item => ({
         ...item,
         date: item.bookingDate?.split("T")[0],
-        time: item?.time || item?.bookingTime || (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate + (item.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+        time: item?.time || item?.bookingTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate + (item.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
         invoiceNo: item.invoiceNo,
         customerName: item.customerName,
         quantity: item.quantity || 1,
@@ -344,7 +328,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.rentOutDate || "").split("T")[0],
-          time: item?.time || item?.rentOutTime || (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate + (item.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+          time: item?.time || item?.rentOutTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate + (item.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           quantity: item.quantity || 1,
@@ -377,7 +361,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
-          time: item?.time || item?.returnedTime || (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate + (item.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+          time: item?.time || item?.returnedTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate + (item.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           customerName: item.customerName || item.custName || item.customer || "",
           invoiceNo: item.invoiceNo,
           Category: "Return",
@@ -406,7 +390,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: item.cancelDate?.split("T")[0],
-          time: item?.time || item?.cancelTime || (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate + (item.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+          time: item?.time || item?.cancelTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate + (item.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           Category: "Cancel",
@@ -436,7 +420,7 @@ const Datewisedaybook = () => {
         return {
           ...tx,
           date: tx.date?.split("T")[0] || "",
-          time: tx?.time || (tx?.date && tx.date.includes("T") ? new Date(tx.date + (tx.date.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+          time: tx?.time || (tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (tx?.date && tx.date.includes("T") ? new Date(tx.date + (tx.date.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           Category: tx.type,
           SubCategory: subCatLabel,
           SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
@@ -548,7 +532,7 @@ const Datewisedaybook = () => {
     }
 
     // 2. Add Department Dropdown Selections
-    if (selectedDepartment) {
+    if (selectedStore === "none" && selectedDepartment) {
       if (selectedDepartment === "all_departments") {
         locCodesToFetch.push(...DEPT_LOC_CODES);
       } else {
@@ -563,7 +547,7 @@ const Datewisedaybook = () => {
       locCodesToFetch = [currentusers.locCode];
     }
 
-    if (selectedStore === "all" || selectedStore === "all_departments" || selectedDepartment) {
+    if (selectedStore === "all" || (selectedStore === "none" && selectedDepartment === "all_departments")) {
       const filteredLocations = visibleLocations.filter(loc => locCodesToFetch.includes(loc.locCode));
       
       const results = await Promise.all(
@@ -622,7 +606,7 @@ const Datewisedaybook = () => {
           const bList = (bookingData?.dataSet?.data || []).map(item => ({
             ...item,
             date: item.bookingDate?.split("T")[0],
-        time: item?.time || item?.bookingTime || (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate + (item.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+        time: item?.time || item?.bookingTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate + (item.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
             invoiceNo: item.invoiceNo,
             customerName: item.customerName,
             quantity: item.quantity || 1,
@@ -649,7 +633,7 @@ const Datewisedaybook = () => {
             return {
               ...item,
               date: (item.rentOutDate || "").split("T")[0],
-          time: item?.time || item?.rentOutTime || (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate + (item.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+          time: item?.time || item?.rentOutTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate + (item.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
               invoiceNo: item.invoiceNo,
               customerName: item.customerName,
               quantity: item.quantity || 1,
@@ -680,7 +664,7 @@ const Datewisedaybook = () => {
             return {
               ...item,
               date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
-          time: item?.time || item?.returnedTime || (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate + (item.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+          time: item?.time || item?.returnedTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate + (item.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
               customerName: item.customerName || item.custName || item.customer || "",
               invoiceNo: item.invoiceNo,
               Category: "Return",
@@ -707,7 +691,7 @@ const Datewisedaybook = () => {
             return {
               ...item,
               date: item.cancelDate?.split("T")[0],
-          time: item?.time || item?.cancelTime || (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate + (item.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+          time: item?.time || item?.cancelTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate + (item.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
               invoiceNo: item.invoiceNo,
               customerName: item.customerName,
               Category: "Cancel",
@@ -740,7 +724,7 @@ const Datewisedaybook = () => {
             return {
               ...tx,
               date: tx.date?.split("T")[0] || "",
-          time: tx?.time || (tx?.date && tx.date.includes("T") ? new Date(tx.date + (tx.date.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+          time: tx?.time || (tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (tx?.date && tx.date.includes("T") ? new Date(tx.date + (tx.date.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
               Category: tx.type,
               SubCategory: subCatLabel,
               SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
@@ -848,7 +832,7 @@ const Datewisedaybook = () => {
       const bookingList = (bookingData?.dataSet?.data || []).map(item => ({
         ...item,
         date: item.bookingDate?.split("T")[0],
-        time: item?.time || item?.bookingTime || (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate + (item.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+        time: item?.time || item?.bookingTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate + (item.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
         invoiceNo: item.invoiceNo,
         customerName: item.customerName,
         quantity: item.quantity || 1,
@@ -875,7 +859,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.rentOutDate || "").split("T")[0],
-          time: item?.time || item?.rentOutTime || (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate + (item.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+          time: item?.time || item?.rentOutTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate + (item.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           quantity: item.quantity || 1,
@@ -909,7 +893,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
-          time: item?.time || item?.returnedTime || (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate + (item.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+          time: item?.time || item?.returnedTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate + (item.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           customerName: item.customerName || item.custName || item.customer || "",
           invoiceNo: item.invoiceNo,
           Category: "Return",
@@ -939,7 +923,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: item.cancelDate?.split("T")[0],
-          time: item?.time || item?.cancelTime || (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate + (item.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+          time: item?.time || item?.cancelTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate + (item.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           Category: "Cancel",
@@ -971,7 +955,7 @@ const Datewisedaybook = () => {
         return {
           ...tx,
           date: tx.date?.split("T")[0] || "",
-          time: tx?.time || (tx?.date && tx.date.includes("T") ? new Date(tx.date + (tx.date.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : ""),
+          time: tx?.time || (tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (tx?.date && tx.date.includes("T") ? new Date(tx.date + (tx.date.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           Category: tx.type,
           SubCategory: subCatLabel,
           SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
@@ -1203,11 +1187,14 @@ const Datewisedaybook = () => {
   const totals = displayedRows.reduce(
     (acc, r) => ({
       cash: acc.cash + toNumber(r.cash),
-      rbl: acc.rbl + toNumber(r.rbl), // ✅ Added RBL calculation
+      rbl: acc.rbl + toNumber(r.rbl),
       bank: acc.bank + toNumber(r.bank),
       upi: acc.upi + toNumber(r.upi),
+      amount: acc.amount + toNumber(r.amount),
+      totalTransaction: acc.totalTransaction + toNumber(r.totalTransaction),
+      discountAmount: acc.discountAmount + toNumber(r.discountAmount),
     }),
-    { cash: openingCash, rbl: openingRbl, bank: 0, upi: 0 } // ✅ Added rbl with opening
+    { cash: openingCash, rbl: openingRbl, bank: 0, upi: 0, amount: openingCash + openingRbl, totalTransaction: openingCash + openingRbl, discountAmount: 0 }
   );
 
   const totalCash = totals.cash;
@@ -1274,7 +1261,11 @@ const Datewisedaybook = () => {
           customerName: t.customerName || "",
           quantity: t.quantity || 1,
           Category: t.Category || t.type || "",
-          SubCategory: getCatLabel(t.SubCategory || t.category || ""),
+          SubCategory: [t.SubCategory || t.category || ""]
+            .concat(isRent ? [t.SubCategory1 || t.subCategory1 || ""] : [])
+            .filter(Boolean)
+            .map(getCatLabel)
+            .join(" + ") || "-", 
           SubCategory1: t.SubCategory1 || t.subCategory1 || "",
           amount,
           totalTransaction: t.totalTransaction ?? amount,
@@ -1326,14 +1317,14 @@ const Datewisedaybook = () => {
 
         if (!response.ok) {
           console.error("❌ Sync failed:", result);
-          alert("❌ Failed to sync transaction.\n" + (result?.error || 'Unknown error'));
+          customAlert("Failed to sync transaction.\n" + (result?.error || 'Unknown error'), "error");
           setIsSyncing(false);
           return;
         }
 
         transaction._id = result.data._id;
       } catch (err) {
-        alert("❌ Sync error: " + err.message);
+        customAlert("Sync error: " + err.message, "error");
         setIsSyncing(false);
         return;
       }
@@ -1429,7 +1420,7 @@ const Datewisedaybook = () => {
     } = editedTransaction;
 
     if (!_id) {
-      alert("❌ Cannot update: missing transaction ID.");
+      customAlert("Cannot update: missing transaction ID.", "error");
       return;
     }
 
@@ -1493,10 +1484,10 @@ const Datewisedaybook = () => {
       const json = await res.json();
 
       if (!res.ok) {
-        alert("❌ Update failed: " + (json?.message || "Unknown error"));
+        customAlert("Update failed: " + (json?.message || "Unknown error"), "error");
         return;
       }
-      alert("✅ Transaction updated.");
+      customAlert("Transaction updated.", "success");
 
       const updatedRow = {
         ...editedTransaction,
@@ -1522,7 +1513,7 @@ const Datewisedaybook = () => {
       setEditingIndex(null);
     } catch (err) {
       console.error("Update error:", err);
-      alert("❌ Update failed: " + err.message);
+      customAlert("Update failed: " + err.message, "error");
     }
   };
 
@@ -1919,8 +1910,8 @@ const Datewisedaybook = () => {
                   {/* Action Buttons Right Side */}
                   <div className="flex items-center gap-3">
                     <CSVLink
-                      data={(selectedStore === "all" || selectedStore === "all_departments" || selectedDepartment) ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
-                      headers={(selectedStore === "all" || selectedStore === "all_departments" || selectedDepartment) ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
+                      data={(selectedStore === "all" || (selectedStore === "none" && selectedDepartment === "all_departments")) ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
+                      headers={(selectedStore === "all" || (selectedStore === "none" && selectedDepartment === "all_departments")) ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
                       filename={`financial_summary_${selectedStore === "all" ? "All_Branches" : selectedStore === "all_departments" ? "All_Departments" : selectedStore === "multi" ? "Multiple_Branches" : (AllLoation.find(loc => loc.locCode === currentusers.locCode)?.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_")}_${fromDate === toDate ? fromDate : fromDate + "_to_" + toDate}.csv`}
                     >
                       <button
@@ -1949,7 +1940,7 @@ const Datewisedaybook = () => {
             <div ref={printRef}>
               {/* Loading Screen */}
 
-              {(selectedStore === "all" || selectedStore === "all_departments" || selectedDepartment) ? (
+              {(selectedStore === "all" || (selectedStore === "none" && selectedDepartment === "all_departments")) ? (
                 <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "500px", overflowY: "auto" }}>
                     <table className="w-full border-collapse min-w-full text-sm">
@@ -1995,23 +1986,16 @@ const Datewisedaybook = () => {
                   <div style={{ maxHeight: "600px", overflowY: "auto", overflowX: "auto" }}>
                     <table className="w-full border-collapse text-xs" style={{ minWidth: '1300px' }}>
                       <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
-                        <tr className="bg-[#1e1e1e] text-white text-xs uppercase tracking-wide">
+                        <tr className="bg-[#1e1e1e] text-white text-xs uppercase tracking-wide font-bold">
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs min-w-[110px]">Date</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Invoice No.</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Customer Name</th>
-                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Qty</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Category</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Sub Category</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Remarks</th>
                           <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Amount</th>
                           <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Total Txn</th>
                           <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Discount</th>
-                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Bill Value</th>
-                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Cash</th>
-                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Razorpay</th>
-                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Card/Bank</th>
-                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">UPI</th>
-                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Attachment</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Branch</th>
                         </tr>
                       </thead>
@@ -2026,23 +2010,12 @@ const Datewisedaybook = () => {
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.customerName || "-"}</td>
-                                    <td rowSpan="2" className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.quantity}</td>
                                     <td rowSpan="2" className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.Category}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.SubCategory}</td>
                                     <td className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">{t.remark}</td>
                                     <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.securityAmount}</td>
                                     <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.totalTransaction}</td>
                                     <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.discountAmount || 0}</td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.billValue}</td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.cash}</td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.rbl ?? 0}</td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.bank}</td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.upi}</td>
-                                    <td rowSpan="2" className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">
-                                      {t.hasAttachment && t._id ? (
-                                        <a href={`${baseUrl.baseUrl}user/transaction/${t._id}/attachment`} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline text-xs">View</a>
-                                      ) : "-"}
-                                    </td>
                                     <td rowSpan="2" className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs font-medium">{t.branch}</td>
                                   </tr>
                                   <tr key={`mb-${index}-bal`} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
@@ -2061,7 +2034,6 @@ const Datewisedaybook = () => {
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.customerName || "-"}</td>
-                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.quantity}</td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.Category || t.type}</td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                   {[t.SubCategory].concat(t.Category === "RentOut" ? [t.SubCategory1 || t.subCategory1] : []).filter(Boolean).map(getCatLabel).join(" + ") || "-"}
@@ -2070,25 +2042,13 @@ const Datewisedaybook = () => {
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.amount)).toLocaleString()}</td>
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.totalTransaction)).toLocaleString()}</td>
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.discountAmount || 0)).toLocaleString()}</td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.billValue)).toLocaleString()}</td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.cash}</td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.rbl ?? 0}</td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.bank}</td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.upi}</td>
-                                <td className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">
-                                  {t.hasAttachment && t._id ? (
-                                    <a href={`${baseUrl.baseUrl}user/transaction/${t._id}/attachment`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-purple-600 hover:underline text-xs">
-                                      <FiDownload size={14} />Download
-                                    </a>
-                                  ) : "-"}
-                                </td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs font-medium">{t.branch}</td>
                               </tr>
                             );
                           })}
                         {multiBranchData.length === 0 && (
                           <tr>
-                            <td colSpan={17} className="text-center py-8 text-gray-400 text-sm">
+                            <td colSpan={10} className="text-center py-8 text-gray-400 text-sm">
                               {selectedStores.length === 0 ? "Select branches above and click Fetch Data" : "No transactions found"}
                             </td>
                           </tr>
@@ -2096,22 +2056,7 @@ const Datewisedaybook = () => {
                       </tbody>
                       <tfoot>
                         <tr className="bg-[#e2e8f0] font-bold border-t-2 border-gray-300" style={{ position: "sticky", bottom: 0, zIndex: 2 }}>
-                          <td colSpan="10" className="px-3 py-2.5 text-left text-gray-800 text-xs font-bold uppercase tracking-wide">Total</td>
-                          <td className="px-3 py-2.5"></td>
-                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">
-                            {Math.round(multiBranchData.reduce((s, r) => s + (isNaN(+r.cash) ? 0 : +r.cash), 0)).toLocaleString()}
-                          </td>
-                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">
-                            {Math.round(multiBranchData.reduce((s, r) => s + (isNaN(+r.rbl) ? 0 : +r.rbl), 0)).toLocaleString()}
-                          </td>
-                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">
-                            {Math.round(multiBranchData.reduce((s, r) => s + (isNaN(+r.bank) ? 0 : +r.bank), 0)).toLocaleString()}
-                          </td>
-                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">
-                            {Math.round(multiBranchData.reduce((s, r) => s + (isNaN(+r.upi) ? 0 : +r.upi), 0)).toLocaleString()}
-                          </td>
-                          <td className="px-3 py-2.5"></td>
-                          <td className="px-3 py-2.5"></td>
+                          <td colSpan="10" className="px-3 py-2.5 text-left text-gray-800 text-xs font-bold uppercase tracking-wide">TOTAL</td>
                         </tr>
                       </tfoot>
                     </table>
@@ -2132,35 +2077,21 @@ const Datewisedaybook = () => {
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs min-w-[110px]">Date</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Invoice No.</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Customer Name</th>
-                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Qty</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Category</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Sub Category</th>
                           <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Remarks</th>
                           <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Amount</th>
                           <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Total Txn</th>
                           <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Discount</th>
-                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Bill Value</th>
-                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Cash</th>
-                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Razorpay</th>
-                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Card/Bank</th>
-                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">UPI</th>
-                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Attachment</th>
                           {showAction && <th className="px-3 py-3 text-center font-bold whitespace-nowrap border-r border-[#333333] text-xs">Action</th>}
                         </tr>
                       </thead>
 
                       <tbody>
                         <tr className="bg-gray-100/70 font-bold text-gray-800 border-b border-gray-200">
-                          <td colSpan="10" className="px-3 py-2.5 text-xs uppercase tracking-wide font-bold">
-                            Opening Balance
+                          <td colSpan={showAction ? 10 : 9} className="px-3 py-2.5 text-xs uppercase tracking-wide font-bold">
+                            OPENING BALANCE
                           </td>
-                          <td className="px-3 py-2.5"></td>
-                          <td className="px-3 py-2.5 text-right font-bold">{preOpen.cash || 0}</td>
-                          <td className="px-3 py-2.5 text-right font-bold">{preOpen.rbl ?? 0}</td>
-                          <td className="px-3 py-2.5 text-right font-bold">0</td>
-                          <td className="px-3 py-2.5 text-right font-bold">0</td>
-                          <td className="px-3 py-2.5"></td>
-                          {showAction && <td className="px-3 py-2.5"></td>}
                         </tr>
 
                         {displayedRows
@@ -2176,20 +2107,6 @@ const Datewisedaybook = () => {
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
                                     <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                       {t.customerName || t.customer || t.name || "-"}
-                                    </td>
-                                    <td rowSpan="2" className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
-                                      {isEditing ? (
-                                        <input
-                                          type="number"
-                                          value={editedTransaction.quantity}
-                                          onChange={(e) =>
-                                            handleInputChange("quantity", e.target.value)
-                                          }
-                                          className="w-full border border-gray-300 rounded-none p-1 text-sm"
-                                        />
-                                      ) : (
-                                        t.quantity
-                                      )}
                                     </td>
                                     <td rowSpan="2" className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                       {t.Category}
@@ -2215,82 +2132,6 @@ const Datewisedaybook = () => {
                                     </td>
                                     <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
                                       {t.discountAmount || 0}
-                                    </td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
-                                      {t.billValue}
-                                    </td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
-                                      {isEditing && editedTransaction._id ? (
-                                        <input
-                                          type="number"
-                                          step="any"
-                                          value={editedTransaction.cash}
-                                          onChange={(e) =>
-                                            handleInputChange("cash", e.target.value)
-                                          }
-                                          className="w-full border border-gray-300 rounded-none p-1 text-sm"
-                                        />
-                                      ) : (
-                                        t.cash
-                                      )}
-                                    </td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
-                                      {isEditing && editedTransaction._id ? (
-                                        <input
-                                          type="number"
-                                          value={editedTransaction.rbl}
-                                          onChange={(e) =>
-                                            handleInputChange("rbl", e.target.value)
-                                          }
-                                          className="w-full border border-gray-300 rounded-none p-1 text-sm"
-                                        />
-                                      ) : (
-                                        t.rbl ?? 0
-                                      )}
-                                    </td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
-                                      {isEditing && editedTransaction._id ? (
-                                        <input
-                                          type="number"
-                                          step="any"
-                                          value={editedTransaction.bank}
-                                          onChange={(e) =>
-                                            handleInputChange("bank", e.target.value)
-                                          }
-                                          className="w-full border border-gray-300 rounded-none p-1 text-sm"
-                                        />
-                                      ) : (
-                                        t.bank
-                                      )}
-                                    </td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
-                                      {isEditing && editedTransaction._id ? (
-                                        <input
-                                          type="number"
-                                          step="any"
-                                          value={editedTransaction.upi}
-                                          onChange={(e) =>
-                                            handleInputChange("upi", e.target.value)
-                                          }
-                                          className="w-full border border-gray-300 rounded-none p-1 text-sm"
-                                        />
-                                      ) : (
-                                        t.upi
-                                      )}
-                                    </td>
-                                    <td rowSpan="2" className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">
-                                      {t.hasAttachment && t._id ? (
-                                        <a
-                                          href={`${baseUrl.baseUrl}user/transaction/${t._id}/attachment`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-purple-600 hover:underline text-xs"
-                                        >
-                                          View
-                                        </a>
-                                      ) : (
-                                        "-"
-                                      )}
                                     </td>
 
                                     {showAction && (
@@ -2353,20 +2194,6 @@ const Datewisedaybook = () => {
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                   {t.customerName || t.customer || t.name || "-"}
                                 </td>
-                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      value={editedTransaction.quantity}
-                                      onChange={(e) =>
-                                        handleInputChange("quantity", e.target.value)
-                                      }
-                                      className="w-full border border-gray-300 rounded-none p-1 text-sm"
-                                    />
-                                  ) : (
-                                    t.quantity
-                                  )}
-                                </td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.Category || t.type}</td>
                                 <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                   {[t.SubCategory]
@@ -2381,73 +2208,6 @@ const Datewisedaybook = () => {
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.amount)).toLocaleString()}</td>
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.totalTransaction)).toLocaleString()}</td>
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.discountAmount || 0)).toLocaleString()}</td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.billValue)).toLocaleString()}</td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
-                                  {isEditing && editedTransaction._id ? (
-                                    <input
-                                      type="number"
-                                      value={editedTransaction.cash}
-                                      onChange={(e) => handleInputChange("cash", e.target.value)}
-                                      className="w-full border border-gray-300 rounded-none p-1 text-sm"
-                                    />
-                                  ) : (
-                                    t.cash
-                                  )}
-                                </td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
-                                  {isEditing &&
-                                    editedTransaction._id &&
-                                    t.SubCategory !== "Cash to Bank" ? (
-                                    <input
-                                      type="number"
-                                      value={editedTransaction.rbl}
-                                      onChange={(e) => handleInputChange("rbl", e.target.value)}
-                                      className="w-full border border-gray-300 rounded-none p-1 text-sm"
-                                    />
-                                  ) : (
-                                    t.rbl ?? 0
-                                  )}
-                                </td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
-                                  {isEditing && editedTransaction._id ? (
-                                    <input
-                                      type="number"
-                                      value={editedTransaction.bank}
-                                      onChange={(e) => handleInputChange("bank", e.target.value)}
-                                      className="w-full border border-gray-300 rounded-none p-1 text-sm"
-                                    />
-                                  ) : (
-                                    t.bank
-                                  )}
-                                </td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
-                                  {isEditing && editedTransaction._id ? (
-                                    <input
-                                      type="number"
-                                      value={editedTransaction.upi}
-                                      onChange={(e) => handleInputChange("upi", e.target.value)}
-                                      className="w-full border border-gray-300 rounded-none p-1 text-sm"
-                                    />
-                                  ) : (
-                                    t.upi
-                                  )}
-                                </td>
-                                <td className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">
-                                  {t.hasAttachment && t._id ? (
-                                    <a
-                                      href={`${baseUrl.baseUrl}user/transaction/${t._id}/attachment`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-1 text-[#9B48D7] hover:underline text-xs"
-                                    >
-                                      <FiDownload size={14} />
-                                      Download
-                                    </a>
-                                  ) : (
-                                    "-"
-                                  )}
-                                </td>
-
                                 {showAction && (
                                   <td className="px-3 py-2 text-center border-r border-gray-100 text-xs">
                                     {isSyncing && editingIndex === index ? (
@@ -2475,7 +2235,7 @@ const Datewisedaybook = () => {
 
                         {mergedTransactions.length === 0 && (
                           <tr>
-                            <td colSpan={showAction ? 17 : 16} className="text-center py-8 text-gray-400 text-sm">
+                            <td colSpan={showAction ? 10 : 9} className="text-center py-8 text-gray-400 text-sm">
                               No transactions found
                             </td>
                           </tr>
@@ -2487,15 +2247,12 @@ const Datewisedaybook = () => {
                           className="bg-[#e2e8f0] font-bold border-t-2 border-gray-300"
                           style={{ position: "sticky", bottom: 0, zIndex: 2 }}
                         >
-                          <td colSpan="10" className="px-3 py-2.5 text-left text-gray-800 text-xs font-bold uppercase tracking-wider">
+                          <td colSpan="6" className="px-3 py-2.5 text-left text-gray-800 text-xs font-bold uppercase tracking-wider">
                             Total
                           </td>
-                          <td className="px-3 py-2.5"></td>
-                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalCash)).toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalRblAmount)).toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalBankAmount)).toLocaleString()}</td>
-                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalUpiAmount)).toLocaleString()}</td>
-                          <td className="px-3 py-2.5"></td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totals.amount)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totals.totalTransaction)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totals.discountAmount)).toLocaleString()}</td>
                           {showAction && <td className="px-3 py-2.5"></td>}
                         </tr>
                       </tfoot>
