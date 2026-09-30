@@ -5,14 +5,6 @@ const expenseTargetSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  month: {
-    type: String,
-    required: true,
-  },
-  week: {
-    type: String,
-    default: "All",
-  },
   category: {
     type: String,
     required: true,
@@ -27,8 +19,9 @@ const expenseTargetSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Create a compound index to ensure uniqueness per store, month, week, category, subCategory
-expenseTargetSchema.index({ storeCode: 1, month: 1, week: 1, category: 1, subCategory: 1 }, { unique: true });
+// Unique per store + category + subCategory — no month/week dimension.
+// The limit auto-recurs every month by design (one permanent record per store/category).
+expenseTargetSchema.index({ storeCode: 1, category: 1, subCategory: 1 }, { unique: true });
 
 const ExpenseTarget = mongoose.model('ExpenseTarget', expenseTargetSchema);
 export default ExpenseTarget;
