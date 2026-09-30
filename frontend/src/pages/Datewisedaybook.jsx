@@ -209,6 +209,30 @@ const Datewisedaybook = () => {
   const isClusterManager = (currentusers.role || "").toLowerCase() === "cluster_manager";
   const clusterAllowedLocCodes = currentusers.allowedLocCodes || [];
 
+  // Admin-level dept loc codes — expenses from these are only visible to admin/superadmin
+  const ADMIN_DEPT_LOC_CODES = new Set(["759", "102", "101", "858", "103"]);
+  const isAdminOrSuperAdmin = (currentusers.power || "").toLowerCase() === "admin" || (currentusers.role || "").toLowerCase() === "superadmin";
+  // Expense categories that should be hidden from store/cluster users when entered by admin depts
+  const EXPENSE_CATEGORIES_SET = new Set([
+    "expense", "petty expenses", "staff reimbursement", "maintenance expenses",
+    "telephone internet", "utility bill", "salary", "rent", "courier charges",
+    "asset purchase", "promotion_services", "spot incentive", "other expenses",
+    "shoe sales return", "shirt sales return", "dry cleaning", "altration",
+    "material", "travel exp", "fuel exp", "waste management", "water charges",
+    "printing stationary", "staff welfare", "staff accommodation", "incentive", "write off",
+  ]);
+
+  // Returns true if a transaction is an admin-entered expense that should be hidden from store/cluster users
+  const isAdminExpense = (tx) => {
+    if (isAdminOrSuperAdmin) return false; // admins always see everything
+    const type = (tx.Category || tx.type || "").toLowerCase();
+    const cat  = (tx.SubCategory || tx.category || "").toLowerCase().trim();
+    const txLocCode = String(tx.locCode || "");
+    const isExpense = type === "expense" || EXPENSE_CATEGORIES_SET.has(type) || EXPENSE_CATEGORIES_SET.has(cat);
+    const isFromAdminDept = ADMIN_DEPT_LOC_CODES.has(txLocCode);
+    return isExpense && (isFromAdminDept || tx.isAdminLevel);
+  };
+
   // For cluster managers, filter AllLoation to only their allowed stores
   const visibleLocations = isClusterManager
     ? AllLoation.filter(s => clusterAllowedLocCodes.includes(s.locCode))
@@ -520,7 +544,7 @@ const Datewisedaybook = () => {
 
     let locCodesToFetch = [];
 
-    // 1. Process Store Dropdown Selection
+    // Process combined Store/Department Dropdown Selection
     if (selectedStore === "all") {
       locCodesToFetch = [...AllLoation.map(loc => loc.locCode).filter(c => !DEPT_LOC_CODES.includes(c))];
     } else if (selectedStore === "current") {
@@ -529,15 +553,9 @@ const Datewisedaybook = () => {
       locCodesToFetch = [...selectedStores];
     } else if (selectedStore === "all_departments") {
       locCodesToFetch = DEPT_LOC_CODES;
-    }
-
-    // 2. Add Department Dropdown Selections
-    if (selectedStore === "none" && selectedDepartment) {
-      if (selectedDepartment === "all_departments") {
-        locCodesToFetch.push(...DEPT_LOC_CODES);
-      } else {
-        locCodesToFetch.push(selectedDepartment);
-      }
+    } else {
+      // Could be an individual store or dept locCode
+      locCodesToFetch = [selectedStore];
     }
 
     // Ensure uniqueness
@@ -547,7 +565,7 @@ const Datewisedaybook = () => {
       locCodesToFetch = [currentusers.locCode];
     }
 
-    if (selectedStore === "all" || (selectedStore === "none" && selectedDepartment === "all_departments")) {
+    if (selectedStore === "all" || selectedStore === "all_departments") {
       const filteredLocations = visibleLocations.filter(loc => locCodesToFetch.includes(loc.locCode));
       
       const results = await Promise.all(
@@ -1149,6 +1167,9 @@ const Datewisedaybook = () => {
   const isAllSubCategories = subCatValues.length === 0 || subCatValues.includes("all");
 
   const filterTransaction = (t) => {
+    // Hide admin-dept expenses from store-level and cluster manager users
+    if (isAdminExpense(t)) return false;
+
     const category = (t.Category ?? t.category ?? t.type ?? "").toLowerCase();
     const subCategory = (t.SubCategory ?? t.subCategory ?? t.type ?? "").toLowerCase();
     const subCategory1 = (t.SubCategory1 ?? t.subCategory1 ?? "").toLowerCase();
@@ -1711,9 +1732,9 @@ const Datewisedaybook = () => {
                     />
                   </div>
 
-                  {/* Store */}
+                  {/* Store / Department Combined */}
                   <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-500 mb-1.5">Store</label>
+                    <label className="text-sm font-medium text-gray-500 mb-1.5">Store / Department</label>
                     <Select
                       placeholder="Select Store..."
                       options={[
@@ -1721,16 +1742,37 @@ const Datewisedaybook = () => {
                         ...(((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager)
                           ? [{ value: "all", label: "All Stores" }]
                           : []),
+                        ...(showAction
+                          ? [{ value: "all_departments", label: "All Departments" }]
+                          : []),
                         ...(((currentusers.power || '').toLowerCase() === 'admin')
                           ? [{ value: "multi", label: "Multiple Branches" }]
                           : []),
+                        ...(((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager) ? [{
+                          label: "Stores",
+                          options: (isClusterManager
+                            ? AllLoation.filter(s => clusterAllowedLocCodes.includes(s.locCode) && !DEPT_LOC_CODES.includes(s.locCode))
+                            : AllLoation.filter(s => !DEPT_LOC_CODES.includes(s.locCode))
+                          ).map(s => ({ value: s.locCode, label: s.locName }))
+                        }] : []),
+                        ...(showAction ? [{
+                          label: "Departments",
+                          options: [
+                            ...AllLoation.filter(s => DEPT_LOC_CODES.includes(s.locCode))
+                              .map(s => ({ value: s.locCode, label: s.locName })),
+                            { value: "Office", label: "Office" },
+                            { value: "Production", label: "Production" },
+                          ]
+                        }] : [])
                       ]}
-                      value={[
-                        { value: "none", label: "None (Departments Only)" },
-                        { value: "current", label: `Current Store (${currentusers.locCode})` },
-                        { value: "all", label: "All Stores" },
-                        { value: "multi", label: "Multiple Branches" }
-                      ].find(o => o.value === selectedStore) || null}
+                      value={(() => {
+                        if (selectedStore === "current") return { value: "current", label: `Current Store (${currentusers.locCode})` };
+                        if (selectedStore === "all") return { value: "all", label: "All Stores" };
+                        if (selectedStore === "all_departments") return { value: "all_departments", label: "All Departments" };
+                        if (selectedStore === "multi") return { value: "multi", label: "Multiple Branches" };
+                        const found = AllLoation.find(s => s.locCode === selectedStore);
+                        return found ? { value: found.locCode, label: found.locName } : null;
+                      })()}
                       onChange={(opt) => setSelectedStore(opt ? opt.value : "current")}
                       menuPortalTarget={document.body}
                       styles={{
@@ -1765,6 +1807,16 @@ const Datewisedaybook = () => {
                           overflow: 'hidden'
                         }),
                         menuPortal: base => ({ ...base, zIndex: 9999 }),
+                        groupHeading: base => ({
+                          ...base,
+                          fontSize: '0.7rem',
+                          fontWeight: '700',
+                          color: '#9B48D7',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          padding: '6px 12px 4px',
+                          backgroundColor: '#faf5ff'
+                        }),
                         option: (base, state) => ({
                           ...base,
                           fontSize: '0.875rem',
@@ -1775,78 +1827,6 @@ const Datewisedaybook = () => {
                       }}
                     />
                   </div>
-
-                  {/* Department */}
-                  {showAction && (
-                    <div className="flex flex-col">
-                      <label className="text-sm font-medium text-gray-500 mb-1.5">Department</label>
-                      <Select
-                        placeholder="Select Department"
-                        options={[
-                          ...(((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager)
-                            ? [{ value: "all_departments", label: "All Departments" }]
-                            : []),
-                          { value: "759", label: "HEAD OFFICE01" },
-                          { value: "Office", label: "Office" },
-                          { value: "Production", label: "Production" },
-                          { value: "858", label: "Warehouse" },
-                          { value: "103", label: "WAREHOUSE" }
-                        ]}
-                        value={[
-                          { value: "all_departments", label: "All Departments" },
-                          { value: "759", label: "HEAD OFFICE01" },
-                          { value: "Office", label: "Office" },
-                          { value: "Production", label: "Production" },
-                          { value: "858", label: "Warehouse" },
-                          { value: "103", label: "WAREHOUSE" }
-                        ].find(o => o.value === selectedDepartment) || null}
-                        onChange={(opt) => {
-                            if (opt) setSelectedDepartment(opt.value);
-                        }}
-                        menuPortalTarget={document.body}
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            minHeight: '42px',
-                            height: '42px',
-                            border: state.isFocused ? '1px solid #9B48D7' : '1px solid #e5e7eb',
-                            borderRadius: '0px',
-                            boxShadow: state.isFocused ? '0 0 0 2px rgba(155,72,215,0.15)' : 'none',
-                            fontSize: '0.875rem',
-                            backgroundColor: 'white',
-                            transition: 'all 0.15s ease',
-                            '&:hover': { border: '1px solid #cbd5e1' }
-                          }),
-                          valueContainer: base => ({ ...base, height: '40px', padding: '0 12px' }),
-                          input: base => ({ ...base, margin: '0px', padding: '0px' }),
-                          indicatorSeparator: base => ({ ...base, display: 'none' }),
-                          dropdownIndicator: (base, state) => ({
-                            ...base,
-                            padding: '0 12px',
-                            transition: 'transform 0.2s ease',
-                            transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                            color: '#6b7280'
-                          }),
-                          menu: base => ({
-                            ...base,
-                            zIndex: 9999,
-                            borderRadius: '0px',
-                            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
-                            animation: 'dropdownOpen 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                            overflow: 'hidden'
-                          }),
-                          menuPortal: base => ({ ...base, zIndex: 9999 }),
-                          option: (base, state) => ({
-                            ...base,
-                            fontSize: '0.875rem',
-                            backgroundColor: state.isSelected ? '#9B48D7' : state.isFocused ? '#f5f3ff' : 'white',
-                            color: state.isSelected ? 'white' : '#374151',
-                            cursor: 'pointer',
-                          }),
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {/* Bottom Row Actions: Fetch Data on Left, Export & Print on Right */}
@@ -1912,8 +1892,8 @@ const Datewisedaybook = () => {
                   {/* Action Buttons Right Side */}
                   <div className="flex items-center gap-3">
                     <CSVLink
-                      data={(selectedStore === "all" || (selectedStore === "none" && selectedDepartment === "all_departments")) ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
-                      headers={(selectedStore === "all" || (selectedStore === "none" && selectedDepartment === "all_departments")) ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
+                      data={(selectedStore === "all" || selectedStore === "all_departments") ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
+                      headers={(selectedStore === "all" || selectedStore === "all_departments") ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
                       filename={`financial_summary_${selectedStore === "all" ? "All_Branches" : selectedStore === "all_departments" ? "All_Departments" : selectedStore === "multi" ? "Multiple_Branches" : (AllLoation.find(loc => loc.locCode === currentusers.locCode)?.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_")}_${fromDate === toDate ? fromDate : fromDate + "_to_" + toDate}.csv`}
                     >
                       <button
@@ -1942,7 +1922,7 @@ const Datewisedaybook = () => {
             <div ref={printRef}>
               {/* Loading Screen */}
 
-              {(selectedStore === "all" || (selectedStore === "none" && selectedDepartment === "all_departments")) ? (
+              {(selectedStore === "all" || selectedStore === "all_departments") ? (
                 <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "500px", overflowY: "auto" }}>
                     <table className="w-full border-collapse min-w-full text-sm">
@@ -2085,15 +2065,26 @@ const Datewisedaybook = () => {
                           <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Amount</th>
                           <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Total Txn</th>
                           <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Discount</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Bill Value</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Cash</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Razorpay</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Card/Bank</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">UPI</th>
                           {showAction && <th className="px-3 py-3 text-center font-bold whitespace-nowrap border-r border-[#333333] text-xs">Action</th>}
                         </tr>
                       </thead>
 
                       <tbody>
-                        <tr className="bg-gray-100/70 font-bold text-gray-800 border-b border-gray-200">
-                          <td colSpan={showAction ? 10 : 9} className="px-3 py-2.5 text-xs uppercase tracking-wide font-bold">
+                        {/* OPENING BALANCE ROW */}
+                        <tr className="bg-white font-bold text-gray-900 border-b border-gray-200">
+                          <td colSpan={10} className="px-3 py-2.5 text-xs uppercase tracking-wide font-bold">
                             OPENING BALANCE
                           </td>
+                          <td className="px-3 py-2.5 text-right text-xs font-semibold whitespace-nowrap">{openingCash ? Math.round(openingCash).toLocaleString() : "-"}</td>
+                          <td className="px-3 py-2.5 text-right text-xs font-semibold whitespace-nowrap">{openingRbl ? Math.round(openingRbl).toLocaleString() : "-"}</td>
+                          <td className="px-3 py-2.5 text-right text-xs font-semibold whitespace-nowrap">-</td>
+                          <td className="px-3 py-2.5 text-right text-xs font-semibold whitespace-nowrap">-</td>
+                          {showAction && <td className="px-3 py-2.5"></td>}
                         </tr>
 
                         {displayedRows
@@ -2135,6 +2126,11 @@ const Datewisedaybook = () => {
                                     <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
                                       {t.discountAmount || 0}
                                     </td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.billValue ? Math.round(Number(t.billValue)).toLocaleString() : "-"}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.cash ? Math.round(Number(t.cash)).toLocaleString() : "-"}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.rbl ? Math.round(Number(t.rbl)).toLocaleString() : "-"}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.bank ? Math.round(Number(t.bank)).toLocaleString() : "-"}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.upi ? Math.round(Number(t.upi)).toLocaleString() : "-"}</td>
 
                                     {showAction && (
                                       <td rowSpan="2" className="px-3 py-2 text-center border-r border-gray-100 text-xs">
@@ -2210,6 +2206,11 @@ const Datewisedaybook = () => {
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.amount)).toLocaleString()}</td>
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.totalTransaction)).toLocaleString()}</td>
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.discountAmount || 0)).toLocaleString()}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.billValue ? Math.round(Number(t.billValue)).toLocaleString() : "-"}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.cash ? Math.round(Number(t.cash)).toLocaleString() : "-"}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.rbl ? Math.round(Number(t.rbl)).toLocaleString() : "-"}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.bank ? Math.round(Number(t.bank)).toLocaleString() : "-"}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.upi ? Math.round(Number(t.upi)).toLocaleString() : "-"}</td>
                                 {showAction && (
                                   <td className="px-3 py-2 text-center border-r border-gray-100 text-xs">
                                     {isSyncing && editingIndex === index ? (
@@ -2237,7 +2238,7 @@ const Datewisedaybook = () => {
 
                         {mergedTransactions.length === 0 && (
                           <tr>
-                            <td colSpan={showAction ? 10 : 9} className="text-center py-8 text-gray-400 text-sm">
+                            <td colSpan={showAction ? 15 : 14} className="text-center py-8 text-gray-400 text-sm">
                               No transactions found
                             </td>
                           </tr>
@@ -2255,6 +2256,11 @@ const Datewisedaybook = () => {
                           <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totals.amount)).toLocaleString()}</td>
                           <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totals.totalTransaction)).toLocaleString()}</td>
                           <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totals.discountAmount)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">-</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalCash)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalRblAmount)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalBankAmount)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalUpiAmount)).toLocaleString()}</td>
                           {showAction && <td className="px-3 py-2.5"></td>}
                         </tr>
                       </tfoot>

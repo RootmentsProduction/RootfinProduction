@@ -10,6 +10,7 @@ const DaybookGuard = ({ children }) => {
 
   const [loading, setLoading] = useState(!isAdminOrSuperAdmin && !isClusterManager);
   const [isFrozen, setIsFrozen] = useState(false);
+  const [freezeReason, setFreezeReason] = useState(null);
 
   useEffect(() => {
     if (isAdminOrSuperAdmin || isClusterManager || !currentuser) {
@@ -32,6 +33,13 @@ const DaybookGuard = ({ children }) => {
 
         if (!response.ok && response.status === 404) {
           setIsFrozen(true);
+          setFreezeReason("missing_yesterday");
+        } else if (response.ok) {
+          const data = await response.json();
+          if (data?.data?.status === "pending_approval") {
+            setIsFrozen(true);
+            setFreezeReason("pending_approval");
+          }
         }
       } catch (error) {
         console.error("Error checking yesterday's closure:", error);
@@ -58,7 +66,9 @@ const DaybookGuard = ({ children }) => {
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Blocked</h2>
           <p className="text-gray-600">
-            You cannot open this page because yesterday's daybook is not closed. Please close the daybook first to proceed.
+            {freezeReason === 'pending_approval'
+              ? "Your late daybook closure for yesterday is pending approval. You cannot access this page until it is accepted."
+              : "You cannot open this page because yesterday's daybook is not closed. Please close the daybook first to proceed."}
           </p>
         </div>
       </div>

@@ -102,7 +102,7 @@ export default function IncomeExpenseReport() {
   const isClusterManager = (user.role || "").toLowerCase() === "cluster_manager";
   const clusterAllowedLocCodes = user.allowedLocCodes || [];
   const canSelectStore = isAdmin || isSuperAdmin || isClusterManager;
-  const userCanSeeAdminExpenses = isAdmin || isSuperAdmin || isClusterManager;
+  const userCanSeeAdminExpenses = isAdmin || isSuperAdmin;
 
   const [fromDate, setFromDate] = useState(firstOfMonth());
   const [toDate, setToDate] = useState(today());
@@ -905,58 +905,42 @@ export default function IncomeExpenseReport() {
               </select>
             </div>
 
-            {/* Store Dropdown (for admin or cluster manager) */}
-            
-            {/* Store Dropdown */}
+            {/* Store & Department Combined Dropdown */}
             {canSelectStore && (
-              <div className="flex-1 min-w-[160px]">
+              <div className="flex-1 min-w-[200px]">
                 <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                  Store
+                  Store / Department
                 </label>
                 <select
-                  value={DEPT_LOC_CODES.includes(selectedStore) || selectedStore === "all_depts" ? "none" : selectedStore}
-                  onChange={(e) => {
-                     if (e.target.value !== "none") setSelectedStore(e.target.value);
-                  }}
+                  value={selectedStore}
+                  onChange={(e) => setSelectedStore(e.target.value)}
                   className="w-full h-[38px] bg-white border border-gray-300 rounded-lg px-3 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all shadow-sm cursor-pointer"
                 >
-                  <option value="none" disabled>Select Store</option>
                   <option value="all_stores">{isClusterManager ? "All My Stores" : "All Stores"}</option>
-                  {(isClusterManager
-                    ? STORE_LIST.filter((s) => clusterAllowedLocCodes.includes(s.locCode) && !DEPT_LOC_CODES.includes(s.locCode))
-                    : STORE_LIST.filter((s) => !DEPT_LOC_CODES.includes(s.locCode))
-                  ).map((s) => (
-                    <option key={s.locCode} value={s.locCode}>
-                      {s.locName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+                  {(isAdmin || isSuperAdmin) && (
+                    <option value="all_depts">All Departments</option>
+                  )}
+                  
+                  <optgroup label="Stores">
+                    {(isClusterManager
+                      ? STORE_LIST.filter((s) => clusterAllowedLocCodes.includes(s.locCode) && !DEPT_LOC_CODES.includes(s.locCode))
+                      : STORE_LIST.filter((s) => !DEPT_LOC_CODES.includes(s.locCode))
+                    ).map((s) => (
+                      <option key={s.locCode} value={s.locCode}>
+                        {s.locName}
+                      </option>
+                    ))}
+                  </optgroup>
 
-            {/* Department Dropdown */}
-            {canSelectStore && (
-              <div className="flex-1 min-w-[160px]">
-                <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">
-                  Department
-                </label>
-                <select
-                  value={(!DEPT_LOC_CODES.includes(selectedStore) && selectedStore !== "all_depts" && selectedStore !== "all") ? "none" : selectedStore}
-                  onChange={(e) => {
-                     if (e.target.value !== "none") setSelectedStore(e.target.value);
-                  }}
-                  className="w-full h-[38px] bg-white border border-gray-300 rounded-lg px-3 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all shadow-sm cursor-pointer"
-                >
-                  <option value="none" disabled>Select Department</option>
-                  <option value="all_depts">All Departments</option>
-                  {(isClusterManager
-                    ? STORE_LIST.filter((s) => clusterAllowedLocCodes.includes(s.locCode) && DEPT_LOC_CODES.includes(s.locCode))
-                    : STORE_LIST.filter((s) => DEPT_LOC_CODES.includes(s.locCode))
-                  ).map((s) => (
-                    <option key={s.locCode} value={s.locCode}>
-                      {s.locName}
-                    </option>
-                  ))}
+                  {(isAdmin || isSuperAdmin) && (
+                    <optgroup label="Departments">
+                      {STORE_LIST.filter((s) => DEPT_LOC_CODES.includes(s.locCode)).map((s) => (
+                        <option key={s.locCode} value={s.locCode}>
+                          {s.locName}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
             )}

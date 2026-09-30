@@ -516,8 +516,11 @@ const DayBookInc = () => {
             return tx.Category || tx.category || "";
         };
 
+        const userCanSeeAdminExpenses = (currentusers?.power || "").toLowerCase() === "admin" || (currentusers?.role || "").toLowerCase() === "superadmin";
+
         const mongoTransactions = (dayBookData || []).filter(transaction => {
             const cat = (transaction.category || transaction.Category || "").toLowerCase();
+            if (transaction.isAdminLevel && !userCanSeeAdminExpenses) return false;
             return allowedMongoCategories.includes(cat);
         }).map(transaction => {
             const isReturn = (transaction.type || "").toLowerCase() === "return";
@@ -789,15 +792,21 @@ const DayBookInc = () => {
             
             // Auto download PDF only for late daybook closures (yesterday's daybook flow)
             if (!isToday && printRef.current) {
-                const element = printRef.current;
-                const opt = {
-                    margin: 0.2,
-                    filename: `DayBook_Close_${currentDate}_${locCode}.pdf`,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2 },
-                    jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
-                };
-                html2pdf().set(opt).from(element).save();
+                try {
+                    const element = printRef.current;
+                    const opt = {
+                        margin: 0.2,
+                        filename: `DayBook_Close_${currentDate}_${locCode}.pdf`,
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+                        jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+                    };
+                    await html2pdf().set(opt).from(element).save();
+                } catch (pdfError) {
+                    console.error("PDF generation failed:", pdfError);
+                    // Don't show an error to the user — the save was successful.
+                    // They can still print manually via the print button.
+                }
             }
 
             takeCreateCashBank();
