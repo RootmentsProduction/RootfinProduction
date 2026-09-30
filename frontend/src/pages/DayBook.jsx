@@ -196,9 +196,9 @@ const DayBook = () => {
                                     type="date" 
                                     value={fromDate}
                                     onChange={(e) => setFromDate(e.target.value)}
-                                    className="w-full border border-gray-200 rounded-md h-[38px] pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer z-10 bg-transparent"
+                                    className="w-full border border-gray-200 rounded-md h-[38px] pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 transition-colors z-10 bg-transparent"
                                 />
-                                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none z-0" size={16} />
+                                
                             </div>
                         </div>
                         <div className="flex flex-col gap-1.5 w-[160px]">
@@ -208,9 +208,9 @@ const DayBook = () => {
                                     type="date" 
                                     value={toDate}
                                     onChange={(e) => setToDate(e.target.value)}
-                                    className="w-full border border-gray-200 rounded-md h-[38px] pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer z-10 bg-transparent"
+                                    className="w-full border border-gray-200 rounded-md h-[38px] pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 transition-colors z-10 bg-transparent"
                                 />
-                                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none z-0" size={16} />
+                                
                             </div>
                         </div>
                         

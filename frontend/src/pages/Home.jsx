@@ -35,12 +35,14 @@ const STORE_LIST = [
 const Dashboard = ({ isSidebarOpen }) => {
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
-    d.setMonth(d.getMonth() - 1);
+    d.setDate(d.getDate() - 1);
     return d.toISOString().split('T')[0];
   });
 
   const [dateTo, setDateTo] = useState(() => {
-    return new Date().toISOString().split('T')[0];
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
   });
 
   const [loading, setLoading] = useState(false);
@@ -334,38 +336,26 @@ const Dashboard = ({ isSidebarOpen }) => {
             {/* From Date */}
             <div className="flex flex-col">
               <p className="text-[12px] text-gray-400 mb-2">From Date</p>
-              <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 h-[42px] gap-3 relative" style={{ minWidth: '155px' }}>
-                <span className="text-[14px] font-medium text-gray-800 flex-1 select-none">
-                  {dateFrom ? dateFrom.split('-').reverse().join('-') : ''}
-                </span>
-                <label htmlFor="from-date-picker" className="cursor-pointer text-gray-400 hover:text-gray-600 flex items-center">
-                  <CalendarIcon size={16} strokeWidth={1.8} />
-                </label>
+              <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 h-[42px]" style={{ minWidth: '155px' }}>
                 <input
                   id="from-date-picker"
                   type="date"
                   value={dateFrom}
                   onChange={e => setDateFrom(e.target.value)}
-                  style={{ position: 'absolute', opacity: 0, width: '1px', height: '1px', pointerEvents: 'none' }}
+                  className="w-full text-[14px] font-medium text-gray-800 bg-transparent outline-none cursor-text"
                 />
               </div>
             </div>
             {/* To Date */}
             <div className="flex flex-col">
               <p className="text-[12px] text-gray-400 mb-2">To Date</p>
-              <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 h-[42px] gap-3 relative" style={{ minWidth: '155px' }}>
-                <span className="text-[14px] font-medium text-gray-800 flex-1 select-none">
-                  {dateTo ? dateTo.split('-').reverse().join('-') : ''}
-                </span>
-                <label htmlFor="to-date-picker" className="cursor-pointer text-gray-400 hover:text-gray-600 flex items-center">
-                  <CalendarIcon size={16} strokeWidth={1.8} />
-                </label>
+              <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 h-[42px]" style={{ minWidth: '155px' }}>
                 <input
                   id="to-date-picker"
                   type="date"
                   value={dateTo}
                   onChange={e => setDateTo(e.target.value)}
-                  style={{ position: 'absolute', opacity: 0, width: '1px', height: '1px', pointerEvents: 'none' }}
+                  className="w-full text-[14px] font-medium text-gray-800 bg-transparent outline-none cursor-text"
                 />
               </div>
             </div>

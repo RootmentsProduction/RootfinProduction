@@ -271,9 +271,9 @@ const AdminClose = () => {
                                     type="date"
                                     value={cashDate}
                                     onChange={(e) => setCashDate(e.target.value)}
-                                    className="w-full border border-gray-200 rounded-md h-[40px] pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer z-10 bg-transparent"
+                                    className="w-full border border-gray-200 rounded-md h-[40px] pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors z-10 bg-transparent"
                                 />
-                                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none z-0" size={16} />
+                                
                             </div>
                         </div>
                     </div>

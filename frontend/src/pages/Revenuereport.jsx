@@ -152,9 +152,9 @@ const Revenuereport = () => {
                                     type="date"
                                     value={fromDate}
                                     onChange={(e) => setFromDate(e.target.value)}
-                                    className="w-[155px] h-[40px] border border-gray-300 rounded-md pl-3 pr-10 text-sm text-gray-700 focus:outline-none focus:border-purple-500 transition-colors bg-white [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer z-10"
+                                    className="w-[155px] h-[40px] border border-gray-300 rounded-md pl-3 pr-10 text-sm text-gray-700 focus:outline-none focus:border-purple-500 transition-colors bg-white z-10"
                                 />
-                                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" size={16} />
+                                
                             </div>
                         </div>
 
@@ -165,9 +165,9 @@ const Revenuereport = () => {
                                     type="date"
                                     value={toDate}
                                     onChange={(e) => setToDate(e.target.value)}
-                                    className="w-[155px] h-[40px] border border-gray-300 rounded-md pl-3 pr-10 text-sm text-gray-700 focus:outline-none focus:border-purple-500 transition-colors bg-white [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer z-10"
+                                    className="w-[155px] h-[40px] border border-gray-300 rounded-md pl-3 pr-10 text-sm text-gray-700 focus:outline-none focus:border-purple-500 transition-colors bg-white z-10"
                                 />
-                                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" size={16} />
+                                
                             </div>
                         </div>
 

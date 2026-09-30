@@ -497,6 +497,7 @@ const SalesInvoiceDetail = () => {
       const returnTotal = calculateTotalReturnAmountWithTax();
 
       const returnInvoicePayload = {
+        invoiceNumber: `RET-${invoice.invoiceNumber}-${Date.now()}`,
         customer: invoice.customer || invoice.customerName || "Walk-in Customer",
         customerPhone: invoice.customerPhone || invoice.phone || "",
         invoiceDate: new Date().toISOString().split("T")[0],
@@ -510,7 +511,7 @@ const SalesInvoiceDetail = () => {
         notes: `Return for Invoice ${invoice.invoiceNumber}. Reason: ${returnReason}`,
         paymentMethod: returnPaymentMethod,
         lineItems: itemsToReturn.map((item) => ({
-          item: item.item,
+          item: typeof item.item === 'string' ? item.item : (item.item?.itemName || item.itemData?.itemName || "Unknown Item"),
           quantity: item.returnQuantity,
           rate: item.rate,
           amount: calculateReturnAmountWithTax(item),

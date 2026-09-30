@@ -154,7 +154,7 @@ const SalesByInvoiceReport = () => {
               <label className="text-[12px] font-medium text-gray-500">From Date</label>
               <div className="relative">
                 <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
-                  className="w-[150px] h-[40px] border border-gray-300 rounded-md pl-3 pr-10 text-sm text-gray-700 bg-white focus:outline-none focus:border-purple-500 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer z-10" />
+                  className="w-[150px] h-[40px] border border-gray-300 rounded-md pl-3 pr-10 text-sm text-gray-700 bg-white focus:outline-none focus:border-purple-500 z-10" />
                 <Calendar size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" />
               </div>
             </div>
@@ -163,7 +163,7 @@ const SalesByInvoiceReport = () => {
               <label className="text-[12px] font-medium text-gray-500">To Date</label>
               <div className="relative">
                 <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
-                  className="w-[150px] h-[40px] border border-gray-300 rounded-md pl-3 pr-10 text-sm text-gray-700 bg-white focus:outline-none focus:border-purple-500 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer z-10" />
+                  className="w-[150px] h-[40px] border border-gray-300 rounded-md pl-3 pr-10 text-sm text-gray-700 bg-white focus:outline-none focus:border-purple-500 z-10" />
                 <Calendar size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" />
               </div>
             </div>
