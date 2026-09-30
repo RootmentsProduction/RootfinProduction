@@ -195,60 +195,60 @@ const SalesByGroupReport = () => {
 
         {/* Table */}
         {fetched && !loading && (
-          <div className="bg-white border border-slate-200 shadow-sm overflow-x-auto">
+          <div className="bg-white border border-gray-200 shadow-sm overflow-x-auto">
             {rows.length === 0 ? (
-              <div className="py-16 text-center text-slate-400 text-sm">
+              <div className="py-16 text-center text-gray-400 text-sm">
                 No sales data found for the selected period.
               </div>
             ) : (
-              <table className="border-collapse w-full text-xs" style={{ minWidth: `${180 + sizes.length * 56 + 60}px` }}>
+              <table className="border-collapse w-full text-left" style={{ minWidth: `${180 + sizes.length * 56 + 60}px` }}>
                 <thead>
-                  <tr className="bg-slate-700 text-white text-xs uppercase tracking-wide">
-                    <th className="border-r border-slate-600 px-3 py-2 text-left font-semibold whitespace-nowrap" style={{ minWidth: 200 }}>
+                  <tr className="bg-[#1c1c1c] text-white">
+                    <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap" style={{ minWidth: 200 }}>
                       Group Name
                     </th>
                     {sizes.map(s => (
-                      <th key={s} className="border-r border-slate-600 px-3 py-2 text-center font-semibold whitespace-nowrap" style={{ minWidth: 52 }}>
+                      <th key={s} className="py-3.5 px-3 text-[11px] font-bold uppercase tracking-wider text-center whitespace-nowrap" style={{ minWidth: 52 }}>
                         {s}
                       </th>
                     ))}
-                    <th className="px-3 py-2 text-center font-semibold whitespace-nowrap bg-slate-800" style={{ minWidth: 60 }}>
+                    <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider text-center whitespace-nowrap bg-[#0f0f0f]" style={{ minWidth: 60 }}>
                       Total
                     </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-gray-100 text-sm">
                   {rows.map((row, i) => (
-                    <tr key={i} className={`border-b border-slate-100 hover:bg-blue-50 transition-colors ${i % 2 === 0 ? "" : "bg-slate-50/50"}`}>
-                      <td className="border-r border-slate-100 px-3 py-2 text-left font-medium text-slate-800 whitespace-nowrap">
+                    <tr key={i} className="hover:bg-gray-50/70 transition-colors text-gray-800">
+                      <td className="px-4 py-3 text-left font-medium whitespace-nowrap">
                         {row.groupName}
                       </td>
                       {sizes.map(s => (
-                        <td key={s} className="border-r border-slate-100 px-3 py-2 text-center">
+                        <td key={s} className="px-3 py-3 text-center">
                           {row.sizes[s] ? (
-                            <span className="font-semibold text-slate-800">{row.sizes[s]}</span>
+                            <span className="font-medium text-gray-900">{row.sizes[s]}</span>
                           ) : (
-                            <span className="text-slate-200">—</span>
+                            <span className="text-gray-300">—</span>
                           )}
                         </td>
                       ))}
-                      <td className="px-3 py-2 text-center font-bold text-blue-700 bg-blue-50">
+                      <td className="px-4 py-3 text-center font-bold text-gray-900 bg-gray-50/50">
                         {row.total}
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-slate-100 border-t-2 border-slate-300 font-semibold">
-                    <td className="border-r border-slate-200 px-3 py-2 text-left text-slate-700 uppercase text-xs tracking-wide">
+                  <tr className="bg-[#e5e7eb] border-t border-gray-300 font-bold text-gray-900">
+                    <td className="px-4 py-3.5 text-left text-xs uppercase tracking-wider">
                       Total
                     </td>
                     {sizes.map(s => (
-                      <td key={s} className="border-r border-slate-200 px-3 py-2 text-center text-slate-800 font-bold">
-                        {grandTotals[s] || <span className="text-slate-300">—</span>}
+                      <td key={s} className="px-3 py-3.5 text-center text-sm">
+                        {grandTotals[s] || <span className="text-gray-400">—</span>}
                       </td>
                     ))}
-                    <td className="px-3 py-2 text-center font-bold text-white bg-blue-600">
+                    <td className="px-4 py-3.5 text-center text-sm bg-[#d1d5db]">
                       {grandTotal}
                     </td>
                   </tr>

@@ -23,7 +23,7 @@ const baseExpenseCats = [
   { value: "salary",                label: "Salary/Salary Advance" },
   { value: "printing stationary",   label: "Printing & Stationary",        subs: ["Printout", "Books/pen/Checklist/Register/Bill Book/Voucher", "Stationary Items"] },
   { value: "staff welfare",         label: "Staff Welfare",                subs: ["Cake purchase", "Food allowance on Special Occassion", "Other Refreshment"] },
-  { value: "staff reimbursement",   label: "Staff Accommodation",          subs: ["Staff room rent/Electricity"] },
+  { value: "staff reimbursement",   label: "Staff Accommodation",          subs: ["Staff room rent", "Electricity"] },
   { value: "rent",                  label: "Store Rent" },
   { value: "asset purchase",        label: "Asset Purchase",               subs: ["Steamer", "Chairs", "Electronic Items", "Any other Furniture items"] },
   { value: "spot incentive",        label: "Incentive",                    subs: ["Spot incentive", "Weekly incentive"] },
@@ -90,7 +90,14 @@ const Expenses = () => {
       setPaymentMethod("cash");
       setSplitPayment(false);
     }
-    setSubCategory(cat.subs?.[0] || "");
+    const firstSub = cat.subs?.[0] || "";
+    setSubCategory(firstSub);
+    if (firstSub) setRemark(firstSub);
+  };
+
+  const handleSubCategoryChange = (val) => {
+    setSubCategory(val);
+    if (val) setRemark(val);
   };
 
   const handleSubmit = async (e) => {
@@ -237,21 +244,21 @@ const Expenses = () => {
               </div>
             </div>
 
-            {/* Row 2: Subcategories as pills */}
+            {/* Row 2: Sub Category Dropdown */}
             {selectedCategory.subs?.length > 0 && (
-              <div className="flex items-center gap-4 mb-6">
-                <span className="text-[13px] text-gray-500 font-medium">Subcategories:</span>
-                <div className="flex flex-wrap gap-2">
-                  {selectedCategory.subs.map(sub => (
-                    <button
-                      key={sub}
-                      type="button"
-                      onClick={() => setSubCategory(sub)}
-                      className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-colors ${subCategory === sub ? 'bg-[#faf5ff] text-[#9333ea]' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                    >
-                      {sub}
-                    </button>
-                  ))}
+              <div className="mb-6">
+                <label className="block text-[11px] font-semibold uppercase text-gray-500 mb-2">Sub Category</label>
+                <div className="relative w-full md:w-1/2">
+                  <select
+                    value={subCategory}
+                    onChange={e => handleSubCategoryChange(e.target.value)}
+                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-[15px] text-gray-900 focus:outline-none focus:border-[#a855f7] focus:ring-1 focus:ring-[#a855f7] pr-10 cursor-pointer"
+                  >
+                    {selectedCategory.subs.map(sub => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={18} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
               </div>
             )}
@@ -264,7 +271,7 @@ const Expenses = () => {
               <div className="flex flex-wrap items-center gap-4">
                 {[
                   { id: "cash", label: "Cash", icon: <MdCurrencyRupee size={18} /> },
-                  ...(selectedCategory.value !== "bulk amount transfer" ? [
+                  ...(selectedCategory.value !== "bulk amount transfer" && canSelectStore ? [
                     { id: "bank", label: "Bank", icon: <BsBank2 size={16} /> },
                     { id: "upi",  label: "UPI",  icon: <span className="font-bold italic text-sm">UPI</span> },
                   ] : []),
@@ -286,7 +293,7 @@ const Expenses = () => {
                     </label>
                   );
                 })}
-                {selectedCategory.value !== "bulk amount transfer" && (
+                {selectedCategory.value !== "bulk amount transfer" && canSelectStore && (
                   <label className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border ${splitPayment ? 'border-[#a855f7] bg-[#faf5ff] text-[#9333ea]' : 'border-gray-200 bg-white text-gray-600'} cursor-pointer select-none transition-colors`}>
                     <input type="checkbox" checked={splitPayment} onChange={() => setSplitPayment(!splitPayment)}
                       className="w-4 h-4 accent-[#a855f7]" />

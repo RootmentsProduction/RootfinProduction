@@ -12,6 +12,7 @@ const Revenuereport = () => {
     const [apiUrl, setApiUrl] = useState("");
     const [apiUrl1, setApiUrl1] = useState("");
     const [fetched, setFetched] = useState(false);
+    const [categoryFilter, setCategoryFilter] = useState("All");
 
     const isSidebarOpen = useSidebar();
     const currentusers = JSON.parse(localStorage.getItem("rootfinuser")) || {};
@@ -74,9 +75,14 @@ const Revenuereport = () => {
         });
     }, [rentOutTransactions, bookingTransactions]);
 
+    const filteredTransactions = useMemo(() => {
+        if (categoryFilter === "All") return allTransactions;
+        return allTransactions.filter(t => t.Category === categoryFilter);
+    }, [allTransactions, categoryFilter]);
+
     const filteredTotal = useMemo(() => {
-        return allTransactions.reduce((sum, item) => sum + (item.amount || 0), 0);
-    }, [allTransactions]);
+        return filteredTransactions.reduce((sum, item) => sum + (item.amount || 0), 0);
+    }, [filteredTransactions]);
 
     const formatNumber = (num) => {
         if (!num) return "0";
@@ -105,9 +111,9 @@ const Revenuereport = () => {
     };
 
     const handleExportCSV = () => {
-        if (allTransactions.length === 0) return;
+        if (filteredTransactions.length === 0) return;
         const csvRows = [['Date', 'Invoice No.', 'Customer Name', 'Category', 'Subcategory', 'Difference']];
-        allTransactions.forEach(item => {
+        filteredTransactions.forEach(item => {
             csvRows.push([formatDateCSV(item.date), item.invoiceNo || "-", item.customerName || "-", item.Category, item.SubCategory, item.amount || 0]);
         });
         csvRows.push(['TOTAL', '', '', '', '', filteredTotal]);
@@ -186,19 +192,32 @@ const Revenuereport = () => {
                                 </>
                             ) : 'Fetch Data'}
                         </button>
+
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[12px] font-medium text-gray-500">Category</label>
+                            <select
+                                value={categoryFilter}
+                                onChange={(e) => setCategoryFilter(e.target.value)}
+                                className="w-[155px] h-[40px] border border-gray-300 rounded-md px-3 text-sm text-gray-700 focus:outline-none focus:border-purple-500 transition-colors bg-white cursor-pointer"
+                            >
+                                <option value="All">All</option>
+                                <option value="Booking">Booking</option>
+                                <option value="Rent Out">Rent Out</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-3">
                         <button
                             onClick={handleExportCSV}
-                            disabled={allTransactions.length === 0}
+                            disabled={filteredTransactions.length === 0}
                             className="h-[38px] px-5 border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[13px] font-medium rounded-lg transition-colors flex items-center gap-2 disabled:opacity-40 shadow-sm"
                         >
                             Export CSV <Download size={14} strokeWidth={2} />
                         </button>
                         <button
                             onClick={handlePrintPDF}
-                            disabled={allTransactions.length === 0}
+                            disabled={filteredTransactions.length === 0}
                             className="h-[38px] px-5 border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[13px] font-medium rounded-lg transition-colors flex items-center gap-2 disabled:opacity-40 shadow-sm"
                         >
                             Print PDF <Printer size={14} strokeWidth={2} />
@@ -233,8 +252,8 @@ const Revenuereport = () => {
                                             </div>
                                         </td>
                                     </tr>
-                                ) : allTransactions.length > 0 ? (
-                                    allTransactions.map((transaction, index) => (
+                                ) : filteredTransactions.length > 0 ? (
+                                    filteredTransactions.map((transaction, index) => (
                                         <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors bg-white">
                                             <td className="px-5 py-[14px] text-gray-700 whitespace-nowrap align-top">
                                                 {formatDate(transaction.date)}
@@ -266,7 +285,7 @@ const Revenuereport = () => {
                                     </tr>
                                 )}
                             </tbody>
-                            {allTransactions.length > 0 && (
+                            {filteredTransactions.length > 0 && (
                                 <tfoot>
                                     <tr className="bg-[#f3f4f6] border-t border-gray-200">
                                         <td colSpan="5" className="px-5 py-4 text-sm font-bold text-gray-800">

@@ -1777,74 +1777,76 @@ const Datewisedaybook = () => {
                   </div>
 
                   {/* Department */}
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium text-gray-500 mb-1.5">Department</label>
-                    <Select
-                      placeholder="Select Department"
-                      options={[
-                        ...(((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager)
-                          ? [{ value: "all_departments", label: "All Departments" }]
-                          : []),
-                        { value: "759", label: "HEAD OFFICE01" },
-                        { value: "Office", label: "Office" },
-                        { value: "Production", label: "Production" },
-                        { value: "858", label: "Warehouse" },
-                        { value: "103", label: "WAREHOUSE" }
-                      ]}
-                      value={[
-                        { value: "all_departments", label: "All Departments" },
-                        { value: "759", label: "HEAD OFFICE01" },
-                        { value: "Office", label: "Office" },
-                        { value: "Production", label: "Production" },
-                        { value: "858", label: "Warehouse" },
-                        { value: "103", label: "WAREHOUSE" }
-                      ].find(o => o.value === selectedDepartment) || null}
-                      onChange={(opt) => {
-                          if (opt) setSelectedDepartment(opt.value);
-                      }}
-                      menuPortalTarget={document.body}
-                      styles={{
-                        control: (base, state) => ({
-                          ...base,
-                          minHeight: '42px',
-                          height: '42px',
-                          border: state.isFocused ? '1px solid #9B48D7' : '1px solid #e5e7eb',
-                          borderRadius: '0px',
-                          boxShadow: state.isFocused ? '0 0 0 2px rgba(155,72,215,0.15)' : 'none',
-                          fontSize: '0.875rem',
-                          backgroundColor: 'white',
-                          transition: 'all 0.15s ease',
-                          '&:hover': { border: '1px solid #cbd5e1' }
-                        }),
-                        valueContainer: base => ({ ...base, height: '40px', padding: '0 12px' }),
-                        input: base => ({ ...base, margin: '0px', padding: '0px' }),
-                        indicatorSeparator: base => ({ ...base, display: 'none' }),
-                        dropdownIndicator: (base, state) => ({
-                          ...base,
-                          padding: '0 12px',
-                          transition: 'transform 0.2s ease',
-                          transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                          color: '#6b7280'
-                        }),
-                        menu: base => ({
-                          ...base,
-                          zIndex: 9999,
-                          borderRadius: '0px',
-                          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
-                          animation: 'dropdownOpen 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                          overflow: 'hidden'
-                        }),
-                        menuPortal: base => ({ ...base, zIndex: 9999 }),
-                        option: (base, state) => ({
-                          ...base,
-                          fontSize: '0.875rem',
-                          backgroundColor: state.isSelected ? '#9B48D7' : state.isFocused ? '#f5f3ff' : 'white',
-                          color: state.isSelected ? 'white' : '#374151',
-                          cursor: 'pointer',
-                        }),
-                      }}
-                    />
-                  </div>
+                  {showAction && (
+                    <div className="flex flex-col">
+                      <label className="text-sm font-medium text-gray-500 mb-1.5">Department</label>
+                      <Select
+                        placeholder="Select Department"
+                        options={[
+                          ...(((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager)
+                            ? [{ value: "all_departments", label: "All Departments" }]
+                            : []),
+                          { value: "759", label: "HEAD OFFICE01" },
+                          { value: "Office", label: "Office" },
+                          { value: "Production", label: "Production" },
+                          { value: "858", label: "Warehouse" },
+                          { value: "103", label: "WAREHOUSE" }
+                        ]}
+                        value={[
+                          { value: "all_departments", label: "All Departments" },
+                          { value: "759", label: "HEAD OFFICE01" },
+                          { value: "Office", label: "Office" },
+                          { value: "Production", label: "Production" },
+                          { value: "858", label: "Warehouse" },
+                          { value: "103", label: "WAREHOUSE" }
+                        ].find(o => o.value === selectedDepartment) || null}
+                        onChange={(opt) => {
+                            if (opt) setSelectedDepartment(opt.value);
+                        }}
+                        menuPortalTarget={document.body}
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            minHeight: '42px',
+                            height: '42px',
+                            border: state.isFocused ? '1px solid #9B48D7' : '1px solid #e5e7eb',
+                            borderRadius: '0px',
+                            boxShadow: state.isFocused ? '0 0 0 2px rgba(155,72,215,0.15)' : 'none',
+                            fontSize: '0.875rem',
+                            backgroundColor: 'white',
+                            transition: 'all 0.15s ease',
+                            '&:hover': { border: '1px solid #cbd5e1' }
+                          }),
+                          valueContainer: base => ({ ...base, height: '40px', padding: '0 12px' }),
+                          input: base => ({ ...base, margin: '0px', padding: '0px' }),
+                          indicatorSeparator: base => ({ ...base, display: 'none' }),
+                          dropdownIndicator: (base, state) => ({
+                            ...base,
+                            padding: '0 12px',
+                            transition: 'transform 0.2s ease',
+                            transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            color: '#6b7280'
+                          }),
+                          menu: base => ({
+                            ...base,
+                            zIndex: 9999,
+                            borderRadius: '0px',
+                            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+                            animation: 'dropdownOpen 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                            overflow: 'hidden'
+                          }),
+                          menuPortal: base => ({ ...base, zIndex: 9999 }),
+                          option: (base, state) => ({
+                            ...base,
+                            fontSize: '0.875rem',
+                            backgroundColor: state.isSelected ? '#9B48D7' : state.isFocused ? '#f5f3ff' : 'white',
+                            color: state.isSelected ? 'white' : '#374151',
+                            cursor: 'pointer',
+                          }),
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Bottom Row Actions: Fetch Data on Left, Export & Print on Right */}

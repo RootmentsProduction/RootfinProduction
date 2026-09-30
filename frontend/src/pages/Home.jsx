@@ -57,6 +57,7 @@ const Dashboard = ({ isSidebarOpen }) => {
   const [chartData, setChartData] = useState([]);
   const [pendingStores, setPendingStores] = useState([]);
   const [closedStores, setClosedStores] = useState([]);
+  const [lateClosedStores, setLateClosedStores] = useState([]);
 
   const [reorderAlerts, setReorderAlerts] = useState(0);
   const [purchaseOrders, setPurchaseOrders] = useState(0);
@@ -116,16 +117,30 @@ const Dashboard = ({ isSidebarOpen }) => {
     try {
       // ── 1. Daybook Status ─────────────────────────────────────────────────
       let closedArr = [];
+      let lateArr = [];
       try {
-        const clsRes = await fetch(`${API_URL}/api/user/AdminColseView?date=${dateTo}&role=admin`);
+        const clsRes = await fetch(`${API_URL}/user/AdminColseView?date=${dateTo}&role=admin`);
         if (clsRes.ok) {
           const clsData = await clsRes.json();
-          closedArr = (clsData.data || []).map(c => c.locCode);
+          (clsData.data || []).forEach(c => {
+             const created = new Date(c.createdAt);
+             // Get the local date string (YYYY-MM-DD) of when the closure was actually created
+             const createdDateStr = `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, '0')}-${String(created.getDate()).padStart(2, '0')}`;
+             // If closure was created on a later day than the daybook date, it's late
+             if (createdDateStr > dateTo) {
+                 lateArr.push(c.locCode);
+             } else {
+                 closedArr.push(c.locCode);
+             }
+          });
         }
       } catch (e) { console.error("Daybook error", e); }
 
       setClosedStores(STORE_LOC_CODES.filter(lc => closedArr.includes(lc)).map(lc => STORE_LIST.find(s => s.locCode === lc)).filter(Boolean));
-      setPendingStores(STORE_LOC_CODES.filter(lc => !closedArr.includes(lc)).map(lc => STORE_LIST.find(s => s.locCode === lc)).filter(Boolean));
+      setLateClosedStores(STORE_LOC_CODES.filter(lc => lateArr.includes(lc)).map(lc => STORE_LIST.find(s => s.locCode === lc)).filter(Boolean));
+      setPendingStores(STORE_LOC_CODES.filter(lc => !closedArr.includes(lc) && !lateArr.includes(lc)).map(lc => STORE_LIST.find(s => s.locCode === lc)).filter(Boolean));
+
+      console.log("Daybook debug:", { dateTo, closedArr, lateArr, STORE_LOC_CODES });
 
       // ── 2. Quick Overview: Reorder Alerts, Purchase Orders, Late Closures ──
       let expenseTargets = [];
@@ -317,9 +332,14 @@ const Dashboard = ({ isSidebarOpen }) => {
   const netTotal = sum(netTotals);
 
   let displayedDaybooks = [];
-  if (daybookFilter === "All") displayedDaybooks = [...pendingStores.map(s => ({ ...s, st: 'not' })), ...closedStores.map(s => ({ ...s, st: 'closed' }))];
+  if (daybookFilter === "All") displayedDaybooks = [
+      ...pendingStores.map(s => ({ ...s, st: 'not' })), 
+      ...closedStores.map(s => ({ ...s, st: 'closed' })),
+      ...lateClosedStores.map(s => ({ ...s, st: 'late' }))
+  ];
   if (daybookFilter === "Closed") displayedDaybooks = closedStores.map(s => ({ ...s, st: 'closed' }));
   if (daybookFilter === "Not Closed") displayedDaybooks = pendingStores.map(s => ({ ...s, st: 'not' }));
+  if (daybookFilter === "Late Closed") displayedDaybooks = lateClosedStores.map(s => ({ ...s, st: 'late' }));
 
   return (
     <>
@@ -454,22 +474,28 @@ const Dashboard = ({ isSidebarOpen }) => {
                     <div className="flex space-x-1 bg-[#f9fafb] p-1 rounded-full border border-gray-100 text-[12px] font-medium">
                       <button onClick={() => setDaybookFilter("All")} className={`px-4 py-1.5 rounded-full transition-all ${daybookFilter === "All" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-400 hover:text-gray-600"}`}>All</button>
                       <button onClick={() => setDaybookFilter("Closed")} className={`px-4 py-1.5 rounded-full transition-all ${daybookFilter === "Closed" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-400 hover:text-gray-600"}`}>Closed</button>
-                      <button onClick={() => setDaybookFilter("Not Closed")} className={`px-4 py-1.5 rounded-full transition-all ${daybookFilter === "Not Closed" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-400 hover:text-gray-600"}`}>Not Closed</button>
+                      <button onClick={() => setDaybookFilter("Not Closed")} className={`px-4 py-1.5 rounded-full transition-all ${daybookFilter === "Not Closed" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-400 hover:text-gray-600"}`}>Not</button>
+                      <button onClick={() => setDaybookFilter("Late Closed")} className={`px-4 py-1.5 rounded-full transition-all ${daybookFilter === "Late Closed" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-400 hover:text-gray-600"}`}>Late</button>
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto pr-3 space-y-3 custom-vertical-scrollbar">
                     {displayedDaybooks.map((s, i) => {
                       const isClosed = s.st === 'closed';
+                      const isLate = s.st === 'late';
+                      const bgClass = isClosed ? 'bg-[#f0fdf4]' : (isLate ? 'bg-[#fffbeb]' : 'bg-[#fff1f2]');
+                      const iconColor = isClosed ? 'text-[#16a34a]' : (isLate ? 'text-[#d97706]' : 'text-[#ef4444]');
+                      const textLabel = isClosed ? 'Closed' : (isLate ? 'Late Closed' : 'Not Closed');
+                      
                       return (
-                        <div key={`${s.locCode}-${i}`} className={`flex justify-between items-center py-2 px-3 rounded-xl ${isClosed ? 'bg-[#f0fdf4]' : 'bg-[#fff1f2]'}`}>
+                        <div key={`${s.locCode}-${i}`} className={`flex justify-between items-center py-2 px-3 rounded-xl ${bgClass}`}>
                           <div className="flex items-center gap-3">
-                            <div className={`${isClosed ? 'text-[#16a34a]' : 'text-[#ef4444]'}`}>
+                            <div className={iconColor}>
                               <FileText size={18} strokeWidth={2.5} />
                             </div>
                             <span className="text-[14px] font-medium text-gray-800">{s.locName}</span>
                           </div>
-                          <span className={`text-[11px] font-bold px-3 py-1.5 rounded-md ${isClosed ? 'text-[#16a34a]' : 'text-[#ef4444]'}`}>
-                            {isClosed ? 'Closed' : 'Not Closed'}
+                          <span className={`text-[11px] font-bold px-3 py-1.5 rounded-md ${iconColor}`}>
+                            {textLabel}
                           </span>
                         </div>
                       );
