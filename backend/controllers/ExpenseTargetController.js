@@ -1,25 +1,23 @@
 import ExpenseTarget from "../model/ExpenseTarget.js";
 
-// Save or Update Expense Target
+// Save or Update Expense Target (permanent, auto-recurs each month)
 export const saveExpenseTarget = async (req, res) => {
   try {
-    const { storeCode, month, week, category, subCategory, targetAmount } = req.body;
+    const { storeCode, category, subCategory, targetAmount } = req.body;
 
-    if (!storeCode || !month || !category || targetAmount === undefined) {
+    if (!storeCode || !category || targetAmount === undefined) {
       return res.status(400).json({ success: false, message: "Missing required fields." });
     }
 
     const filter = {
       storeCode,
-      month,
-      week: week || "All",
       category,
       subCategory: subCategory || ""
     };
 
     const update = { targetAmount };
 
-    // Upsert the target limit
+    // Upsert: create if not exists, update if exists
     const target = await ExpenseTarget.findOneAndUpdate(filter, update, {
       new: true,
       upsert: true,
@@ -33,15 +31,13 @@ export const saveExpenseTarget = async (req, res) => {
   }
 };
 
-// Fetch Existing Target
+// Fetch Existing Target for a store + category combination
 export const getExpenseTarget = async (req, res) => {
   try {
-    const { storeCode, month, week, category, subCategory } = req.query;
+    const { storeCode, category, subCategory } = req.query;
 
     const filter = {
       storeCode,
-      month,
-      week: week || "All",
       category,
       subCategory: subCategory || ""
     };
@@ -59,13 +55,10 @@ export const getExpenseTarget = async (req, res) => {
   }
 };
 
-// Fetch All Targets (for dashboard aggregations)
+// Fetch All Targets (for dashboard aggregations — month param ignored, all limits are permanent)
 export const getAllExpenseTargets = async (req, res) => {
   try {
-    const { month } = req.query;
-    const filter = month ? { month } : {};
-    
-    const targets = await ExpenseTarget.find(filter);
+    const targets = await ExpenseTarget.find({});
     return res.status(200).json({ success: true, targets });
   } catch (error) {
     console.error("Error fetching all expense targets:", error);

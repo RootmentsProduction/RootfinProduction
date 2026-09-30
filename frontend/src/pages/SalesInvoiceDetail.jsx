@@ -512,16 +512,16 @@ const SalesInvoiceDetail = () => {
         paymentMethod: returnPaymentMethod,
         lineItems: itemsToReturn.map((item) => ({
           item: typeof item.item === 'string' ? item.item : (item.item?.itemName || item.itemData?.itemName || "Unknown Item"),
-          quantity: item.returnQuantity,
-          rate: item.rate,
+          quantity: Number(item.returnQuantity) || 0,
+          rate: Number(item.rate) || 0,
           amount: calculateReturnAmountWithTax(item),
           itemData: item.itemData,
-          size: item.size,
-          itemGroupId: item.itemGroupId,
+          size: item.size != null ? String(item.size) : "",
+          itemGroupId: item.itemGroupId ? String(item.itemGroupId) : "",
         })),
         subTotal: returnTotal,
         finalTotal: -returnTotal,
-        status: "Sent",
+        status: "sent",
         userId: user?.email,
       };
 
@@ -537,7 +537,8 @@ const SalesInvoiceDetail = () => {
         let errMsg = `Failed to create return invoice (status ${returnResponse.status})`;
         try {
           const errBody = await returnResponse.json();
-          errMsg = errBody.message || errBody.error || errBody.msg || JSON.stringify(errBody);
+          const details = [errBody.message, errBody.error, errBody.msg].filter(Boolean);
+          errMsg = details.length ? details.join(": ") : JSON.stringify(errBody);
         } catch (_) {}
         throw new Error(errMsg);
       }

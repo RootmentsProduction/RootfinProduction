@@ -41,6 +41,12 @@ const CloseReport = () => {
     return `${year}-${month}-${day}`;
   };
 
+  const toLocalDateStr = (value) => {
+    const dt = new Date(value);
+    if (isNaN(dt.getTime())) return "";
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+  };
+
   const handleFetch = async () => {
     if (!fromDate) return alert("Please select a date first.");
 
@@ -86,6 +92,8 @@ const CloseReport = () => {
           const bankAmount = parseInt(transaction.bank || 0);
           const upiAmount = parseInt(transaction.upi || 0);
           const bankPlusUpi = bankAmount + upiAmount;
+          const createdDateStr = transaction.createdAt ? toLocalDateStr(transaction.createdAt) : "";
+          const isLateClosed = Boolean(createdDateStr && createdDateStr > formattedDate);
 
           return { 
             ...transaction,
@@ -94,7 +102,9 @@ const CloseReport = () => {
             difference,
             match,
             storeName,
-            bankPlusUpi
+            bankPlusUpi,
+            createdDateStr,
+            isLateClosed,
           };
         });
         
@@ -115,8 +125,9 @@ const CloseReport = () => {
     const transactions = data?.data || [];
     const matchCount = transactions.filter(t => t.match === 'Match').length;
     const mismatchCount = transactions.filter(t => t.match === 'Mismatch').length;
+    const lateClosedCount = transactions.filter(t => t.isLateClosed).length;
     const notClosedCount = AllLoation.filter(loc => !transactions.some(t => t.storeName === loc.locName)).length;
-    return { matchCount, mismatchCount, notClosedCount };
+    return { matchCount, mismatchCount, notClosedCount, lateClosedCount };
   }, [data?.data]);
 
   const combinedData = useMemo(() => {
@@ -139,8 +150,10 @@ const CloseReport = () => {
 
     combined = [...combined, ...notClosed];
 
-    if (filter !== "All") {
-       combined = combined.filter(item => item.displayStatus === filter);
+    if (filter === "Lately Closed") {
+      combined = combined.filter(item => item.isLateClosed);
+    } else if (filter !== "All") {
+      combined = combined.filter(item => item.displayStatus === filter);
     }
 
     return combined;
@@ -159,7 +172,7 @@ const CloseReport = () => {
         row.cash || 0,
         row.Closecash || 0,
         row.difference || 0,
-        row.displayStatus
+        row.isLateClosed ? 'Lately Closed' : row.displayStatus
       ].join(','));
     });
     const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
@@ -234,6 +247,18 @@ const CloseReport = () => {
               )}
             </button>
             <button 
+              onClick={() => setFilter("Lately Closed")} 
+              style={{ display: 'inline-flex' }}
+              className={`items-center justify-center gap-1.5 px-4 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors ${filter === 'Lately Closed' ? 'bg-[#222222] text-white shadow-sm' : 'text-gray-800 hover:bg-gray-200 bg-transparent'}`}
+            >
+              <span>Lately Closed</span>
+              {counts.lateClosedCount > 0 && (
+                <span className="bg-[#d97706] text-white text-[11px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {counts.lateClosedCount}
+                </span>
+              )}
+            </button>
+            <button 
               onClick={() => setFilter("Match")} 
               style={{ display: 'inline-flex' }}
               className={`px-4 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors items-center justify-center ${filter === 'Match' ? 'bg-[#222222] text-white shadow-sm' : 'text-gray-800 hover:bg-gray-200 bg-transparent'}`}
@@ -282,17 +307,27 @@ const CloseReport = () => {
                 </tr>
               ) : combinedData.length > 0 ? (
                 combinedData.map((row, index) => (
-                  <tr key={index} className={`border-b border-gray-100 text-[14px] hover:bg-gray-50 transition-colors ${row.displayStatus === 'Not Closed' ? 'bg-[#ffe4e6]' : 'bg-white'}`}>
+                  <tr key={index} className={`border-b border-gray-100 text-[14px] hover:bg-gray-50 transition-colors ${row.displayStatus === 'Not Closed' ? 'bg-[#ffe4e6]' : row.isLateClosed ? 'bg-[#fffbeb]' : 'bg-white'}`}>
                     <td className="px-6 py-4 text-gray-500">{String(index + 1).padStart(2, '0')}</td>
-                    <td className="px-6 py-4 font-medium text-gray-900">{row.storeName}</td>
+                    <td className="px-6 py-4 font-medium text-gray-900">
+                      <div>{row.storeName}</div>
+                      {row.isLateClosed && row.createdAt && (
+                        <div className="text-[11px] text-amber-700 font-medium mt-0.5">
+                          Closed {new Date(row.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-center text-gray-600">{row.locCode}</td>
                     <td className="px-6 py-4 text-center text-gray-600">{formatNumber(row.bankPlusUpi)}</td>
                     <td className="px-6 py-4 text-center text-gray-600">{formatNumber(row.cash)}</td>
                     <td className="px-6 py-4 text-center text-gray-600">{formatNumber(row.Closecash)}</td>
                     <td className="px-6 py-4 text-center text-gray-600">{formatNumber(row.difference)}</td>
                     <td className="px-6 py-4 text-center">
-                      {row.displayStatus === 'Match' && <span className="bg-[#dcfce7] text-[#16a34a] px-3 py-1 rounded-md text-[12px] font-semibold inline-block">Match</span>}
-                      {row.displayStatus === 'Mismatch' && <span className="bg-[#fee2e2] text-[#ef4444] px-3 py-1 rounded-md text-[12px] font-semibold inline-block">Mismatch</span>}
+                      {row.isLateClosed && (
+                        <span className="bg-[#fef3c7] text-[#d97706] px-3 py-1 rounded-md text-[12px] font-semibold inline-block">Lately Closed</span>
+                      )}
+                      {!row.isLateClosed && row.displayStatus === 'Match' && <span className="bg-[#dcfce7] text-[#16a34a] px-3 py-1 rounded-md text-[12px] font-semibold inline-block">Match</span>}
+                      {!row.isLateClosed && row.displayStatus === 'Mismatch' && <span className="bg-[#fee2e2] text-[#ef4444] px-3 py-1 rounded-md text-[12px] font-semibold inline-block">Mismatch</span>}
                       {row.displayStatus === 'Not Closed' && <span className="bg-[#ef4444] text-white px-3 py-1 rounded-md text-[12px] font-semibold inline-block">Not Closed</span>}
                     </td>
                   </tr>

@@ -149,7 +149,7 @@ const Dashboard = ({ isSidebarOpen }) => {
           fetch(`${API_URL}/api/reorder-alerts`).then(r => r.ok ? r.json() : []).catch(() => []),
           fetch(`${API_URL}/api/purchase/orders`).then(r => r.ok ? r.json() : []).catch(() => []),
           fetch(`${API_URL}/user/pendingClosures`).then(r => r.ok ? r.json() : {}).catch(() => ({})),
-          fetch(`${API_URL}/api/expense-targets/all?month=${dateTo.slice(0, 7)}`).then(r => r.ok ? r.json() : { targets: [] }).catch(() => ({ targets: [] }))
+          fetch(`${API_URL}/api/expense-targets/all`).then(r => r.ok ? r.json() : { targets: [] }).catch(() => ({ targets: [] }))
         ]);
 
         const reorderList = Array.isArray(reorderRes) ? reorderRes : (reorderRes.data || []);

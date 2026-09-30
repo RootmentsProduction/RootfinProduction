@@ -168,10 +168,11 @@ export default function IncomeExpenseReport() {
         ]))
       );
 
-      const bookingData = { dataSet: { data: twsResults.flatMap(r => r[0]?.dataSet?.data || []) } };
-      const rentoutData = { dataSet: { data: twsResults.flatMap(r => r[1]?.dataSet?.data || []) } };
-      const returnData  = { dataSet: { data: twsResults.flatMap(r => r[2]?.dataSet?.data || []) } };
-      const cancelData  = { dataSet: { data: twsResults.flatMap(r => r[3]?.dataSet?.data || []) } };
+      const withLoc = (rows, lc) => (rows || []).map((item) => ({ ...item, locCode: item.locCode || lc }));
+      const bookingData = { dataSet: { data: twsResults.flatMap((r, i) => withLoc(r[0]?.dataSet?.data, locCodesToFetch[i])) } };
+      const rentoutData = { dataSet: { data: twsResults.flatMap((r, i) => withLoc(r[1]?.dataSet?.data, locCodesToFetch[i])) } };
+      const returnData  = { dataSet: { data: twsResults.flatMap((r, i) => withLoc(r[2]?.dataSet?.data, locCodesToFetch[i])) } };
+      const cancelData  = { dataSet: { data: twsResults.flatMap((r, i) => withLoc(r[3]?.dataSet?.data, locCodesToFetch[i])) } };
 
       let mongoJson = { data: [] };
       if (locCode === "all" || locCode === "all_stores" || locCode === "all_depts" || (isClusterManager && (!locCode || locCode === "all"))) {
@@ -498,7 +499,7 @@ export default function IncomeExpenseReport() {
     return store ? store.locName : (lc || "-");
   };
 
-  const showBranch = selectedStore === "all" || (isClusterManager && selectedStore === "all");
+  const showBranch = canSelectStore;
 
   // CSV Export Data
   const csvData = useMemo(() => {

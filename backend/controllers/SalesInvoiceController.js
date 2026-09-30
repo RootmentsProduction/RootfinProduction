@@ -121,6 +121,10 @@ export const createSalesInvoice = async (req, res) => {
     invoiceData.createdBy = userId;
     invoiceData.storeId = user.storeId;
 
+    if (invoiceData.status) {
+      invoiceData.status = String(invoiceData.status).toLowerCase();
+    }
+
     // Save invoice to MongoDB
     const invoice = await SalesInvoice.create(invoiceData);
 

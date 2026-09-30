@@ -372,7 +372,7 @@ const DayBookInc = () => {
             return {
                 ...transaction,
                 date: transaction?.bookingDate || null,
-                time: transaction?.time || transaction?.bookingTime || (transaction?.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction?.bookingDate && transaction.bookingDate.includes("T") ? new Date(transaction.bookingDate + (transaction.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
+                time: transaction?.time || transaction?.bookingTime || (transaction?.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction?.bookingDate && transaction.bookingDate.includes("T") ? new Date(transaction.bookingDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
                 customerName: transaction?.customerName || transaction?.customer || "Customer",
                 bookingCashAmount,
                 bookingBankAmount,
@@ -407,7 +407,7 @@ const DayBookInc = () => {
             return {
                 ...transaction,
                 date: transaction?.rentOutDate ?? "",
-                time: transaction?.time || transaction?.rentOutTime || (transaction?.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction?.rentOutDate && transaction.rentOutDate.includes("T") ? new Date(transaction.rentOutDate + (transaction.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
+                time: transaction?.time || transaction?.rentOutTime || (transaction?.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction?.rentOutDate && transaction.rentOutDate.includes("T") ? new Date(transaction.rentOutDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
                 customerName: transaction?.customerName || transaction?.customer || "Customer",
                 rentoutCashAmount,
                 rentoutBankAmount,
@@ -445,7 +445,7 @@ const DayBookInc = () => {
             return {
                 ...transaction,
                 date: transaction?.returnedDate || null,
-                time: transaction?.time || transaction?.returnedTime || (transaction?.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction?.returnedDate && transaction.returnedDate.includes("T") ? new Date(transaction.returnedDate + (transaction.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
+                time: transaction?.time || transaction?.returnedTime || (transaction?.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction?.returnedDate && transaction.returnedDate.includes("T") ? new Date(transaction.returnedDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
                 customerName: transaction?.customerName || transaction?.customer || "Customer",
                 returnBankAmount,
                 returnCashAmount,
@@ -479,7 +479,7 @@ const DayBookInc = () => {
             return {
                 ...transaction,
                 date: transaction.cancelDate,
-                time: transaction?.time || transaction?.cancelTime || (transaction?.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction?.cancelDate && transaction.cancelDate.includes("T") ? new Date(transaction.cancelDate + (transaction.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
+                time: transaction?.time || transaction?.cancelTime || (transaction?.createdAt ? new Date(transaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (transaction?.cancelDate && transaction.cancelDate.includes("T") ? new Date(transaction.cancelDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "10:34 am")),
                 customerName: transaction?.customerName || transaction?.customer || "Customer",
                 Category: "Cancel",
                 SubCategory: "cancellation Refund",

@@ -51,6 +51,11 @@ const headers = [
   { label: "Amount", key: "amount" },
   { label: "Total Txn", key: "totalTransaction" },
   { label: "Discount", key: "discountAmount" },
+  { label: "Bill Value", key: "billValue" },
+  { label: "Cash", key: "cash" },
+  { label: "Razorpay", key: "rbl" },
+  { label: "Card/Bank", key: "bank" },
+  { label: "UPI", key: "upi" },
 ];
 
 const subCategories = [
@@ -193,6 +198,11 @@ const multiBranchCsvHeaders = [
   { label: "Amount", key: "amount" },
   { label: "Total Txn", key: "totalTransaction" },
   { label: "Discount", key: "discountAmount" },
+  { label: "Bill Value", key: "billValue" },
+  { label: "Cash", key: "cash" },
+  { label: "Razorpay", key: "rbl" },
+  { label: "Card/Bank", key: "bank" },
+  { label: "UPI", key: "upi" },
   { label: "Branch", key: "branch" },
 ];
 
@@ -327,7 +337,7 @@ const Datewisedaybook = () => {
       const bookingList = (bookingData?.dataSet?.data || []).map(item => ({
         ...item,
         date: item.bookingDate?.split("T")[0],
-        time: item?.time || item?.bookingTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate + (item.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+        time: item?.time || item?.bookingTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
         invoiceNo: item.invoiceNo,
         customerName: item.customerName,
         quantity: item.quantity || 1,
@@ -352,7 +362,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.rentOutDate || "").split("T")[0],
-          time: item?.time || item?.rentOutTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate + (item.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+          time: item?.time || item?.rentOutTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           quantity: item.quantity || 1,
@@ -385,7 +395,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
-          time: item?.time || item?.returnedTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate + (item.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+          time: item?.time || item?.returnedTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           customerName: item.customerName || item.custName || item.customer || "",
           invoiceNo: item.invoiceNo,
           Category: "Return",
@@ -414,7 +424,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: item.cancelDate?.split("T")[0],
-          time: item?.time || item?.cancelTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate + (item.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+          time: item?.time || item?.cancelTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           Category: "Cancel",
@@ -444,7 +454,7 @@ const Datewisedaybook = () => {
         return {
           ...tx,
           date: tx.date?.split("T")[0] || "",
-          time: tx?.time || (tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (tx?.date && tx.date.includes("T") ? new Date(tx.date + (tx.date.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+          time: tx?.time || (tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (tx?.date && tx.date.includes("T") ? new Date(tx.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           Category: tx.type,
           SubCategory: subCatLabel,
           SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
@@ -624,7 +634,7 @@ const Datewisedaybook = () => {
           const bList = (bookingData?.dataSet?.data || []).map(item => ({
             ...item,
             date: item.bookingDate?.split("T")[0],
-        time: item?.time || item?.bookingTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate + (item.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+        time: item?.time || item?.bookingTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
             invoiceNo: item.invoiceNo,
             customerName: item.customerName,
             quantity: item.quantity || 1,
@@ -651,7 +661,7 @@ const Datewisedaybook = () => {
             return {
               ...item,
               date: (item.rentOutDate || "").split("T")[0],
-          time: item?.time || item?.rentOutTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate + (item.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+          time: item?.time || item?.rentOutTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
               invoiceNo: item.invoiceNo,
               customerName: item.customerName,
               quantity: item.quantity || 1,
@@ -682,7 +692,7 @@ const Datewisedaybook = () => {
             return {
               ...item,
               date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
-          time: item?.time || item?.returnedTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate + (item.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+          time: item?.time || item?.returnedTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
               customerName: item.customerName || item.custName || item.customer || "",
               invoiceNo: item.invoiceNo,
               Category: "Return",
@@ -709,7 +719,7 @@ const Datewisedaybook = () => {
             return {
               ...item,
               date: item.cancelDate?.split("T")[0],
-          time: item?.time || item?.cancelTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate + (item.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+          time: item?.time || item?.cancelTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
               invoiceNo: item.invoiceNo,
               customerName: item.customerName,
               Category: "Cancel",
@@ -742,7 +752,7 @@ const Datewisedaybook = () => {
             return {
               ...tx,
               date: tx.date?.split("T")[0] || "",
-          time: tx?.time || (tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (tx?.date && tx.date.includes("T") ? new Date(tx.date + (tx.date.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+          time: tx?.time || (tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (tx?.date && tx.date.includes("T") ? new Date(tx.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
               Category: tx.type,
               SubCategory: subCatLabel,
               SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
@@ -850,7 +860,7 @@ const Datewisedaybook = () => {
       const bookingList = (bookingData?.dataSet?.data || []).map(item => ({
         ...item,
         date: item.bookingDate?.split("T")[0],
-        time: item?.time || item?.bookingTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate + (item.bookingDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+        time: item?.time || item?.bookingTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
         invoiceNo: item.invoiceNo,
         customerName: item.customerName,
         quantity: item.quantity || 1,
@@ -877,7 +887,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.rentOutDate || "").split("T")[0],
-          time: item?.time || item?.rentOutTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate + (item.rentOutDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+          time: item?.time || item?.rentOutTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           quantity: item.quantity || 1,
@@ -911,7 +921,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
-          time: item?.time || item?.returnedTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate + (item.returnedDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+          time: item?.time || item?.returnedTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           customerName: item.customerName || item.custName || item.customer || "",
           invoiceNo: item.invoiceNo,
           Category: "Return",
@@ -941,7 +951,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: item.cancelDate?.split("T")[0],
-          time: item?.time || item?.cancelTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate + (item.cancelDate.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+          time: item?.time || item?.cancelTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           Category: "Cancel",
@@ -973,7 +983,7 @@ const Datewisedaybook = () => {
         return {
           ...tx,
           date: tx.date?.split("T")[0] || "",
-          time: tx?.time || (tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (tx?.date && tx.date.includes("T") ? new Date(tx.date + (tx.date.endsWith("Z") ? "" : "Z")).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
+          time: tx?.time || (tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (tx?.date && tx.date.includes("T") ? new Date(tx.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           Category: tx.type,
           SubCategory: subCatLabel,
           SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
@@ -1188,6 +1198,27 @@ const Datewisedaybook = () => {
   const displayedRows = mergedTransactions
     .filter(filterTransaction)
     .sort((a, b) => {
+      // Define category order
+      const categoryOrder = {
+        booking: 1,
+        rentout: 2,
+        return: 3,
+        cancel: 4,
+        income: 5,
+        expense: 6
+      };
+      
+      const catA = (a.Category || a.category || a.type || "").toLowerCase().replace(/\s+/g, '');
+      const catB = (b.Category || b.category || b.type || "").toLowerCase().replace(/\s+/g, '');
+      
+      const orderA = categoryOrder[catA] || 99;
+      const orderB = categoryOrder[catB] || 99;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // Secondary sort by date
       const dateAStr = a.date ? a.date.replace(/-/g, '/') + (a.time ? " " + a.time : "") : "";
       const dateBStr = b.date ? b.date.replace(/-/g, '/') + (b.time ? " " + b.time : "") : "";
       const dateA = new Date(dateAStr).getTime() || 0;
@@ -1312,7 +1343,9 @@ const Datewisedaybook = () => {
   const handleEditClick = async (transaction, index) => {
     setIsSyncing(true);
 
-    if (!transaction._id) {
+    let resolvedId = transaction._id;
+
+    if (!resolvedId) {
       const patchedTransaction = {
         ...transaction,
         customerName: transaction.customerName || "",
@@ -1322,7 +1355,7 @@ const Datewisedaybook = () => {
         paymentMethod: 'cash',
         date: transaction.date || new Date().toISOString().split('T')[0],
         cash: transaction.cash || 0,
-        rbl: transaction.rbl || 0, // ✅ Added RBL to sync
+        rbl: transaction.rbl || 0,
         bank: transaction.bank || 0,
         upi: transaction.upi || 0,
       };
@@ -1343,7 +1376,20 @@ const Datewisedaybook = () => {
           return;
         }
 
-        transaction._id = result.data._id;
+        resolvedId = result.data._id;
+        // ✅ Properly update state so _id is stored — don't just mutate local reference
+        setMergedTransactions(prev =>
+          prev.map(tx => {
+            if (
+              tx.invoiceNo === transaction.invoiceNo &&
+              (tx.Category || tx.type) === (transaction.Category || transaction.type) &&
+              !tx._id
+            ) {
+              return { ...tx, _id: resolvedId };
+            }
+            return tx;
+          })
+        );
       } catch (err) {
         customAlert("Sync error: " + err.message, "error");
         setIsSyncing(false);
@@ -1351,10 +1397,12 @@ const Datewisedaybook = () => {
       }
     }
 
+    // ✅ Spread original transaction so all display fields are preserved during editing
     setEditedTransaction({
-      _id: transaction._id,
+      ...transaction,
+      _id: resolvedId,
       cash: transaction.cash || 0,
-      rbl: transaction.rbl || 0, // ✅ Added RBL to edit
+      rbl: transaction.rbl || 0,
       bank: transaction.bank || 0,
       upi: transaction.upi || 0,
       securityAmount: transaction.securityAmount || 0,
@@ -1369,18 +1417,14 @@ const Datewisedaybook = () => {
       billValue: transaction.billValue || 0,
       totalTransaction:
         (transaction.Category === "RentOut")
-          ? (Number(transaction.securityAmount || 0) +
-            Number(transaction.Balance || 0))
+          ? (Number(transaction.securityAmount || 0) + Number(transaction.Balance || 0))
           : (Number(transaction.totalTransaction) ||
             Number(transaction.amount) ||
-            (Number(transaction.cash || 0) +
-              Number(transaction.rbl || 0) + // ✅ Added rbl
-              Number(transaction.bank || 0) +
-              Number(transaction.upi || 0))),
+            (Number(transaction.cash || 0) + Number(transaction.rbl || 0) +
+              Number(transaction.bank || 0) + Number(transaction.upi || 0))),
       amount:
         (transaction.Category === "RentOut")
-          ? (Number(transaction.securityAmount || 0) +
-            Number(transaction.Balance || 0))
+          ? (Number(transaction.securityAmount || 0) + Number(transaction.Balance || 0))
           : (transaction.amount || 0)
     });
 
@@ -1511,9 +1555,9 @@ const Datewisedaybook = () => {
       customAlert("Transaction updated.", "success");
 
       const updatedRow = {
-        ...editedTransaction,
+        ...editedTransaction,  // ✅ Preserve all original display fields (source, locCode, time, etc.)
         cash: adjCash,
-        rbl: adjRbl, // ✅ Added RBL to updated row
+        rbl: adjRbl,
         bank: adjBank,
         upi: adjUpi,
         securityAmount: numSec,
@@ -1523,13 +1567,15 @@ const Datewisedaybook = () => {
         billValue: originalBillValue,
         date,
         invoiceNo: invoiceNo || invoice,
+        _id,
       };
 
+      // ✅ Match by _id only (Category check removed — type casing can differ between TWS and Mongo)
       setMongoTransactions(prev =>
-        prev.map(tx => (tx._id === _id && (tx.Category || tx.type) === editedTransaction.Category ? updatedRow : tx))
+        prev.map(tx => tx._id === _id ? updatedRow : tx)
       );
       setMergedTransactions(prev =>
-        prev.map(t => (t._id === _id && (t.Category || t.type) === editedTransaction.Category ? updatedRow : t))
+        prev.map(t => t._id === _id ? updatedRow : t)
       );
       setEditingIndex(null);
     } catch (err) {
@@ -2091,6 +2137,21 @@ const Datewisedaybook = () => {
                           .map((transaction, index) => {
                             const isEditing = editingIndex === index;
                             const t = isEditing ? editedTransaction : transaction;
+                            const paymentInputClass = "w-full min-w-[72px] border border-gray-300 rounded-none p-1 text-xs text-right bg-white";
+                            const renderPaymentCell = (field) => {
+                              if (isEditing) {
+                                return (
+                                  <input
+                                    type="number"
+                                    value={editedTransaction[field] ?? ""}
+                                    onChange={(e) => handleInputChange(field, e.target.value)}
+                                    className={paymentInputClass}
+                                  />
+                                );
+                              }
+                              const val = t[field];
+                              return val ? Math.round(Number(val)).toLocaleString() : "-";
+                            };
 
                             if (t.Category === "RentOut") {
                               return (
@@ -2127,10 +2188,10 @@ const Datewisedaybook = () => {
                                       {t.discountAmount || 0}
                                     </td>
                                     <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.billValue ? Math.round(Number(t.billValue)).toLocaleString() : "-"}</td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.cash ? Math.round(Number(t.cash)).toLocaleString() : "-"}</td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.rbl ? Math.round(Number(t.rbl)).toLocaleString() : "-"}</td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.bank ? Math.round(Number(t.bank)).toLocaleString() : "-"}</td>
-                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.upi ? Math.round(Number(t.upi)).toLocaleString() : "-"}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("cash")}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("rbl")}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("bank")}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("upi")}</td>
 
                                     {showAction && (
                                       <td rowSpan="2" className="px-3 py-2 text-center border-r border-gray-100 text-xs">
@@ -2207,10 +2268,10 @@ const Datewisedaybook = () => {
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.totalTransaction)).toLocaleString()}</td>
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.discountAmount || 0)).toLocaleString()}</td>
                                 <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.billValue ? Math.round(Number(t.billValue)).toLocaleString() : "-"}</td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.cash ? Math.round(Number(t.cash)).toLocaleString() : "-"}</td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.rbl ? Math.round(Number(t.rbl)).toLocaleString() : "-"}</td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.bank ? Math.round(Number(t.bank)).toLocaleString() : "-"}</td>
-                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.upi ? Math.round(Number(t.upi)).toLocaleString() : "-"}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("cash")}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("rbl")}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("bank")}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("upi")}</td>
                                 {showAction && (
                                   <td className="px-3 py-2 text-center border-r border-gray-100 text-xs">
                                     {isSyncing && editingIndex === index ? (

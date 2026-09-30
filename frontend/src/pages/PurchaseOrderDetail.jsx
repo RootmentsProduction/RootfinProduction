@@ -6,7 +6,6 @@ import baseUrl from "../api/api";
 import useSidebar from "../hooks/useSidebar";
 
 const formatCurrency = (value) => {
-  const isSidebarOpen = useSidebar();
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
