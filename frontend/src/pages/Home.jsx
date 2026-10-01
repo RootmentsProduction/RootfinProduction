@@ -165,7 +165,6 @@ const Dashboard = ({ isSidebarOpen }) => {
       } catch (e) { console.error("Quick overview error:", e); }
 
       // ── 3. Financial Summary — all stores (same logic as IncomeExpenseReport) ──
-      // Fetch TWS data for ALL loc codes in parallel
       const twsResults = await Promise.all(
         ALL_LOC_CODES.map(lc => Promise.all([
           safeFetch(`${TWS_BASE}/GetBookingList?LocCode=${lc}&DateFrom=${dateFrom}&DateTo=${dateTo}`),
@@ -175,23 +174,27 @@ const Dashboard = ({ isSidebarOpen }) => {
         ]))
       );
 
-      const bookingData = twsResults.flatMap(r => r[0]?.dataSet?.data || []);
-      const rentoutData = twsResults.flatMap(r => r[1]?.dataSet?.data || []);
-      const returnData = twsResults.flatMap(r => r[2]?.dataSet?.data || []);
-      const deleteData = twsResults.flatMap(r => r[3]?.dataSet?.data || []);
+      const withLoc = (rows, lc) => (rows || []).map((item) => ({ ...item, locCode: item.locCode || lc }));
+      
+      const bookingData = twsResults.flatMap((r, i) => withLoc(r[0]?.dataSet?.data, ALL_LOC_CODES[i]));
+      const rentoutData = twsResults.flatMap((r, i) => withLoc(r[1]?.dataSet?.data, ALL_LOC_CODES[i]));
+      const returnData = twsResults.flatMap((r, i) => withLoc(r[2]?.dataSet?.data, ALL_LOC_CODES[i]));
+      const deleteData = twsResults.flatMap((r, i) => withLoc(r[3]?.dataSet?.data, ALL_LOC_CODES[i]));
 
-      // Mongo: fetch all stores in a single request to optimize load time
       let mongoTxns = [];
       try {
-        const mongoRes = await fetch(`${API_URL}user/Getpayment?DateFrom=${dateFrom}&DateTo=${dateTo}`);
+        const mongoRes = await fetch(`${API_URL}/user/Getpayment?DateFrom=${dateFrom}&DateTo=${dateTo}`);
         if (mongoRes.ok) {
           const mData = await mongoRes.json();
           mongoTxns = Array.isArray(mData) ? mData : (mData.data || []);
         }
       } catch (err) { console.error("Mongo fetch error:", err); }
 
-      // ── Booking → Income
       let iCash = 0, iRbl = 0, iBank = 0, iUpi = 0;
+      let retCash = 0, retRbl = 0, retBank = 0, retUpi = 0;
+      let eCash = 0, eRbl = 0, eBank = 0, eUpi = 0;
+
+      // Booking -> Income
       bookingData.forEach(item => {
         iCash += Number(item.bookingCashAmount || 0);
         iRbl += Number(item.rblRazorPay || 0);
@@ -199,71 +202,76 @@ const Dashboard = ({ isSidebarOpen }) => {
         iUpi += Number(item.bookingUPIAmount || 0);
       });
 
-      // ── RentOut → Income (balance payable) + Returnable (security)
-      let rCash = 0, rRbl = 0, rBank = 0, rUpi = 0;
-      let retCash = 0;
+      // RentOut -> Split into Income (Balance Payable) and Returnable Income (Security)
       rentoutData.forEach(item => {
         const security = Number(item.securityAmount || 0);
-        const cash = Number(item.rentoutCashAmount || 0);
-        const rbl = Number(item.rblRazorPay || 0);
-        const bank = Number(item.rentoutBankAmount || 0);
-        const upi = Number(item.rentoutUPIAmount || 0);
-        // Income part
-        iCash += cash; iRbl += rbl; iBank += bank; iUpi += upi;
-        // Returnable income (security)
-        if (security > 0) retCash += security;
+        const advance = Number(item.advanceAmount || 0);
+        const balancePayable = Number(item.invoiceAmount || 0) - advance;
+        
+        // Returnable Income (Security received on RentOut)
+        if (security > 0 || item.securityAmount) {
+          retCash += security;
+        }
+        // Actual non-returnable Income (Balance Payable)
+        iCash += balancePayable;
       });
 
-      // ── Return → Security Refund (expense)
-      let secRefCash = 0, secRefRbl = 0, secRefBank = 0, secRefUpi = 0;
-      returnData.forEach(item => {
-        secRefCash += -Math.abs(Number(item.returnCashAmount || 0));
-        secRefRbl += -Math.abs(Number(item.rblRazorPay || 0));
-        secRefBank += -Math.abs(Number(item.returnBankAmount || 0));
-        secRefUpi += -Math.abs(Number(item.returnUPIAmount || 0));
-      });
-
-      // ── Delete (Cancel) → Expense
-      let eCash = 0, eRbl = 0, eBank = 0, eUpi = 0;
+      // Return -> Security Refund (Not included in top Total Expenses card in IncomeExpenseReport)
+      // Cancel -> Expense
       deleteData.forEach(item => {
+        const rbl = -Math.abs(Number(item.rblRazorPay || 0));
         eCash += -Math.abs(Number(item.deleteCashAmount || 0));
-        eRbl += -Math.abs(Number(item.rblRazorPay || 0));
-        eBank += -Math.abs(Number(item.deleteBankAmount || 0));
-        eUpi += -Math.abs(Number(item.deleteUPIAmount || 0));
+        eRbl += rbl;
+        eBank += rbl !== 0 ? 0 : -Math.abs(Number(item.deleteBankAmount || 0));
+        eUpi += rbl !== 0 ? 0 : -Math.abs(Number(item.deleteUPIAmount || 0));
       });
 
-      // ── Mongo Transactions
-      let b2cCash = 0, b2cRbl = 0, b2cBank = 0, b2cUpi = 0;
-      let c2bCash = 0, c2bRbl = 0, c2bBank = 0, c2bUpi = 0;
+      // Mongo Txns
       mongoTxns.forEach(t => {
         const tp = (t.type || "").toLowerCase();
-        const cat = (t.category || "").toLowerCase().trim();
         const sub = (t.subCategory || "").toLowerCase().trim();
+        const cat = (t.category || "").toLowerCase().trim();
         const inv = (t.invoiceNo || "").toUpperCase();
-        const isShoeOrShirtSale = sub === "shoe sales" || sub === "shirt sales" || cat === "shoe sales" || cat === "shirt sales";
-        const isSalesReturn = sub.includes("sales return") || cat.includes("sales return");
+        
+        const isShoeOrShirtSale = sub === "shoe sales" || sub === "shirt sales" || sub === "mixed sales"
+          || cat === "shoe sales" || cat === "shirt sales" || cat === "mixed sales";
+        const isSalesReturn = sub === "shoe sales return" || sub === "shirt sales return" || sub === "mixed sales return"
+          || cat === "shoe sales return" || cat === "shirt sales return" || cat === "mixed sales return";
         const isReturnInvoice = inv.startsWith("RTN-") || inv.startsWith("RET-");
-        // Filter same as IncomeExpenseReport
+        
         if (!isShoeOrShirtSale && !isSalesReturn && !isReturnInvoice && (inv.startsWith("INV-") || inv.startsWith("RTN-") || inv.startsWith("RET-"))) return;
-        const isBankToCash = cat === "bank to cash" || cat.includes("bank to cash") || cat.includes("cash to branch");
-        const isCashToBank = !isBankToCash && (cat === "bulk amount transfer" || cat === "cash to bank" || tp === "money transfer");
-        const isExpense = tp === "expense" || EXPENSE_CATS.has(cat);
+
+        const isBankToCash = cat === "bank to cash" || sub === "bank to cash" || cat.includes("bank to cash") || sub.includes("bank to cash") || cat.includes("cash to branch") || sub.includes("cash to branch");
+        const isCashToBank = !isBankToCash && (cat === "bulk amount transfer" || cat === "cash to bank" || sub === "bulk amount transfer" || sub === "cash to bank" || tp === "money transfer");
+        
+        const isExpenseCategory = tp === "expense" || EXPENSE_CATS.has(cat);
         const cash = Number(t.cash || 0), rbl = Number(t.rbl || t.rblRazorPay || 0), bank = Number(t.bank || 0), upi = Number(t.upi || 0);
-        if (isBankToCash) { b2cCash += cash; b2cRbl += rbl; b2cBank += bank; b2cUpi += upi; }
-        else if (isCashToBank) { c2bCash += cash; c2bRbl += rbl; c2bBank += bank; c2bUpi += upi; }
-        else if (isReturnInvoice || isExpense) { eCash += cash; eRbl += rbl; eBank += bank; eUpi += upi; }
-        else if (tp === "income") { iCash += cash; iRbl += rbl; iBank += bank; iUpi += upi; }
+
+        if (isBankToCash) {
+          // Bank to cash
+        } else if (isCashToBank) {
+          // Cash to bank
+        } else if (isReturnInvoice || isExpenseCategory) {
+          eCash += cash; eRbl += rbl; eBank += bank; eUpi += upi;
+        } else if (tp === "income") {
+          iCash += cash; iRbl += rbl; iBank += bank; iUpi += upi;
+        }
       });
 
-      // ── Set Summary Card Totals
       setIncTotals({ cash: iCash, rbl: iRbl, bank: iBank, upi: iUpi });
-      setRetTotals({ cash: retCash, rbl: 0, bank: 0, upi: 0 });
+      setRetTotals({ cash: retCash, rbl: retRbl, bank: retBank, upi: retUpi });
       setExpTotals({ cash: Math.abs(eCash), rbl: Math.abs(eRbl), bank: Math.abs(eBank), upi: Math.abs(eUpi) });
 
-      const netCash = iCash + eCash + secRefCash;
-      const netRbl = iRbl + eRbl + secRefRbl;
-      const netBank = iBank + eBank + secRefBank;
-      const netUpi = iUpi + eUpi + secRefUpi;
+      // Calculate Net Difference specifically for Dashboard from top cards
+      const incTot = iCash + iRbl + iBank + iUpi;
+      const expTot = Math.abs(eCash) + Math.abs(eRbl) + Math.abs(eBank) + Math.abs(eUpi);
+      const diffTot = incTot - expTot;
+      
+      const netCash = iCash - Math.abs(eCash);
+      const netRbl = iRbl - Math.abs(eRbl);
+      const netBank = iBank - Math.abs(eBank);
+      const netUpi = iUpi - Math.abs(eUpi);
+      
       setNetTotals({ cash: netCash, rbl: netRbl, bank: netBank, upi: netUpi });
 
       // ── 4. Per-store chart data (store-only, no depts) ───────────────────────────
@@ -295,11 +303,16 @@ const Dashboard = ({ isSidebarOpen }) => {
 
         let sInc = 0, sExp = 0;
         sBk.forEach(i => { sInc += Number(i.bookingCashAmount || 0) + Number(i.rblRazorPay || 0) + Number(i.bookingBankAmount || 0) + Number(i.bookingUPIAmount || 0); });
-        sRt.forEach(i => { sInc += Number(i.rentoutCashAmount || 0) + Number(i.rblRazorPay || 0) + Number(i.rentoutBankAmount || 0) + Number(i.rentoutUPIAmount || 0); });
-        sDl.forEach(i => { sExp += Math.abs(Number(i.deleteCashAmount || 0)) + Math.abs(Number(i.rblRazorPay || 0)) + Math.abs(Number(i.deleteBankAmount || 0)); });
+        sRt.forEach(i => {
+          const advance = Number(i.advanceAmount || 0);
+          const balancePayable = Number(i.invoiceAmount || 0) - advance;
+          sInc += balancePayable; 
+        });
+        sDl.forEach(i => { sExp += Math.abs(Number(i.deleteCashAmount || 0)) + Math.abs(Number(i.rblRazorPay || 0)) + Math.abs(Number(i.deleteBankAmount || 0)) + Math.abs(Number(i.deleteUPIAmount || 0)); });
         sMgTxns.forEach(t => {
           const tp = (t.type || "").toLowerCase(), cat = (t.category || "").toLowerCase().trim();
-          const isExp = tp === "expense" || EXPENSE_CATS.has(cat);
+          const inv = (t.invoiceNo || "").toUpperCase();
+          const isExp = tp === "expense" || EXPENSE_CATS.has(cat) || inv.startsWith("RTN-") || inv.startsWith("RET-");
           const amt = Number(t.cash || 0) + Number(t.rbl || t.rblRazorPay || 0) + Number(t.bank || 0) + Number(t.upi || 0);
           if (isExp) sExp += amt;
           else if (tp === "income") sInc += amt;
