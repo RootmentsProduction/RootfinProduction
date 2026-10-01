@@ -6,6 +6,7 @@ import Head from "../components/Head";
 import ImageUpload from "../components/ImageUpload";
 import { X, Pencil, Trash2, Plus, Settings, Search, Check, ChevronDown, Image as ImageIcon } from "lucide-react";
 import baseUrl from "../api/api";
+import useSidebar from "../hooks/useSidebar";
 
 const Label = ({ children, required = false }) => (
   <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${required ? "text-[#ef4444]" : "text-[#64748b]"}`}>
@@ -853,6 +854,7 @@ const PurchaseOrderCreate = () => {
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
   const navigate = useNavigate();
   const isEditMode = !!id;
+  const isSidebarOpen = useSidebar();
   
   // Safely get user from localStorage
   let currentuser = null;
@@ -2398,7 +2400,7 @@ const PurchaseOrderCreate = () => {
   useEnterToSave(() => handleSavePurchaseOrder("sent"), saving);
 
   return (
-    <div className="ml-64 min-h-screen bg-[#f5f7fb] p-6 overflow-visible relative">
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-3 sm:p-6 overflow-visible relative ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       <Head
         title={isEditMode ? "Edit Purchase Order" : "New Purchase Order"}
         description=""

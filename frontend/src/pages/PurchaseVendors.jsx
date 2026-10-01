@@ -3,11 +3,13 @@ import Head from "../components/Head";
 import { Link, useLocation } from "react-router-dom";
 import { SlidersHorizontal } from "lucide-react";
 import baseUrl from "../api/api";
+import useSidebar from "../hooks/useSidebar";
 
 const currency = (value) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(value || 0);
 
 const PurchaseVendors = () => {
+  const isSidebarOpen = useSidebar();
   const location = useLocation();
   const [vendors, setVendors] = useState([]);
   const [selected, setSelected] = useState(() => new Set());
@@ -152,7 +154,7 @@ const PurchaseVendors = () => {
   };
 
   return (
-    <div className="ml-64 min-h-screen bg-[#f5f7fb] p-6">
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       <Head
         title="All Vendors"
         description=""
@@ -200,10 +202,10 @@ const PurchaseVendors = () => {
         }
       />
 
-      <div className="rounded-3xl border border-[#e1e5f5] bg-white shadow-[0_30px_90px_-40px_rgba(15,23,42,0.25)]">
+      <div className="bg-white border border-gray-200 overflow-hidden shadow-sm">
         {/* Controls */}
-        <div className="flex items-center justify-between gap-2 border-b border-[#e7ebf8] px-4 py-3">
-          <button className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#dbe4ff] bg-[#f8f9ff] text-[#475569] hover:bg-[#eef2ff]">
+        <div className="flex items-center justify-between gap-2 border-b border-gray-200 px-4 py-3">
+          <button className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100">
             <SlidersHorizontal size={16} />
           </button>
           <div className="flex items-center gap-2">
@@ -212,54 +214,54 @@ const PurchaseVendors = () => {
               placeholder="Search vendors"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-9 w-60 rounded-md border border-[#d7dcf5] px-3 text-sm text-[#1f2937] placeholder:text-[#9ca3af] focus:border-[#2563eb] focus:outline-none"
+              className="h-9 w-60 rounded-md border border-gray-300 px-3 text-sm text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-[#e6eafb]">
-            <thead className="bg-[#f5f6ff]">
-              <tr className="text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-[#64748b]">
-                <th className="px-5 py-3 w-10 border-r border-[#e2e8f0] text-center">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#1c1c1c] text-white">
+                <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider text-center w-10">
                   #
                 </th>
-                <th className="px-5 py-3 border-r border-[#e2e8f0]">Name</th>
-                <th className="px-5 py-3 border-r border-[#e2e8f0]">Company Name</th>
-                <th className="px-5 py-3 border-r border-[#e2e8f0]">Email</th>
-                <th className="px-5 py-3 border-r border-[#e2e8f0]">Work Phone</th>
-                <th className="px-5 py-3 border-r border-[#e2e8f0]">GST Treatment</th>
-                <th className="px-5 py-3 text-right border-r border-[#e2e8f0]">Payables (BCY)</th>
-                <th className="px-5 py-3 text-right">Unused Credits</th>
+                <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider">Name</th>
+                <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider">Company Name</th>
+                <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider">Email</th>
+                <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider">Work Phone</th>
+                <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider">GST Treatment</th>
+                <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider text-right">Payables (BCY)</th>
+                <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider text-right">Unused Credits</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#eef2ff] text-sm">
+            <tbody className="divide-y divide-gray-100 text-sm">
               {filteredVendors.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-5 py-8 text-center text-[#64748b]">
+                  <td colSpan="8" className="px-5 py-8 text-center text-gray-500">
                     {searchTerm ? "No vendors found matching your search." : "No vendors added yet. Click 'New' to add a vendor."}
                   </td>
                 </tr>
               ) : (
                 filteredVendors.map((v, index) => (
-                  <tr key={v.id} className="hover:bg-[#fafbff]">
-                    <td className="px-5 py-4 border-r border-[#e2e8f0] text-center text-sm text-[#64748b]">
+                  <tr key={v.id} className="hover:bg-gray-50/70 transition-colors text-gray-800">
+                    <td className="px-5 py-4 text-center text-sm text-gray-500 font-medium">
                       {index + 1}
                     </td>
-                    <td className="px-5 py-4 whitespace-nowrap border-r border-[#e2e8f0]">
+                    <td className="px-5 py-4 whitespace-nowrap">
                       <Link
                         to={`/purchase/vendors/${v._id || v.id}`}
-                        className="font-medium text-[#1f2937] hover:text-[#2563eb]"
+                        className="font-medium text-gray-900 hover:text-blue-600"
                       >
                         {v.displayName || v.companyName || v.name || `${v.firstName || ""} ${v.lastName || ""}`.trim()}
                       </Link>
                     </td>
-                    <td className="px-5 py-4 text-[#334155] border-r border-[#e2e8f0]">{v.companyName || "-"}</td>
-                    <td className="px-5 py-4 text-[#334155] border-r border-[#e2e8f0]">{v.email || "-"}</td>
-                    <td className="px-5 py-4 text-[#334155] border-r border-[#e2e8f0]">{v.phone || v.mobile || "-"}</td>
-                    <td className="px-5 py-4 whitespace-pre-line text-[#334155] border-r border-[#e2e8f0]">{v.gstTreatment || "-"}</td>
-                    <td className="px-5 py-4 text-right font-semibold text-[#0f172a] border-r border-[#e2e8f0]">{currency(v.payables || 0)}</td>
-                    <td className="px-5 py-4 text-right text-[#334155]">{currency(v.credits || 0)}</td>
+                    <td className="px-5 py-4 text-gray-600">{v.companyName || "-"}</td>
+                    <td className="px-5 py-4 text-gray-600">{v.email || "-"}</td>
+                    <td className="px-5 py-4 text-gray-600">{v.phone || v.mobile || "-"}</td>
+                    <td className="px-5 py-4 whitespace-pre-line text-gray-600">{v.gstTreatment || "-"}</td>
+                    <td className="px-5 py-4 text-right font-semibold text-gray-900">{currency(v.payables || 0)}</td>
+                    <td className="px-5 py-4 text-right text-gray-600 font-medium">{currency(v.credits || 0)}</td>
                   </tr>
                 ))
               )}

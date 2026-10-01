@@ -4,8 +4,10 @@ import { createPortal } from "react-dom";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Search, X, Plus, Trash2 } from "lucide-react";
 import Head from "../components/Head";
+import Header from "../components/Header";
 import baseUrl from "../api/api";
 import { mapLocNameToWarehouse as mapWarehouse } from "../utils/warehouseMapping";
+import useSidebar from "../hooks/useSidebar";
 
 const Label = ({ children, required = false }) => (
   <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${required ? "text-[#ef4444]" : "text-[#64748b]"}`}>
@@ -577,6 +579,7 @@ const ItemDropdown = ({ rowId, value, onChange, storeWarehouse, onStockFetched, 
 };
 
 const StoreOrderCreate = () => {
+  const isSidebarOpen = useSidebar();
   const { id } = useParams();
   const navigate = useNavigate();
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
@@ -907,13 +910,15 @@ const StoreOrderCreate = () => {
   
   if (loading) {
     return (
-      <div className="p-6 ml-64 bg-[#f5f7fb] min-h-screen flex items-center justify-center">
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen flex items-center justify-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-[#64748b]">Loading store order...</div>
       </div>
     );
   }
   
   return (
+    <>
+      <Header title={isEditMode ? "Edit Store Order" : "New Store Order"} />
     <div className="min-h-screen bg-[#f7f9ff]">
       <Head
         title={isEditMode ? "Edit Store Order" : "New Store Order"}
@@ -928,7 +933,7 @@ const StoreOrderCreate = () => {
         }
       />
 
-      <div className="ml-64 px-10 pb-16 pt-8">
+      <div className={`transition-all duration-300 px-10 pb-16 pt-8 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="rounded-3xl border border-[#e6ebfa] bg-white">
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#edf1ff] px-10 py-6">
             <div className="space-y-1">
@@ -1108,6 +1113,7 @@ const StoreOrderCreate = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

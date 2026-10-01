@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Users, Plus, ChevronRight, ChevronDown, ChevronLeft, Pencil, Trash2, Mail, Phone, MapPin, ShieldCheck, Eye } from "lucide-react";
 import baseUrl from "../api/api";
+import { useSidebar } from "../hooks/useSidebar.js";
 
 const ROLE_GROUPS = [
     { key: "admin",           label: "ADMIN" },
@@ -43,6 +44,7 @@ const getStoreName = (code) => {
 };
 
 const ExistingUsers = () => {
+    const isSidebarOpen = useSidebar();
     const [stores, setStores] = useState([]);
     const [loadingStores, setLoadingStores] = useState(false);
     const [openGroups, setOpenGroups] = useState({});
@@ -195,11 +197,11 @@ const ExistingUsers = () => {
     );
 
     return (
-        <div className="ml-[240px] bg-[#EEF2F7] min-h-screen">
+        <div className={`bg-[#EEF2F7] min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-[240px]' : 'ml-0'}`}>
             {/* Header */}
             <div className="bg-white px-10 py-7 border-b border-gray-200 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <div className="bg-blue-600 p-4 rounded-xl">
+                    <div className="bg-purple-600 p-4 rounded-xl">
                         <Users className="text-white" size={28} />
                     </div>
                     <div>
@@ -209,9 +211,10 @@ const ExistingUsers = () => {
                 </div>
                 <button
                     onClick={() => navigate("/manage-users/add-user")}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-xl hover:bg-blue-800 font-semibold transition-all"
+                    className="flex flex-row flex-nowrap items-center justify-center gap-2 px-6 py-3 bg-purple-700 text-white rounded-xl hover:bg-purple-800 font-semibold transition-all whitespace-nowrap min-w-max w-fit"
                 >
-                    ADD NEW USER <Plus size={18} />
+                    <span>ADD NEW USER</span>
+                    <Plus size={18} className="shrink-0" />
                 </button>
             </div>
 
@@ -261,7 +264,7 @@ const ExistingUsers = () => {
                                             users.map((user) => (
                                                 <div
                                                     key={user._id}
-                                                    className="grid grid-cols-[2fr_2fr_3fr_2fr_1.5fr_1.5fr] px-6 py-3 bg-[#f8faff] border-t border-gray-100 hover:bg-blue-50 transition-colors items-center"
+                                                    className="grid grid-cols-[2fr_2fr_3fr_2fr_1.5fr_1.5fr] px-6 py-3 bg-[#f8faff] border-t border-gray-100 hover:bg-purple-50 transition-colors items-center"
                                                 >
                                                     {/* Role column — show role label */}
                                                     <div className="text-sm text-gray-500 capitalize">{(user.role || "—").replace(/_/g, " ")}</div>
@@ -273,7 +276,7 @@ const ExistingUsers = () => {
                                                     <div className="text-sm text-gray-500">{user.phone || "—"}</div>
                                                     {/* User Type */}
                                                     <div>
-                                                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-600">
+                                                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-600">
                                                             {user.power === "admin" ? "Admin" : "Normal"}
                                                         </span>
                                                     </div>
@@ -281,7 +284,7 @@ const ExistingUsers = () => {
                                                     <div className="flex items-center">
                                                         <button
                                                             onClick={() => setViewUser(user)}
-                                                            className="no-blue-button text-blue-600 hover:text-blue-800 transition-colors"
+                                                            className="no-blue-button text-purple-600 hover:text-purple-800 transition-colors"
                                                             title="View details"
                                                         >
                                                             <Eye size={18} />
@@ -325,7 +328,7 @@ const ExistingUsers = () => {
                                     </div>
                                 </div>
                                 <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ${
-                                    viewUser.power === "admin" ? "bg-pink-100 text-pink-600" : "bg-blue-100 text-blue-600"
+                                    viewUser.power === "admin" ? "bg-pink-100 text-pink-600" : "bg-purple-100 text-purple-600"
                                 }`}>
                                     {viewUser.power === "admin" ? "Admin" : "Normal User"}
                                 </span>
@@ -336,7 +339,7 @@ const ExistingUsers = () => {
                         <div className="flex-1 px-6 py-6 space-y-5">
                             {/* Email */}
                             <div className="flex items-start gap-4">
-                                <div className="bg-blue-600 p-2.5 rounded-lg flex-shrink-0">
+                                <div className="bg-purple-600 p-2.5 rounded-lg flex-shrink-0">
                                     <Mail size={16} className="text-white" />
                                 </div>
                                 <div>
@@ -347,7 +350,7 @@ const ExistingUsers = () => {
 
                             {/* Phone */}
                             <div className="flex items-start gap-4">
-                                <div className="bg-blue-600 p-2.5 rounded-lg flex-shrink-0">
+                                <div className="bg-purple-600 p-2.5 rounded-lg flex-shrink-0">
                                     <Phone size={16} className="text-white" />
                                 </div>
                                 <div>
@@ -358,7 +361,7 @@ const ExistingUsers = () => {
 
                             {/* Address */}
                             <div className="flex items-start gap-4">
-                                <div className="bg-blue-600 p-2.5 rounded-lg flex-shrink-0">
+                                <div className="bg-purple-600 p-2.5 rounded-lg flex-shrink-0">
                                     <MapPin size={16} className="text-white" />
                                 </div>
                                 <div>
@@ -369,7 +372,7 @@ const ExistingUsers = () => {
 
                             {/* GST */}
                             <div className="flex items-start gap-4">
-                                <div className="bg-blue-600 p-2.5 rounded-lg flex-shrink-0">
+                                <div className="bg-purple-600 p-2.5 rounded-lg flex-shrink-0">
                                     <ShieldCheck size={16} className="text-white" />
                                 </div>
                                 <div>
@@ -422,7 +425,7 @@ const ExistingUsers = () => {
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">User Role</label>
                                     <select value={editRole} onChange={(e) => setEditRole(e.target.value)}
-                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700">
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-700">
                                         <option value="">Select Role</option>
                                         <option value="store_user">Store User</option>
                                         <option value="store_manager">Store Manager</option>
@@ -435,12 +438,12 @@ const ExistingUsers = () => {
                                     <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Store Name</label>
                                     <input value={editUsername} onChange={(e) => setEditUsername(e.target.value)}
                                         placeholder="G.MG Road"
-                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">User Type</label>
                                     <select value={editPower} onChange={(e) => setEditPower(e.target.value)}
-                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700">
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-700">
                                         <option value="normal">Normal</option>
                                         <option value="admin">Admin</option>
                                     </select>
@@ -451,19 +454,19 @@ const ExistingUsers = () => {
                                     <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Email Address</label>
                                     <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)}
                                         placeholder="store@example.com"
-                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Phone Number</label>
                                     <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)}
                                         placeholder="+91 98765 43210"
-                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">GST Number</label>
                                     <input value={editGst} onChange={(e) => setEditGst(e.target.value)}
                                         placeholder="123450000AAz5"
-                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -471,14 +474,14 @@ const ExistingUsers = () => {
                                     <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Loc Code</label>
                                     <input value={editLocCode} onChange={(e) => setEditLocCode(e.target.value)}
                                         placeholder="102"
-                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-600 uppercase mb-1.5">Store Address</label>
                                     <textarea value={editAddress} onChange={(e) => setEditAddress(e.target.value)}
                                         placeholder="Address"
                                         rows="2"
-                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+                                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500 resize-none" />
                                 </div>
                             </div>
 
@@ -492,7 +495,7 @@ const ExistingUsers = () => {
                                             onChange={(e) => { setEditStoreSearch(e.target.value); setShowEditStoreDropdown(true); }}
                                             onFocus={() => setShowEditStoreDropdown(true)}
                                             placeholder="Search and add stores..."
-                                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-500"
                                         />
                                         {showEditStoreDropdown && editFilteredStores.length > 0 && (
                                             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
@@ -511,7 +514,7 @@ const ExistingUsers = () => {
                                                                 setShowEditStoreDropdown(false);
                                                             }}
                                                             className={`px-3 py-2 text-sm flex items-center justify-between ${
-                                                                isTaken ? "text-gray-400 bg-gray-50 cursor-not-allowed" : "hover:bg-blue-50 cursor-pointer text-gray-700"
+                                                                isTaken ? "text-gray-400 bg-gray-50 cursor-not-allowed" : "hover:bg-purple-50 cursor-pointer text-gray-700"
                                                             }`}
                                                         >
                                                             <span>{store.locName} ({store.locCode})</span>
@@ -525,11 +528,11 @@ const ExistingUsers = () => {
                                     {editAllowedLocCodes.length > 0 && (
                                         <div className="flex flex-wrap gap-2">
                                             {editAllowedLocCodes.map((code) => (
-                                                <span key={code} className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                                                <span key={code} className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
                                                     {getStoreName(code)}
                                                     <button
                                                         type="button"
-                                                        className="no-blue-button text-blue-500 hover:text-blue-800"
+                                                        className="no-blue-button text-purple-500 hover:text-purple-800"
                                                         style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '14px', lineHeight: 1 }}
                                                         onMouseDown={(e) => {
                                                             e.preventDefault();
@@ -554,7 +557,7 @@ const ExistingUsers = () => {
                                     CANCEL
                                 </button>
                                 <button onClick={handleEditSave} disabled={editLoading}
-                                    className={`px-8 py-3 rounded-xl font-semibold text-white ${editLoading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}>
+                                    className={`px-8 py-3 rounded-xl font-semibold text-white ${editLoading ? "bg-gray-400" : "bg-purple-600 hover:bg-purple-700"}`}>
                                     {editLoading ? "SAVING..." : "SAVE CHANGES"}
                                 </button>
                             </div>

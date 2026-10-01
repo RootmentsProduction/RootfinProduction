@@ -4,8 +4,10 @@ import { createPortal } from "react-dom";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Search, X, Plus, ChevronDown, Trash2, RefreshCw } from "lucide-react";
 import Head from "../components/Head";
+import Header from "../components/Header";
 import baseUrl from "../api/api";
 import { mapLocNameToWarehouse as mapWarehouse } from "../utils/warehouseMapping";
+import useSidebar from "../hooks/useSidebar";
 
 const Label = ({ children, required = false }) => (
   <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${required ? "text-[#ef4444]" : "text-[#64748b]"}`}>
@@ -702,6 +704,7 @@ const ItemDropdown = ({ rowId, value, onChange, warehouse, onStockFetched, userW
 };
 
 const InventoryAdjustmentCreate = () => {
+  const isSidebarOpen = useSidebar();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = !!id;
@@ -712,6 +715,7 @@ const InventoryAdjustmentCreate = () => {
   const user = userStr ? JSON.parse(userStr) : null;
   const userId = user?.email || user?._id || user?.id || "";
   const isAdmin = user?.power === "admin";
+  const isSuperAdmin = user?.role === "superadmin" || (user?.power === "admin" && user?.role === "superadmin");
   
   // Fallback locations mapping
   const fallbackLocations = [
@@ -1416,7 +1420,7 @@ const InventoryAdjustmentCreate = () => {
         }));
       }
       
-      alert(`Adjustment ${isEditMode ? "updated" : "saved"} successfully as ${status === "draft" ? "Draft" : "Adjusted"}`);
+      alert(`Adjustment ${isEditMode ? "updated" : "saved"} successfully as ${status === "draft" ? "Draft" : status === "pending_approval" ? "Pending Approval" : "Adjusted"}`);
       navigate("/inventory/adjustments");
     } catch (error) {
       console.error("Error saving adjustment:", error);
@@ -1427,18 +1431,20 @@ const InventoryAdjustmentCreate = () => {
   };
 
   // Enter key to save adjustment
-  useEnterToSave(() => handleSave("adjusted"), saving);
+  useEnterToSave(() => handleSave(isSuperAdmin ? "adjusted" : "pending_approval"), saving);
   
   if (loading) {
     return (
-      <div className="p-6 ml-64 bg-[#f5f7fb] min-h-screen flex items-center justify-center">
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen flex items-center justify-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-[#64748b]">Loading adjustment...</div>
       </div>
     );
   }
   
   return (
-    <div className="p-6 ml-64 bg-[#f5f7fb] min-h-screen">
+    <>
+      <Header title={isEditMode ? "Edit Adjustment" : "New Adjustment"} />
+    <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       <Head
         title={isEditMode ? "Edit Adjustment" : "New Adjustment"}
         description=""
@@ -1707,13 +1713,23 @@ const InventoryAdjustmentCreate = () => {
           >
             {saving ? "Saving..." : "Save as Draft"}
           </button>
-          <button
-            onClick={() => handleSave("adjusted")}
-            disabled={saving}
-            className="rounded-md border border-[#d7dcf5] px-4 py-2 text-sm font-medium text-[#475569] transition hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? "Saving..." : "Convert to Adjusted"}
-          </button>
+          {isSuperAdmin ? (
+            <button
+              onClick={() => handleSave("adjusted")}
+              disabled={saving}
+              className="rounded-md border border-[#d7dcf5] px-4 py-2 text-sm font-medium text-[#475569] transition hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? "Saving..." : "Convert to Adjusted"}
+            </button>
+          ) : (
+            <button
+              onClick={() => handleSave("pending_approval")}
+              disabled={saving}
+              className="rounded-md border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? "Saving..." : "Submit for Approval"}
+            </button>
+          )}
           <Link
             to="/inventory/adjustments"
             className="rounded-md border border-[#d7dcf5] px-4 py-2 text-sm font-medium text-[#475569] transition hover:bg-white"
@@ -1723,6 +1739,7 @@ const InventoryAdjustmentCreate = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

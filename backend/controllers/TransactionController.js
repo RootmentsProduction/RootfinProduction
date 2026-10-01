@@ -99,6 +99,7 @@ export const CreatePayment = async (req, res) => {
     const {
       type,
       category,
+      subCategory,
       remark,
       amount,
       cash,
@@ -110,6 +111,7 @@ export const CreatePayment = async (req, res) => {
       date,
       invoiceNo,        // may be omitted
       isSecurityReturn,
+      isAdminLevel,
       attachment        // 🔺 ADDED  (base-64 string from React)
     } = req.body;
 
@@ -158,6 +160,7 @@ export const CreatePayment = async (req, res) => {
     const newTx = await Transaction.create({
       type,
       category,
+      subCategory: subCategory || "",
       remark,
       amount,
       quantity,
@@ -168,6 +171,7 @@ export const CreatePayment = async (req, res) => {
       paymentMethod,
       date,
       invoiceNo: finalInvoice,
+      isAdminLevel,
       attachment: attachmentObj                     // 🔺 ADDED
     });
 

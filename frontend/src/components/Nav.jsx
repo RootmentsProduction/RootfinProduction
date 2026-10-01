@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
     FileText,
@@ -27,9 +27,52 @@ import {
     ShoppingBasket,
     UserPlus,
     UserCog,
-    KeyRound
+    KeyRound,
+    Menu,
+    ChevronLeft
 } from "lucide-react";
 import salesInventoryAccessConfig from "../config/salesInventoryAccess.json";
+import baseUrl from "../api/api.js";
+import rootfinLogo from "../assets/rootfin-logo.png";
+
+const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
+
+const formatLocationName = (name) => {
+    if (!name) return name;
+    let formatted = name.trim();
+    formatted = formatted.replace(/^([A-Z])([A-Z][a-z])/g, '$1 $2');
+    formatted = formatted.replace(/^([A-Z])([a-z])/g, '$1 $2');
+    return formatted;
+};
+
+const fallbackLocations = [
+    { "locName": "Warehouse", "locCode": "858" },
+    { "locName": "G-Edappally", "locCode": "702" },
+    { "locName": "HEAD OFFICE01", "locCode": "759" },
+    { "locName": "SG-Trivandrum", "locCode": "700" },
+    { "locName": "Z-Edapally", "locCode": "144" },
+    { "locName": "Z-Edappal", "locCode": "100" },
+    { "locName": "Z-Perinthalmanna", "locCode": "133" },
+    { "locName": "Z-Kottakkal", "locCode": "122" },
+    { "locName": "G-Kottayam", "locCode": "701" },
+    { "locName": "G-Perumbavoor", "locCode": "703" },
+    { "locName": "G-Thrissur", "locCode": "704" },
+    { "locName": "G-Chavakkad", "locCode": "706" },
+    { "locName": "G-Calicut", "locCode": "712" },
+    { "locName": "G-Vadakara", "locCode": "708" },
+    { "locName": "G-Edappal", "locCode": "707" },
+    { "locName": "G-Perinthalmanna", "locCode": "709" },
+    { "locName": "G-Kottakkal", "locCode": "711" },
+    { "locName": "G-Manjeri", "locCode": "710" },
+    { "locName": "G-Palakkad", "locCode": "705" },
+    { "locName": "G-Kalpetta", "locCode": "717" },
+    { "locName": "G-Kannur", "locCode": "716" },
+    { "locName": "G-Mg Road", "locCode": "718" },
+    { "locName": "Production", "locCode": "101" },
+    { "locName": "Office", "locCode": "102" },
+    { "locName": "WAREHOUSE", "locCode": "103" },
+    { "locName": "Dappr Squad", "locCode": "555" }
+];
 
 const Nav = () => {
     const location = useLocation();
@@ -39,6 +82,8 @@ const Nav = () => {
     // Admin users always have access, regular users need to be in the allowed list
     const userEmail = currentuser?.email?.toLowerCase() || "";
     const isAdmin = currentuser?.power === 'admin';
+    const isSuperAdmin = (currentuser?.role || "").toLowerCase() === "superadmin";
+    const isAdminOrSuperAdmin = isAdmin || isSuperAdmin;
     const isClusterManager = (currentuser?.role || "").toLowerCase() === "cluster_manager";
     const isInAllowedList = salesInventoryAccessConfig.allowedEmails
         .map(email => email.toLowerCase())
@@ -47,7 +92,140 @@ const Nav = () => {
 
     const activePath = location.pathname;
 
-    const [isOpen, setIsOpen] = useState(true);
+    const [isHovered, setIsHovered] = useState(false);
+    const isOpen = isHovered;
+
+    const [allLocations, setAllLocations] = useState(fallbackLocations);
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const [showLocationMenu, setShowLocationMenu] = useState(false);
+    const userMenuRef = useRef(null);
+    const locationMenuRef = useRef(null);
+
+    const getInitialUser = () => {
+        try {
+            return JSON.parse(localStorage.getItem("rootfinuser")) || {};
+        } catch {
+            return {};
+        }
+    };
+    const [currentUser, setCurrentUser] = useState(getInitialUser());
+
+    useEffect(() => {
+        const fetchStores = async () => {
+            try {
+                const response = await fetch(`${API_URL}/api/stores`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.stores && Array.isArray(data.stores)) {
+                        const fallbackMap = new Map(fallbackLocations.map(f => [f.locCode, f.locName]));
+                        const backendStores = data.stores.map(store => ({
+                            locName: fallbackMap.get(store.locCode) || store.name,
+                            locCode: store.locCode
+                        }));
+                        const mergedLocations = [...backendStores];
+                        const backendCodes = new Set(backendStores.map(s => s.locCode));
+                        fallbackLocations.forEach(fallback => {
+                            if (!backendCodes.has(fallback.locCode)) {
+                                mergedLocations.push(fallback);
+                            }
+                        });
+                        const sortedLocations = mergedLocations.sort((a, b) =>
+                            a.locName.localeCompare(b.locName)
+                        );
+                        setAllLocations(sortedLocations);
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching stores in Nav:", error);
+            }
+            const sortedLocations = [...fallbackLocations].sort((a, b) =>
+                a.locName.localeCompare(b.locName)
+            );
+            setAllLocations(sortedLocations);
+        };
+        fetchStores();
+    }, []);
+
+    // Close menus when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+                setShowUserMenu(false);
+            }
+            if (locationMenuRef.current && !locationMenuRef.current.contains(event.target)) {
+                setShowLocationMenu(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        const handleToggleSidebar = () => {
+            setIsHovered(prev => !prev);
+        };
+        document.addEventListener("toggle-sidebar", handleToggleSidebar);
+        return () => document.removeEventListener("toggle-sidebar", handleToggleSidebar);
+    }, []);
+
+    const handleChangeLocation = (e) => {
+        const selectedCode = e.target.value;
+        const selectedItem = allLocations.find(item => item.locCode === selectedCode);
+        if (selectedItem) {
+            const updatedUser = {
+                ...currentUser,
+                locCode: selectedItem.locCode,
+                username: selectedItem.locName,
+            };
+            localStorage.setItem("rootfinuser", JSON.stringify(updatedUser));
+            setCurrentUser(updatedUser);
+            window.location.reload();
+        }
+    };
+
+    const handleLogout = () => {
+        try {
+            localStorage.removeItem("rootfinuser");
+            window.location.reload();
+        } catch (error) {
+            console.error("Logout error:", error);
+        }
+    };
+
+    const locationDisplayName =
+        allLocations.find(loc => loc.locCode === currentUser?.locCode)?.locName ||
+        currentUser?.storeName ||
+        currentUser?.username ||
+        currentUser?.locName ||
+        "";
+
+    // Determine user display name for the profile tab
+    // If user is admin / superadmin, always show 'Admin' (not store name or selected location)
+    const getDisplayName = () => {
+        if (currentUser?.power === "admin" || currentUser?.role === "admin" || currentUser?.role === "superadmin") {
+            return "Admin";
+        }
+        if (isClusterManager) {
+            return "Cluster Manager";
+        }
+        const candidateName = currentUser?.name || currentUser?.username;
+        const isStoreName = allLocations.some(
+            loc => loc.locName?.toLowerCase().trim() === candidateName?.toLowerCase().trim()
+        );
+        if (candidateName && !isStoreName) {
+            return candidateName;
+        }
+        return "Staff User";
+    };
+
+    const displayName = getDisplayName();
+
+    useEffect(() => {
+        document.body.classList.add("sidebar-closed");
+        document.body.classList.remove("sidebar-open");
+        window.dispatchEvent(new CustomEvent("sidebar-changed", { detail: { isOpen: false } }));
+    }, []);
 
     const getInitialSection = useMemo(() => {
         if (activePath === "/reports/sales" || activePath === "/reports/sales-by-invoice" || activePath === "/reports/inventory" || activePath === "/reports/income-expense" || activePath === "/securityReport" || activePath === "/Revenuereport" || activePath === "/BookingReport" || activePath === "/RentOutReport" || activePath === "/reports/sales-by-group") {
@@ -103,10 +281,10 @@ const Nav = () => {
         { to: "/sales/returns", label: "Invoice Return", Icon: RotateCcw }
     ];
     const isInventoryActive = inventoryLinks.some((link) => link.to === activePath) ||
-                               activePath.startsWith("/shoe-sales/items") ||
-                               (currentuser.power === 'admin' || currentuser.power === 'warehouse') && activePath.startsWith("/shoe-sales/item-groups") ||
-                               (currentuser.power === 'admin' || currentuser.power === 'warehouse') && activePath.startsWith("/shoe-sales/inactive") ||
-                               activePath.startsWith("/inventory/store-orders");
+        activePath.startsWith("/shoe-sales/items") ||
+        (currentuser.power === 'admin' || currentuser.power === 'warehouse') && activePath.startsWith("/shoe-sales/item-groups") ||
+        (currentuser.power === 'admin' || currentuser.power === 'warehouse') && activePath.startsWith("/shoe-sales/inactive") ||
+        activePath.startsWith("/inventory/store-orders");
     const isSalesActive = salesLinks.some((link) => link.to === activePath);
     const purchaseLinks = [
         { to: "/purchase/orders", label: "Purchase Orders", Icon: ClipboardList },
@@ -116,7 +294,7 @@ const Nav = () => {
         { to: "/purchase/vendors", label: "Vendors", Icon: Users },
     ];
     const isPurchaseActive = purchaseLinks.some((link) => link.to === activePath);
-    
+
     const manageUsersLinks = [
         { to: "/manage-users/add-store", label: "Add New Store", Icon: Store },
         { to: "/manage-users/add-user", label: "Add New User", Icon: UserPlus },
@@ -126,225 +304,322 @@ const Nav = () => {
     const isManageUsersActive = manageUsersLinks.some((link) => link.to === activePath);
 
     const isReportsActive = [
-        "/securityReport", 
-        "/Revenuereport", 
-        "/BookingReport", 
+        "/securityReport",
+        "/Revenuereport",
+        "/BookingReport",
         "/RentOutReport",
         "/reports/income-expense",
         "/reports/sales-by-group",
         ...(hasSalesInventoryAccess ? ["/reports/sales", "/reports/sales-by-invoice", "/reports/inventory"] : [])
     ].includes(activePath);
 
-    const groupButtonClasses = (isActive) =>
-        `sidebar-button flex items-center justify-between w-full rounded-lg px-4 py-3 text-sm font-medium tracking-wide transition-all border ${
-            isActive
-                ? "bg-[#132a4d] text-white border-[#2563eb]/70 shadow-[0_6px_20px_-10px_rgba(37,99,235,0.6)]"
-                : "text-[#9ca3af] border-transparent hover:bg-[#111827] hover:text-white"
+    const groupButtonClasses = (isOpen, hasActiveChild) => {
+        const shouldHighlight = (isOpen && !hasActiveChild) || (!isOpen && hasActiveChild);
+        return `sidebar-button flex items-center justify-between w-full px-5 py-3 text-[14px] font-medium rounded-full transition-all ${shouldHighlight
+            ? "bg-[#a855f7] text-white font-semibold shadow-sm"
+            : (isOpen || hasActiveChild)
+                ? "text-white font-semibold"
+                : "text-zinc-400 hover:text-white hover:bg-[#27272a]/60"
         }`;
+    };
 
     const subLinkClasses = (path) =>
-        `flex items-center gap-2 rounded-md px-3 py-2 text-xs transition ${
-            activePath === path
-                ? "border border-[#2563eb]/70 bg-[#1d4ed8] text-white shadow-[0_4px_14px_-8px_rgba(37,99,235,0.8)]"
-                : "border border-transparent text-[#94a3b8] hover:bg-[#111827] hover:text-white"
+        `block w-full pl-6 pr-4 py-2.5 text-[13px] whitespace-nowrap truncate transition-colors ${activePath === path
+            ? "bg-[#a855f7] text-white font-semibold"
+            : "text-zinc-400 font-medium hover:text-white hover:bg-[#27272a]/40"
         }`;
 
     const singleLinkClasses = (path) =>
-        `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
-            activePath === path
-                ? "border border-[#2563eb]/70 bg-[#132a4d] text-white shadow-[0_4px_14px_-8px_rgba(37,99,235,0.8)]"
-                : "border border-transparent text-[#94a3b8] hover:bg-[#111827] hover:text-white"
+        `flex items-center gap-3.5 px-5 py-3 text-[14px] font-medium whitespace-nowrap truncate transition-all rounded-full ${activePath === path
+            ? "bg-[#a855f7] text-white font-semibold shadow-sm"
+            : "text-zinc-400 hover:text-white hover:bg-[#27272a]/60"
         }`;
 
     // alert(location.pathname)
     const isInvoiceCreatePage = activePath === "/sales/invoices/new" || activePath.startsWith("/sales/invoices/edit");
-    const sidebarWidth = isInvoiceCreatePage ? "w-52" : "w-64";
-    const sidebarTranslate = isInvoiceCreatePage ? "-translate-x-52" : "-translate-x-64";
+    const sidebarWidth = isInvoiceCreatePage ? "w-56" : "w-64";
+    const sidebarTranslate = isInvoiceCreatePage ? "-translate-x-56" : "-translate-x-64";
 
     return (
         <div className={`flex ${location.pathname === "/login" ? "hidden" : "block"}`}>
+            {/* Invisible hover strip on left edge to trigger sidebar on mouse hover or tap */}
+            <div
+                onMouseEnter={() => setIsHovered(true)}
+                onClick={() => setIsHovered(!isHovered)}
+                className="fixed top-0 left-0 w-8 md:w-6 h-full z-[99990] cursor-pointer no-print"
+                title="Tap or Hover to view menu"
+            />
+
+            {/* Mobile Backdrop overlay */}
+            {isOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-[99998] lg:hidden"
+                    onClick={() => setIsHovered(false)}
+                />
+            )}
+
             {/* Sidebar */}
             <div
-                className={`fixed top-0 left-0 h-full ${sidebarWidth} transform overflow-y-auto bg-[#0b1120] pb-10 pl-4 pr-3 pt-6 text-[#cbd5f5] transition-transform duration-300 ${
-                    isOpen ? "translate-x-0" : sidebarTranslate
-                }`}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                className={`fixed top-0 left-0 h-full ${sidebarWidth} z-[99999] transform flex flex-col justify-between bg-[#18181b] text-white transition-transform duration-300 shadow-2xl ${isOpen ? "translate-x-0" : sidebarTranslate
+                    }`}
             >
-                <nav className="space-y-3">
+                <div className="flex flex-col flex-1 overflow-hidden">
+                    <div className="pl-7 pr-5 pt-6 pb-15 flex items-center justify-between">
+                        <Link to="/" className="flex items-center">
+                            <img
+                                src={rootfinLogo}
+                                alt="RootFin"
+                                className="h-6 w-auto object-contain select-none"
+                            />
+                        </Link>
+                    </div>
+                    <nav className="space-y-5 px-3 overflow-y-auto pb-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 
-                    {/* ── CLUSTER MANAGER: only Financial Summary + Reports ── */}
-                    {isClusterManager ? (
-                        <>
-                            <Link to="/datewisedaybook" className={singleLinkClasses("/datewisedaybook")}>
-                                <FileTextIcon size={18} />
-                                <span>Financial Summary</span>
-                            </Link>
+                        {/* ── CLUSTER MANAGER: only Financial Summary + Reports ── */}
+                        {isClusterManager ? (
+                            <>
+                                <Link to="/datewisedaybook" className={singleLinkClasses("/datewisedaybook")}>
+                                    <FileTextIcon size={18} className="shrink-0" />
+                                    <span>Financial Summary</span>
+                                </Link>
 
-                            <div>
-                                <button
-                                    onClick={() => setOpenSection(isReportsOpen ? null : "reports")}
-                                    className={groupButtonClasses(isReportsActive || isReportsOpen)}
-                                >
-                                    <div className="flex w-full items-center gap-3">
+                                <div>
+                                    <button
+                                        onClick={() => setOpenSection(isReportsOpen ? null : "reports")}
+                                        className={groupButtonClasses(isReportsOpen, isReportsActive)}
+                                    >
+                                        <div className="flex w-full items-center gap-3.5">
+                                            <LineChart size={18} className="shrink-0" />
+                                            <span className="flex-1 text-left whitespace-nowrap truncate">Reports</span>
+                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isReportsOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                        </div>
+                                    </button>
+                                    {isReportsOpen && (
+                                        <div className="mt-1 space-y-0.5 border-l border-[#27272a] ml-[25px]">
+                                            <Link to="/BookingReport" className={subLinkClasses('/BookingReport')}><span>Booking Report</span></Link>
+                                            <Link to="/RentOutReport" className={subLinkClasses('/RentOutReport')}><span>Rent Out Report</span></Link>
+                                            <Link to="/securityReport" className={subLinkClasses('/securityReport')}><span>Security Report</span></Link>
+                                            <Link to="/Revenuereport" className={subLinkClasses('/Revenuereport')}><span>Revenue Report</span></Link>
+                                            <Link to="/reports/sales-by-invoice" className={subLinkClasses('/reports/sales-by-invoice')}><span>Sales by Invoice</span></Link>
+                                            <Link to="/reports/sales" className={subLinkClasses('/reports/sales')}><span>Sales Report</span></Link>
+                                            <Link to="/reports/sales-by-group" className={subLinkClasses('/reports/sales-by-group')}><span>Sales by Group</span></Link>
+                                            <Link to="/reports/inventory" className={subLinkClasses('/reports/inventory')}><span>Inventory Report</span></Link>
+                                            <Link to="/reports/income-expense" className={subLinkClasses('/reports/income-expense')}><span>Income &amp; Expense</span></Link>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* Dashboard - Only for Admin / Super Admin */}
+                                {isAdminOrSuperAdmin && (
+                                    <Link to="/" className={singleLinkClasses("/")}>
                                         <LineChart size={18} className="shrink-0" />
-                                        <span className="flex-1 text-left">Reports</span>
-                                        <ChevronDown size={16} className={`shrink-0 transition-transform ${isReportsOpen ? "rotate-180" : "rotate-0"}`} />
-                                    </div>
-                                </button>
-                                {isReportsOpen && (
-                                    <div className="mt-2 space-y-1 border-l border-[#1b233a]/70 pl-3">
-                                        <Link to="/BookingReport" className={subLinkClasses('/BookingReport')}><ShoppingBag size={16} /><span>Booking Report</span></Link>
-                                        <Link to="/RentOutReport" className={subLinkClasses('/RentOutReport')}><Package size={16} /><span>Rent Out Report</span></Link>
-                                        <Link to="/securityReport" className={subLinkClasses('/securityReport')}><FileText size={16} /><span>Security Report</span></Link>
-                                        <Link to="/Revenuereport" className={subLinkClasses('/Revenuereport')}><DollarSign size={16} /><span>Revenue Report</span></Link>
-                                        <Link to="/reports/sales-by-invoice" className={subLinkClasses('/reports/sales-by-invoice')}><FileTextIcon size={16} /><span>Sales by Invoice</span></Link>
-                                        <Link to="/reports/sales" className={subLinkClasses('/reports/sales')}><ShoppingCart size={16} /><span>Sales Report</span></Link>
-                                        <Link to="/reports/sales-by-group" className={subLinkClasses('/reports/sales-by-group')}><Box size={16} /><span>Sales by Group</span></Link>
-                                        <Link to="/reports/inventory" className={subLinkClasses('/reports/inventory')}><Box size={16} /><span>Inventory Report</span></Link>
-                                        <Link to="/reports/income-expense" className={subLinkClasses('/reports/income-expense')}><LineChart size={16} /><span>Income &amp; Expense</span></Link>
-                                    </div>
+                                        <span>Dashboard</span>
+                                    </Link>
                                 )}
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            {/* Day Book - Standalone */}
-                            <Link to="/" className={singleLinkClasses("/")}>
-                                <FileText size={18} />
-                                <span>Day Book</span>
-                            </Link>
 
-                            {/* Financial Summary - Standalone */}
-                            <Link to="/datewisedaybook" className={singleLinkClasses("/datewisedaybook")}>
-                                <FileTextIcon size={18} />
-                                <span>Financial Summary</span>
-                            </Link>
+                                {/* Day Book - Standalone */}
+                                <Link to="/daybook" className={singleLinkClasses("/daybook")}>
+                                    <FileText size={18} className="shrink-0" />
+                                    <span>Day Book</span>
+                                </Link>
 
-                            {/* Sales */}
-                            {hasSalesInventoryAccess && (
-                                <div>
-                                    <button onClick={() => setOpenSection(isSalesOpen ? null : "sales")} className={groupButtonClasses(isSalesActive || isSalesOpen)}>
-                                        <div className="flex w-full items-center gap-3">
-                                            <ShoppingCart size={18} className="shrink-0" />
-                                            <span className="flex-1 text-left">Sales</span>
-                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isSalesOpen ? "rotate-180" : "rotate-0"}`} />
-                                        </div>
-                                    </button>
-                                    {isSalesOpen && (
-                                        <div className="mt-2 space-y-1 border-l border-[#1b233a]/70 pl-3">
-                                            {salesLinks.map(({ to, label, Icon }) => (
-                                                <Link key={to} to={to} className={subLinkClasses(to)}><Icon size={16} /><span>{label}</span></Link>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                                {/* Financial Summary - Standalone */}
+                                <Link to="/datewisedaybook" className={singleLinkClasses("/datewisedaybook")}>
+                                    <FileTextIcon size={18} className="shrink-0" />
+                                    <span>Financial Summary</span>
+                                </Link>
 
-                            {/* Inventory */}
-                            {hasSalesInventoryAccess && (
-                                <div>
-                                    <button onClick={() => setOpenSection(isInventoryOpen ? null : "inventory")} className={groupButtonClasses(isInventoryActive || isInventoryOpen)}>
-                                        <div className="flex w-full items-center gap-3">
-                                            <Box size={18} className="shrink-0" />
-                                            <span className="flex-1 text-left">Inventory</span>
-                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isInventoryOpen ? "rotate-180" : "rotate-0"}`} />
-                                        </div>
-                                    </button>
-                                    {isInventoryOpen && (
-                                        <div className="mt-2 space-y-1 border-l border-[#1b233a]/70 pl-3">
-                                            {inventoryLinks.map(({ to, label, Icon }) => (
-                                                <Link key={to} to={to} className={subLinkClasses(to)}><Icon size={16} /><span>{label}</span></Link>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Purchase */}
-                            {(currentuser.power === 'admin' || currentuser.power === 'warehouse') && (
-                                <div>
-                                    <button onClick={() => setOpenSection(isPurchaseOpen ? null : "purchase")} className={groupButtonClasses(isPurchaseActive || isPurchaseOpen)}>
-                                        <div className="flex w-full items-center gap-3">
-                                            <Truck size={18} className="shrink-0" />
-                                            <span className="flex-1 text-left">Purchase</span>
-                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isPurchaseOpen ? "rotate-180" : "rotate-0"}`} />
-                                        </div>
-                                    </button>
-                                    {isPurchaseOpen && (
-                                        <div className="mt-2 space-y-1 border-l border-[#1b233a]/70 pl-3">
-                                            {purchaseLinks.map(({ to, label, Icon }) => (
-                                                <Link key={to} to={to} className={subLinkClasses(to)}><Icon size={16} /><span>{label}</span></Link>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Reports */}
-                            <div>
-                                <button onClick={() => setOpenSection(isReportsOpen ? null : "reports")} className={groupButtonClasses(isReportsActive || isReportsOpen)}>
-                                    <div className="flex w-full items-center gap-3">
-                                        <LineChart size={18} className="shrink-0" />
-                                        <span className="flex-1 text-left">Reports</span>
-                                        <ChevronDown size={16} className={`shrink-0 transition-transform ${isReportsOpen ? "rotate-180" : "rotate-0"}`} />
-                                    </div>
-                                </button>
-                                {isReportsOpen && (
-                                    <div className="mt-2 space-y-1 border-l border-[#1b233a]/70 pl-3">
-                                        <Link to="/BookingReport" className={subLinkClasses('/BookingReport')}><ShoppingBag size={16} /><span>Booking Report</span></Link>
-                                        <Link to="/RentOutReport" className={subLinkClasses('/RentOutReport')}><Package size={16} /><span>Rent Out Report</span></Link>
-                                        <Link to="/securityReport" className={subLinkClasses('/securityReport')}><FileText size={16} /><span>Security Report</span></Link>
-                                        <Link to="/Revenuereport" className={subLinkClasses('/Revenuereport')}><DollarSign size={16} /><span>Revenue Report</span></Link>
-                                        {hasSalesInventoryAccess && (
-                                            <>
-                                                <Link to="/reports/sales-by-invoice" className={subLinkClasses('/reports/sales-by-invoice')}><FileTextIcon size={16} /><span>Sales by Invoice</span></Link>
-                                                <Link to="/reports/sales" className={subLinkClasses('/reports/sales')}><ShoppingCart size={16} /><span>Sales Report</span></Link>
-                                                <Link to="/reports/sales-by-group" className={subLinkClasses('/reports/sales-by-group')}><Box size={16} /><span>Sales by Group</span></Link>
-                                                <Link to="/reports/inventory" className={subLinkClasses('/reports/inventory')}><Box size={16} /><span>Inventory Report</span></Link>
-                                            </>
-                                        )}
-                                        <Link to="/reports/income-expense" className={subLinkClasses('/reports/income-expense')}><LineChart size={16} /><span>Income &amp; Expense</span></Link>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Income & Expenses */}
-                            <Link to="/income" className={singleLinkClasses("/income")}><DollarSign size={18} /><span>Income</span></Link>
-                            <Link to="/expenses" className={singleLinkClasses("/expenses")}><DollarSign size={18} /><span>Expenses</span></Link>
-
-
-
-                            {/* Admin only */}
-                            {(currentuser.power === 'admin' || currentuser.locCode === '102') && (
-                                <>
-                                    {currentuser.power === 'admin' && (
-                                        <Link to="/CloseReport" className={singleLinkClasses("/CloseReport")}><FolderClosed size={18} /><span>Close Report</span></Link>
-                                    )}
-                                    <Link to="/AdminClose" className={singleLinkClasses("/AdminClose")}><Notebook size={18} /><span>Admin Close</span></Link>
-                                    
-                                    {/* Manage Users — admin only */}
-                                    {currentuser.power === 'admin' && (
+                                {/* Sales */}
+                                {hasSalesInventoryAccess && (
                                     <div>
-                                        <button onClick={() => setOpenSection(isManageUsersOpen ? null : "manageUsers")} className={groupButtonClasses(isManageUsersActive || isManageUsersOpen)}>
-                                            <div className="flex w-full items-center gap-3">
-                                                <Users size={18} className="shrink-0" />
-                                                <span className="flex-1 text-left">Manage Users</span>
-                                                <ChevronDown size={16} className={`shrink-0 transition-transform ${isManageUsersOpen ? "rotate-180" : "rotate-0"}`} />
+                                        <button onClick={() => setOpenSection(isSalesOpen ? null : "sales")} className={groupButtonClasses(isSalesOpen, isSalesActive)}>
+                                            <div className="flex w-full items-center gap-3.5">
+                                                <ShoppingCart size={18} className="shrink-0" />
+                                                <span className="flex-1 text-left whitespace-nowrap truncate">Sales</span>
+                                                <ChevronDown size={16} className={`shrink-0 transition-transform ${isSalesOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
                                             </div>
                                         </button>
-                                        {isManageUsersOpen && (
-                                            <div className="mt-2 space-y-1 border-l border-[#1b233a]/70 pl-3">
-                                                {manageUsersLinks.map(({ to, label, Icon }) => (
-                                                    <Link key={to} to={to} className={subLinkClasses(to)}><Icon size={16} /><span>{label}</span></Link>
+                                        {isSalesOpen && (
+                                            <div className="mt-1 space-y-0.5 border-l border-[#27272a] ml-[25px]">
+                                                {salesLinks.map(({ to, label }) => (
+                                                    <Link key={to} to={to} className={subLinkClasses(to)}><span>{label}</span></Link>
                                                 ))}
                                             </div>
                                         )}
                                     </div>
+                                )}
+
+                                {/* Inventory */}
+                                {hasSalesInventoryAccess && (
+                                    <div>
+                                        <button onClick={() => setOpenSection(isInventoryOpen ? null : "inventory")} className={groupButtonClasses(isInventoryOpen, isInventoryActive)}>
+                                            <div className="flex w-full items-center gap-3.5">
+                                                <Box size={18} className="shrink-0" />
+                                                <span className="flex-1 text-left whitespace-nowrap truncate">Inventory</span>
+                                                <ChevronDown size={16} className={`shrink-0 transition-transform ${isInventoryOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                            </div>
+                                        </button>
+                                        {isInventoryOpen && (
+                                            <div className="mt-1 space-y-0.5 border-l border-[#27272a] ml-[25px]">
+                                                {inventoryLinks.map(({ to, label }) => (
+                                                    <Link key={to} to={to} className={subLinkClasses(to)}><span>{label}</span></Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Purchase */}
+                                {(currentuser.power === 'admin' || currentuser.power === 'warehouse') && (
+                                    <div>
+                                        <button onClick={() => setOpenSection(isPurchaseOpen ? null : "purchase")} className={groupButtonClasses(isPurchaseOpen, isPurchaseActive)}>
+                                            <div className="flex w-full items-center gap-3.5">
+                                                <Truck size={18} className="shrink-0" />
+                                                <span className="flex-1 text-left whitespace-nowrap truncate">Purchase</span>
+                                                <ChevronDown size={16} className={`shrink-0 transition-transform ${isPurchaseOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                            </div>
+                                        </button>
+                                        {isPurchaseOpen && (
+                                            <div className="mt-1 space-y-0.5 border-l border-[#27272a] ml-[25px]">
+                                                {purchaseLinks.map(({ to, label }) => (
+                                                    <Link key={to} to={to} className={subLinkClasses(to)}><span>{label}</span></Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Reports */}
+                                <div>
+                                    <button onClick={() => setOpenSection(isReportsOpen ? null : "reports")} className={groupButtonClasses(isReportsOpen, isReportsActive)}>
+                                        <div className="flex w-full items-center gap-3.5">
+                                            <LineChart size={18} className="shrink-0" />
+                                            <span className="flex-1 text-left whitespace-nowrap truncate">Reports</span>
+                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isReportsOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                        </div>
+                                    </button>
+                                    {isReportsOpen && (
+                                        <div className="mt-1 space-y-0.5 border-l border-[#27272a] ml-[25px]">
+                                            <Link to="/BookingReport" className={subLinkClasses('/BookingReport')}><span>Booking Report</span></Link>
+                                            <Link to="/RentOutReport" className={subLinkClasses('/RentOutReport')}><span>Rent Out Report</span></Link>
+                                            <Link to="/securityReport" className={subLinkClasses('/securityReport')}><span>Security Report</span></Link>
+                                            <Link to="/Revenuereport" className={subLinkClasses('/Revenuereport')}><span>Revenue Report</span></Link>
+                                            {hasSalesInventoryAccess && (
+                                                <>
+                                                    <Link to="/reports/sales-by-invoice" className={subLinkClasses('/reports/sales-by-invoice')}><span>Sales by Invoice</span></Link>
+                                                    <Link to="/reports/sales" className={subLinkClasses('/reports/sales')}><span>Sales Report</span></Link>
+                                                    <Link to="/reports/sales-by-group" className={subLinkClasses('/reports/sales-by-group')}><span>Sales by Group</span></Link>
+                                                    <Link to="/reports/inventory" className={subLinkClasses('/reports/inventory')}><span>Inventory Report</span></Link>
+                                                </>
+                                            )}
+                                            <Link to="/reports/income-expense" className={subLinkClasses('/reports/income-expense')}><span>Income &amp; Expense</span></Link>
+                                        </div>
                                     )}
-                                </>
-                            )}
-                        </>
-                    )}
-                </nav>
+                                </div>
+
+                                {/* Income & Expenses */}
+                                <Link to="/income" className={singleLinkClasses("/income")}><DollarSign size={18} className="shrink-0" /><span>Income</span></Link>
+                                <Link to="/expenses" className={singleLinkClasses("/expenses")}><DollarSign size={18} className="shrink-0" /><span>Expenses</span></Link>
+
+                                {/* Admin only */}
+                                {(currentuser.power === 'admin' || currentuser.locCode === '102') && (
+                                    <>
+                                        {currentuser.power === 'admin' && (
+                                            <Link to="/CloseReport" className={singleLinkClasses("/CloseReport")}><FolderClosed size={18} className="shrink-0" /><span>Close Report</span></Link>
+                                        )}
+                                        {(currentuser.power === 'admin' || currentuser.role === 'superadmin') && (
+                                            <Link to="/AdminClose" className={singleLinkClasses("/AdminClose")}><Notebook size={18} className="shrink-0" /><span>Admin Close</span></Link>
+                                        )}
+                                        
+                                        {(currentuser.power === 'admin' || currentuser.role === 'superadmin') && (
+                                            <Link to="/PendingDaybookClosures" className={singleLinkClasses("/PendingDaybookClosures")}><Notebook size={18} className="shrink-0" /><span>Late Closures</span></Link>
+                                        )}
+
+                                        {/* Manage Users — super admin only */}
+                                        {currentuser.role === 'superadmin' && (
+                                            <div>
+                                                <button onClick={() => setOpenSection(isManageUsersOpen ? null : "manageUsers")} className={groupButtonClasses(isManageUsersOpen, isManageUsersActive)}>
+                                                    <div className="flex w-full items-center gap-3.5">
+                                                        <Users size={18} className="shrink-0" />
+                                                        <span className="flex-1 text-left whitespace-nowrap truncate">Manage Users</span>
+                                                        <ChevronDown size={16} className={`shrink-0 transition-transform ${isManageUsersOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                                    </div>
+                                                </button>
+                                                {isManageUsersOpen && (
+                                                    <div className="mt-1 space-y-0.5 border-l border-[#27272a] ml-[25px]">
+                                                        {manageUsersLinks.map(({ to, label }) => (
+                                                            <Link key={to} to={to} className={subLinkClasses(to)}><span>{label}</span></Link>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </>
+                        )}
+                    </nav>
+                </div>
+
+                {/* Fixed Bottom Section: User Profile Tab */}
+                <div className="p-4 bg-[#18181b]">
+                    <div className="relative" ref={userMenuRef}>
+                        {/* User Menu Popover */}
+                        {showUserMenu && (
+                            <div
+                                className="absolute bottom-full left-0 right-0 mb-2 bg-[#18181b] border border-zinc-700 shadow-2xl rounded-2xl p-4 text-white z-50 space-y-3"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="pb-3 border-b border-zinc-800 flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#a855f7] to-[#ec4899] flex items-center justify-center shrink-0 shadow-lg text-white font-bold text-lg">
+                                        {displayName?.charAt(0)?.toUpperCase() || "U"}
+                                    </div>
+                                    <div className="flex flex-col overflow-hidden">
+                                        <span className="text-sm font-bold text-white truncate">
+                                            {displayName}
+                                        </span>
+                                        <span className="text-[11px] text-purple-400 capitalize font-medium">
+                                            {currentUser?.power === 'admin' ? 'Administrator' : (currentUser?.role ? currentUser.role.replace('_', ' ') : 'Staff User')}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full py-2.5 bg-red-600 hover:bg-red-700 active:scale-[0.99] text-white font-semibold rounded-xl text-xs transition-colors flex items-center justify-center gap-2 shadow-md cursor-pointer mt-2"
+                                >
+                                    <span>Logout</span>
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Profile Tab Trigger */}
+                        <div
+                            onClick={() => {
+                                setShowUserMenu(prev => !prev);
+                                setShowLocationMenu(false);
+                            }}
+                            className={`flex items-center gap-3 p-1.5 pr-4 bg-[#27272a] hover:bg-[#3f3f46] transition-all rounded-full cursor-pointer border ${showUserMenu ? "border-purple-500/50" : "border-transparent"
+                                }`}
+                        >
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#a855f7] to-[#ec4899] flex items-center justify-center shrink-0 text-white font-bold text-[15px] shadow-sm">
+                                        {displayName?.charAt(0)?.toUpperCase() || "U"}
+                            </div>
+                            <div className="flex flex-col overflow-hidden text-left">
+                                <span className="text-[13px] font-semibold text-white truncate leading-tight">
+                                    {displayName}
+                                </span>
+                                <span className="text-[11px] text-zinc-400 truncate">
+                                    {currentUser?.email || "admin@gmail.com"}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     )

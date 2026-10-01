@@ -2,19 +2,34 @@
 
 /* CACHE BUST v2.0 - Invoice page NO BLUE buttons - Updated 2026-04-25 */
 
-/* Global Font - Poppins */
+/* Global Font - Instrument Sans */
 @theme {
-  --font-family-sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --font-family-sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
 * {
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 html, body {
-  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 100%;
+  letter-spacing: 0%;
+  overflow-x: auto;
+}
+
+/* Hide scrollbar for sidebar navigation */
+nav::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+}
+nav {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 /* Remove number input spinners (up/down arrows) */
@@ -51,8 +66,9 @@ input[type="number"] {
   scroll-behavior: auto;
 }
 
-/* Button styles for Windows compatibility (excluding login button) */
-button:not([type="submit"]):not(.tax-dropdown-button) {
+/* Button styles for Windows compatibility (excluding login button and invoice page) */
+body:not(:has(.invoice-page-wrapper)) button:not([type="submit"]):not(.tax-dropdown-button),
+button:not([type="submit"]):not(.tax-dropdown-button):not(.invoice-page-wrapper button):not(.payment-method-btn) {
   /* Ensure buttons are visible on older Windows versions */
   appearance: button;
   -webkit-appearance: button;
@@ -86,73 +102,9 @@ button:not([type="submit"]):not(.tax-dropdown-button) {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Apply blue background to ALL buttons for Windows compatibility - EXCLUDES invoice page */
-body:not(:has(.invoice-page-wrapper)) button:not(.sidebar-button):not(.select-option):not(.table-link-button):not(.custom-button):not(.no-blue-button):not(.tax-dropdown-button):not(.gst-treatment-button):not(.state-dropdown-button):not(.action-edit-btn):not(.action-delete-btn):not(.branch-select-btn) {
-  background-color: rgb(37, 99, 235) !important;
-  color: white !important;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 6px 12px !important;
-  border-radius: 4px !important;
-  font-size: 11px !important;
-  font-weight: 300 !important;
-  min-height: 16px !important;
-  min-width: 60px !important;
-}
+/* Remove universal blue button override rule so components can use custom colors like #9B48D7 */
 
-/* Invoice page specific styles - NO BLUE - HIGHEST PRIORITY */
-.invoice-page-wrapper button,
-.invoice-page-wrapper button:not(.keep-blue),
-div.invoice-page-wrapper button {
-  background-color: white !important;
-  color: #374151 !important;
-  border: 1px solid #d1d5db !important;
-  box-shadow: none !important;
-  padding: 0.5rem 1rem !important;
-  border-radius: 0.5rem !important;
-  font-size: 0.875rem !important;
-  font-weight: 500 !important;
-  min-height: auto !important;
-  min-width: auto !important;
-  transform: none !important;
-}
-
-.invoice-page-wrapper button:hover,
-.invoice-page-wrapper button:not(.keep-blue):hover,
-div.invoice-page-wrapper button:hover {
-  background-color: #f9fafb !important;
-  border-color: #9ca3af !important;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.invoice-page-wrapper button:focus,
-.invoice-page-wrapper button:not(.keep-blue):focus,
-div.invoice-page-wrapper button:focus {
-  outline: 2px solid #9ca3af !important;
-  outline-offset: 2px !important;
-}
-
-.invoice-page-wrapper button:active,
-.invoice-page-wrapper button:not(.keep-blue):active,
-div.invoice-page-wrapper button:active {
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-/* Keep the save button blue */
-.invoice-page-wrapper button.keep-blue,
-div.invoice-page-wrapper button.keep-blue {
-  background-color: #1e3a8a !important;
-  color: white !important;
-  border-color: #1e3a8a !important;
-}
-
-.invoice-page-wrapper button.keep-blue:hover,
-div.invoice-page-wrapper button.keep-blue:hover {
-  background-color: #1e40af !important;
-  border-color: #1e40af !important;
-}
+/* Invoice page specific styles */
 
 /* Override input focus colors for invoice page */
 .invoice-page-wrapper input:focus,
@@ -195,16 +147,11 @@ a.no-blue-button {
 }
 
 .sidebar-button {
-  background-color: transparent !important;
-  color: inherit !important;
   border-color: transparent !important;
   box-shadow: none !important;
   min-width: unset !important;
   min-height: unset !important;
-  padding: 0.5rem 0.75rem !important; /* match px-3 py-2 */
-  border-radius: 0.5rem !important;
-  font-size: 0.875rem !important;
-  font-weight: 500 !important;
+  transform: none !important;
 }
 
 .table-link-button {
@@ -295,9 +242,12 @@ body:not(:has(.invoice-page-wrapper)) button:active:not(.no-blue-button):not(.cu
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Focus states for accessibility */
-button:focus {
-  outline: 2px solid #3b82f6;
+/* Focus states for accessibility - only when navigating with keyboard */
+button:focus:not(:focus-visible) {
+  outline: none !important;
+}
+button:focus-visible {
+  outline: 2px solid #8b5cf6;
   outline-offset: 2px;
 }
 
@@ -390,19 +340,22 @@ button.action-delete-btn:hover {
 }
 @media print {
   /* Hide everything except printable content */
-  body > *:not(#root),
+  body > *:not(#root):not(#printable-invoice):not(#printable-daybook):not(.print-content-wrapper),
   nav,
   aside,
-  header:not(#printable-invoice header),
+  header:not(#printable-invoice header):not(#printable-daybook header),
   footer,
-  .ml-64,
-  .w-80,
   .sidebar,
   [class*="sidebar"],
   button,
   .no-print {
     display: none !important;
     visibility: hidden !important;
+  }
+
+  .ml-64, .w-80, [class*="ml-"] {
+    margin-left: 0 !important;
+    width: 100% !important;
   }
 
   /* Reset body for print */
@@ -414,13 +367,11 @@ button.action-delete-btn:hover {
     print-color-adjust: exact !important;
   }
 
-  /* Show only the printable invoice */
-  #printable-invoice {
+  /* Show only the printable invoice/daybook */
+  #printable-invoice,
+  #printable-daybook {
     display: block !important;
     visibility: visible !important;
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
@@ -429,49 +380,17 @@ button.action-delete-btn:hover {
     box-shadow: none !important;
   }
 
-  #printable-invoice * {
+  #printable-invoice *,
+  #printable-daybook * {
     visibility: visible !important;
   }
 
   /* Page setup */
   @page {
-    size: A4;
     margin: 0;
   }
 }
 
-/* ============================================================
-   INVOICE PAGE OVERRIDES - MUST BE LAST TO WIN SPECIFICITY
-   ============================================================ */
-.invoice-page-wrapper button,
-.invoice-page-wrapper button:not(.keep-blue) {
-  background-color: white !important;
-  color: #374151 !important;
-  border: 1px solid #d1d5db !important;
-  box-shadow: none !important;
-  padding: 0.5rem 1rem !important;
-  border-radius: 0.5rem !important;
-  font-size: 0.875rem !important;
-  font-weight: 500 !important;
-  min-height: auto !important;
-  min-width: auto !important;
-  transform: none !important;
-}
-.invoice-page-wrapper button:hover,
-.invoice-page-wrapper button:not(.keep-blue):hover {
-  background-color: #f9fafb !important;
-  border-color: #9ca3af !important;
-  transform: none !important;
-  box-shadow: none !important;
-}
-.invoice-page-wrapper button.keep-blue {
-  background-color: #1e3a8a !important;
-  color: white !important;
-  border-color: #1e3a8a !important;
-}
-.invoice-page-wrapper button.keep-blue:hover {
-  background-color: #1e40af !important;
-}
 
 /* ============================================================
    DROPDOWN ANIMATIONS - Smooth open/close
@@ -509,36 +428,66 @@ button.action-delete-btn:hover {
 }
 
 /* ============================================================
-   INVOICE PAGE - Professional polish
+   INVOICE PAGE - Sharp edges, Instrument Sans typography
    ============================================================ */
-.invoice-page-wrapper {
-  font-family: 'Inter', 'Poppins', sans-serif;
-  font-size: 13px;
+.invoice-page-wrapper,
+.invoice-page-wrapper * {
+  font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
 }
 
-/* Scale down all text and spacing at 100% zoom to match 90% look */
-.invoice-page-wrapper .ml-64 {
-  font-size: 13px;
+.invoice-page-wrapper {
+  font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 100%;
+  letter-spacing: 0%;
+}
+
+/* Sharp edges for sharp containers */
+.invoice-page-wrapper .rounded-none {
+  border-radius: 0 !important;
+}
+
+/* Payment method buttons with visible borders matching design */
+.payment-method-btn,
+.invoice-page-wrapper .payment-method-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.15s ease-in-out !important;
+  cursor: pointer !important;
+  min-height: 50px !important;
+}
+
+.payment-method-btn:hover,
+.invoice-page-wrapper .payment-method-btn:hover {
+  border-color: #c084fc !important;
+  background-color: #faf5ff !important;
+}
+
+.payment-method-btn.payment-method-selected,
+.invoice-page-wrapper .payment-method-btn.payment-method-selected {
+  border: 2px solid #8b5cf6 !important;
+  background-color: #f5f3ff !important;
+  color: #111827 !important;
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.2) !important;
 }
 
 .invoice-page-wrapper input,
 .invoice-page-wrapper select,
 .invoice-page-wrapper textarea {
-  font-size: 13px !important;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.invoice-page-wrapper label,
-.invoice-page-wrapper p,
-.invoice-page-wrapper span,
-.invoice-page-wrapper div {
-  font-size: inherit;
 }
 
 .invoice-page-wrapper input:focus,
 .invoice-page-wrapper select:focus {
-  border-color: #6366f1 !important;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08) !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.12) !important;
   outline: none !important;
 }
 
@@ -556,3 +505,139 @@ button.action-delete-btn:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
 }
 
+/* High-specificity Global Sidebar responsive margin rules for Header and Page Containers */
+html body.sidebar-closed nav.bg-white,
+html body.sidebar-closed .ml-64,
+html body.sidebar-closed [class*="ml-64"],
+html body.sidebar-closed [class*="ml-[240px]"],
+html body.sidebar-closed [class*="ml-[290px]"] {
+  margin-left: 0 !important;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+html body.sidebar-open nav.bg-white,
+html body.sidebar-open div[class*="ml-64"],
+html body.sidebar-open .ml-64 {
+  margin-left: 16rem !important;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+html body.sidebar-open [class*="ml-[240px]"] {
+  margin-left: 240px !important;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+html body.sidebar-open [class*="ml-[290px]"] {
+  margin-left: 290px !important;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+
+@media print {
+  .daybook-print-table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+  .daybook-print-table th,
+  .daybook-print-table td {
+    border: 1px solid black !important;
+    padding: 6px 8px !important;
+  }
+  .daybook-print-table thead tr th {
+    background-color: #7a7a7a !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .daybook-print-table tbody tr:first-child td {
+    font-weight: bold !important;
+  }
+  .daybook-print-table tfoot tr td {
+    font-weight: bold !important;
+    background-color: #e5e7eb !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .print-no-shadow {
+    box-shadow: none !important;
+  }
+  .print-border-none {
+    border: none !important;
+  }
+  
+  /* Physical Cash Count and Cash Summary grids */
+  .print-summary-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    gap: 20px !important;
+  }
+  .print-summary-grid > div:first-child {
+    flex: 1.2 !important; /* Denom takes slightly more space */
+  }
+  .print-summary-grid > div:last-child {
+    flex: 1 !important; /* Summary takes less */
+  }
+  
+  .print-denom-header {
+    background-color: #ffffff !important;
+    color: #4b5563 !important;
+    border-bottom: 2px solid #e5e7eb !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .print-denom-header span {
+    color: #3b5998 !important; /* Match screenshot blueish font */
+  }
+  
+  .print-denom-input {
+    border: 1px solid #d1d5db !important;
+    border-radius: 4px !important;
+    padding: 2px 4px !important;
+    width: 60px !important;
+    display: inline-block !important;
+    background-color: white !important;
+    -webkit-appearance: none !important;
+    box-shadow: none !important;
+  }
+  
+  .print-denom-box {
+    border: 1px solid #d1d5db !important;
+    border-radius: 0 !important;
+  }
+  .print-summary-box {
+    border: 1px solid #d1d5db !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* Dashboard custom scrollbars */
+.custom-horizontal-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+.custom-horizontal-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+.custom-horizontal-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+.custom-horizontal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.custom-vertical-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-vertical-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-vertical-scrollbar::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+.custom-vertical-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}

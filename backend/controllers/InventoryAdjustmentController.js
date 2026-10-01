@@ -536,9 +536,9 @@ export const createInventoryAdjustment = async (req, res) => {
     }
     
     // Validate status
-    if (adjustmentData.status && !["draft", "adjusted"].includes(adjustmentData.status)) {
+    if (adjustmentData.status && !["draft", "pending_approval", "adjusted"].includes(adjustmentData.status)) {
       return res.status(400).json({ 
-        message: "Invalid status. Must be 'draft' or 'adjusted'" 
+        message: "Invalid status. Must be 'draft', 'pending_approval', or 'adjusted'" 
       });
     }
     
@@ -971,8 +971,8 @@ export const updateInventoryAdjustment = async (req, res) => {
     
     console.log(`Quantities Changed: ${quantitiesChanged}`);
     
-    // If changing from draft to adjusted, apply stock changes
-    if (oldStatus === "draft" && newStatus === "adjusted") {
+    // If changing from draft or pending_approval to adjusted, apply stock changes
+    if ((oldStatus === "draft" || oldStatus === "pending_approval") && newStatus === "adjusted") {
       console.log(`📊 Updating adjustment: Applying stock changes (draft -> adjusted)`);
       for (const item of newItems) {
         if (adjustmentType === "quantity" && item.quantityAdjusted !== 0) {
@@ -995,8 +995,8 @@ export const updateInventoryAdjustment = async (req, res) => {
       }
     }
     
-    // If changing from adjusted to draft, reverse stock changes
-    if (oldStatus === "adjusted" && newStatus === "draft") {
+    // If changing from adjusted to draft or pending_approval, reverse stock changes
+    if (oldStatus === "adjusted" && (newStatus === "draft" || newStatus === "pending_approval")) {
       console.log(`📊 Updating adjustment: Reversing stock changes (adjusted -> draft)`);
       for (const item of oldItems) {
         if (adjustmentType === "quantity" && item.quantityAdjusted !== 0) {

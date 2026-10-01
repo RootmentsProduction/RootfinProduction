@@ -1,0 +1,52 @@
+--- src/pages/BillWiseIncome.jsx
++++ src/pages/BillWiseIncome.jsx
+@@ -1257,11 +1257,11 @@
+                 <style>{`
+                     @media print {
+                         @page {
+                             size: A4 landscape;
+-                            margin: 5mm;
++                            margin: 2mm;
+                         }
+                         * {
+                             box-sizing: border-box !important;
+                         }
+                         body { 
+@@ -1273,20 +1273,25 @@
+                         nav, header, aside, .sidebar { display: none !important; }
+                         .ml-\\[240px\\] { margin-left: 0 !important; width: 100% !important; }
++                        .print-content-wrapper {
++                            zoom: 0.85; /* Scale down slightly to ensure all columns fit */
++                            page-break-inside: avoid;
++                        }
+                         table { 
+                             width: 100% !important; 
++                            max-width: 100% !important;
+                             border-collapse: collapse !important; 
+-                            font-size: 9px !important;
++                            font-size: 8px !important;
++                            table-layout: fixed; /* Force equal/fit distribution */
+                         }
+                         th, td { 
+                             border: 1px solid #000 !important; 
+-                            padding: 4px 6px !important; 
++                            padding: 2px 3px !important; 
++                            word-wrap: break-word;
+                         }
+                         th { 
+                             background-color: #18181b !important; 
+                             color: white !important;
++                            font-size: 7px !important;
+                         }
+                         .grid {
+                             display: flex !important;
+                             flex-direction: row !important;
+                             gap: 10px !important;
+                         }
+                         .lg\\:col-span-7 {
+                             width: 60% !important;
+                         }
+                         .lg\\:col-span-5 {
+                             width: 40% !important;
+                         }
+                     }

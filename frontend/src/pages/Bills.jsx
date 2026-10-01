@@ -1,11 +1,13 @@
+import { customConfirm } from '../utils/customConfirm';
 import { useState, useEffect, useRef } from "react";
 import { useEnterToSave } from "../hooks/useEnterToSave";
 import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { Search, X, Plus, Pencil, Image as ImageIcon, ChevronDown, Mail, Printer, Download, Trash2, Link as LinkIcon, Package, PackageX, MoreVertical, Upload, Calendar, Check } from "lucide-react";
+import { Search, X, Plus, Pencil, Image as ImageIcon, ChevronDown, Mail, Printer, Download, Trash2, Link as LinkIcon, Package, PackageX, MoreVertical, Upload, Calendar, Check, ArrowLeft } from "lucide-react";
 import baseUrl from "../api/api";
 import { mapLocNameToWarehouse as mapWarehouse } from "../utils/warehouseMapping";
 import ImageUpload from "../components/ImageUpload";
+import useSidebar from "../hooks/useSidebar";
 
 const Label = ({ children, required = false }) => (
   <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${required ? "text-[#ef4444]" : "text-[#64748b]"}`}>
@@ -15,6 +17,7 @@ const Label = ({ children, required = false }) => (
 );
 
 const Input = ({ placeholder = "", className = "", ...props }) => {
+  const isSidebarOpen = useSidebar();
   const baseClasses = "w-full rounded-lg border border-[#d7dcf5] bg-white text-sm text-[#1f2937] placeholder:text-[#9ca3af] focus:border-[#6366f1] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/20 transition-all";
   const tableInputClasses = "h-[40px] px-3 py-2";
   const defaultClasses = "px-4 py-3";
@@ -904,6 +907,7 @@ const ItemDropdown = ({ rowId, value, description, onDescriptionChange, onChange
 
 const NewBillForm = ({ billId, isEditMode = false }) => {
   const navigate = useNavigate();
+  const isSidebarOpen = useSidebar();
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
   const [vendorName, setVendorName] = useState("");
   const [selectedVendor, setSelectedVendor] = useState(null);
@@ -2077,57 +2081,113 @@ const NewBillForm = ({ billId, isEditMode = false }) => {
   useEnterToSave(() => handleSaveBill("completed"), saving);
 
   return (
-    <div className="ml-64 min-h-screen bg-gradient-to-br from-[#f8f9fc] to-[#f1f5f9]">
+    <div className={`transition-all duration-300 min-h-screen bg-[#f8fafc] ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-white border-b border-[#e2e8f0] shadow-sm">
-        <div className="px-8 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] shadow-md">
-              <Package size={20} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-[#111827]">{isEditMode ? "Edit Bill" : "New Bill"}</h1>
-              <p className="text-sm text-[#64748b] mt-0.5">Create and manage purchase bills</p>
-            </div>
+      <div className="bg-white border-b border-[#e2e8f0]">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-[#111827]">New Bill</h1>
+            <p className="text-sm text-[#6b7280] mt-0.5">Create and manage purchase bills</p>
           </div>
           <button
             onClick={() => navigate("/purchase/bills")}
-            className="p-2.5 hover:bg-[#f1f5f9] rounded-lg transition-colors group"
+            className="flex items-center gap-1.5 text-sm text-[#64748b] hover:text-[#111827] border border-[#e2e8f0] hover:border-[#94a3b8] rounded-md px-3 py-1.5 transition-colors"
           >
-            <X size={22} className="text-[#64748b] group-hover:text-[#111827]" />
+            <X size={14} />
+            Close
           </button>
         </div>
       </div>
 
-      <div className="p-8">
-        <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-lg">
-          <div className="p-8 space-y-8">
+      <div className="p-4 md:p-6">
+        <div className="bg-white rounded-md border border-[#e2e8f0] shadow-sm">
+          <div className="p-6 space-y-6">
             {/* Vendor and Bill Details */}
             <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-1 w-1 rounded-full bg-[#6366f1]"></div>
-                <h2 className="text-lg font-semibold text-[#111827]">Vendor & Bill Information</h2>
+              <div className="mb-4">
+                <span className="text-xs font-semibold tracking-widest text-[#7c3aed] uppercase">Vendor &amp; Bill Information</span>
               </div>
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-2">
+              <div className="grid gap-6 md:grid-cols-4">
+                <div className="space-y-2 md:col-span-2">
                   <Label required>Vendor Name</Label>
-                  <VendorDropdown
-                    value={selectedVendor}
-                    onChange={(vendor) => {
-                      setSelectedVendor(vendor);
-                      setVendorName(vendor ? (vendor.displayName || vendor.companyName || "") : "");
-                      // Auto-fill destination of supply from vendor's source of supply
-                      if (vendor && vendor.sourceOfSupply) {
-                        setDestinationOfSupply(vendor.sourceOfSupply);
-                      }
-                    }}
-                    onNewVendor={() => navigate("/purchase/vendors/new")}
+                  <div className="flex w-full">
+                    <VendorDropdown
+                      value={selectedVendor}
+                      onChange={(vendor) => {
+                        setSelectedVendor(vendor);
+                        setVendorName(vendor ? (vendor.displayName || vendor.companyName || "") : "");
+                        if (vendor && vendor.sourceOfSupply) {
+                          setDestinationOfSupply(vendor.sourceOfSupply);
+                        }
+                      }}
+                      onNewVendor={() => navigate("/purchase/vendors/new")}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label required>Bill Date</Label>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      value={billDate}
+                      onChange={(e) => setBillDate(e.target.value)}
+                      placeholder="dd/MM/yyyy"
+                      className="pr-10"
+                      onClick={() => {
+                        if (billDateInputRef.current) {
+                          if (billDateInputRef.current.showPicker) {
+                            billDateInputRef.current.showPicker();
+                          } else {
+                            billDateInputRef.current.click();
+                          }
+                        }
+                      }}
+                    />
+                    <input
+                      ref={billDateInputRef}
+                      type="date"
+                      value={convertToDateInputFormat(billDate)}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setBillDate(convertFromDateInputFormat(e.target.value));
+                        }
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 opacity-0 cursor-pointer z-10"
+                      style={{ cursor: "pointer" }}
+                      title="Select date"
+                    />
+                    <div
+                      className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer z-10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (billDateInputRef.current) {
+                          if (billDateInputRef.current.showPicker) {
+                            billDateInputRef.current.showPicker();
+                          } else {
+                            billDateInputRef.current.click();
+                          }
+                        }
+                      }}
+                      title="Open calendar"
+                    >
+                      <Calendar className="w-4 h-4 text-[#64748b] hover:text-[#2563eb] transition-colors" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label required>Bill#</Label>
+                  <Input
+                    value={billNumber}
+                    onChange={(e) => setBillNumber(e.target.value)}
                   />
                 </div>
-              
+              </div>
+
               {/* Vendor Details Section - Show when vendor is selected */}
               {selectedVendor && (
-                <div className="space-y-4 border-t border-[#e2e8f0] pt-6 bg-gradient-to-br from-[#fafbff] to-[#f8fafc] rounded-xl p-6 -mx-2">
+                <div className="mt-6 space-y-4 border border-[#e2e8f0] bg-gradient-to-br from-[#fafbff] to-[#f8fafc] rounded-xl p-6">
                   {/* Billing Address */}
                   {(selectedVendor.billingAddress || selectedVendor.billingCity || selectedVendor.billingState) && (
                     <div className="space-y-2">
@@ -2161,7 +2221,7 @@ const NewBillForm = ({ billId, isEditMode = false }) => {
                   )}
                   
                   {/* GST Details */}
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-4 md:grid-cols-2 mt-4">
                     {selectedVendor.gstTreatment && (
                       <div className="flex items-center justify-between">
                         <Label>GST Treatment:</Label>
@@ -2195,176 +2255,122 @@ const NewBillForm = ({ billId, isEditMode = false }) => {
                   </div>
                 </div>
               )}
-              <div className="space-y-2">
-                <Label>Branch</Label>
-                <div className="w-full rounded-md border border-[#d7dcf5] bg-[#f9fafb] px-3 py-2.5 text-sm text-[#1f2937]">
-                  Warehouse
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label required>Bill#</Label>
-                <Input
-                  value={billNumber}
-                  onChange={(e) => setBillNumber(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Order Number</Label>
-                <Input
-                  value={orderNumber}
-                  onChange={(e) => setOrderNumber(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label required>Bill Date</Label>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    value={billDate}
-                    onChange={(e) => setBillDate(e.target.value)}
-                    placeholder="dd/MM/yyyy"
-                    className="pr-10"
-                    onClick={() => {
-                      if (billDateInputRef.current) {
-                        if (billDateInputRef.current.showPicker) {
-                          billDateInputRef.current.showPicker();
-                        } else {
-                          billDateInputRef.current.click();
-                        }
-                      }
-                    }}
-                  />
-                  <input
-                    ref={billDateInputRef}
-                    type="date"
-                    value={convertToDateInputFormat(billDate)}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        setBillDate(convertFromDateInputFormat(e.target.value));
-                      }
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 opacity-0 cursor-pointer z-10"
-                    style={{ cursor: "pointer" }}
-                    title="Select date"
-                  />
-                  <div
-                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer z-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (billDateInputRef.current) {
-                        if (billDateInputRef.current.showPicker) {
-                          billDateInputRef.current.showPicker();
-                        } else {
-                          billDateInputRef.current.click();
-                        }
-                      }
-                    }}
-                    title="Open calendar"
-                  >
-                    <Calendar className="w-4 h-4 text-[#64748b] hover:text-[#2563eb] transition-colors" />
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Due Date</Label>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    placeholder="dd/MM/yyyy"
-                    className="pr-10"
-                    onClick={() => {
-                      if (dueDateInputRef.current) {
-                        if (dueDateInputRef.current.showPicker) {
-                          dueDateInputRef.current.showPicker();
-                        } else {
-                          dueDateInputRef.current.click();
-                        }
-                      }
-                    }}
-                  />
-                  <input
-                    ref={dueDateInputRef}
-                    type="date"
-                    value={convertToDateInputFormat(dueDate)}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        setDueDate(convertFromDateInputFormat(e.target.value));
-                      }
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 opacity-0 cursor-pointer z-10"
-                    style={{ cursor: "pointer" }}
-                    title="Select date"
-                  />
-                  <div
-                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer z-10"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (dueDateInputRef.current) {
-                        if (dueDateInputRef.current.showPicker) {
-                          dueDateInputRef.current.showPicker();
-                        } else {
-                          dueDateInputRef.current.click();
-                        }
-                      }
-                    }}
-                    title="Open calendar"
-                  >
-                    <Calendar className="w-4 h-4 text-[#64748b] hover:text-[#2563eb] transition-colors" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            </div>
 
-            {/* Source and Destination of Supply */}
-            <div className="grid gap-6 md:grid-cols-2 border-t border-[#e6eafb] pt-6">
-              <div className="space-y-2">
-                <Label required>Source of Supply</Label>
-                <Select value={sourceOfSupply} onChange={(e) => setSourceOfSupply(e.target.value)}>
-                  <option value="">Select Source of Supply</option>
-                  <option value="[DL] - Delhi">[DL] - Delhi</option>
-                  <option value="[KL] - Kerala">[KL] - Kerala</option>
-                  <option value="[MH] - Maharashtra">[MH] - Maharashtra</option>
-                  <option value="[TN] - Tamil Nadu">[TN] - Tamil Nadu</option>
-                  <option value="[KA] - Karnataka">[KA] - Karnataka</option>
-                  <option value="[GJ] - Gujarat">[GJ] - Gujarat</option>
-                  <option value="[RJ] - Rajasthan">[RJ] - Rajasthan</option>
-                  <option value="[UP] - Uttar Pradesh">[UP] - Uttar Pradesh</option>
-                  <option value="[WB] - West Bengal">[WB] - West Bengal</option>
-                  <option value="[AP] - Andhra Pradesh">[AP] - Andhra Pradesh</option>
-                  <option value="[TS] - Telangana">[TS] - Telangana</option>
-                  <option value="[MP] - Madhya Pradesh">[MP] - Madhya Pradesh</option>
-                  <option value="[PB] - Punjab">[PB] - Punjab</option>
-                  <option value="[HR] - Haryana">[HR] - Haryana</option>
-                  <option value="[BR] - Bihar">[BR] - Bihar</option>
-                  <option value="[OR] - Odisha">[OR] - Odisha</option>
-                  <option value="[AS] - Assam">[AS] - Assam</option>
-                  <option value="[JH] - Jharkhand">[JH] - Jharkhand</option>
-                  <option value="[CT] - Chhattisgarh">[CT] - Chhattisgarh</option>
-                  <option value="[UT] - Uttarakhand">[UT] - Uttarakhand</option>
-                  <option value="[HP] - Himachal Pradesh">[HP] - Himachal Pradesh</option>
-                  <option value="[TR] - Tripura">[TR] - Tripura</option>
-                  <option value="[MN] - Manipur">[MN] - Manipur</option>
-                  <option value="[ML] - Meghalaya">[ML] - Meghalaya</option>
-                  <option value="[NL] - Nagaland">[NL] - Nagaland</option>
-                  <option value="[GA] - Goa">[GA] - Goa</option>
-                  <option value="[AR] - Arunachal Pradesh">[AR] - Arunachal Pradesh</option>
-                  <option value="[MZ] - Mizoram">[MZ] - Mizoram</option>
-                  <option value="[SK] - Sikkim">[SK] - Sikkim</option>
-                  <option value="[AN] - Andaman and Nicobar Islands">[AN] - Andaman and Nicobar Islands</option>
-                  <option value="[CH] - Chandigarh">[CH] - Chandigarh</option>
-                  <option value="[DN] - Dadra and Nagar Haveli">[DN] - Dadra and Nagar Haveli</option>
-                  <option value="[DD] - Daman and Diu">[DD] - Daman and Diu</option>
-                  <option value="[LD] - Lakshadweep">[LD] - Lakshadweep</option>
-                  <option value="[PY] - Puducherry">[PY] - Puducherry</option>
-                </Select>
+              <div className="grid gap-6 md:grid-cols-4 mt-6">
+                <div className="space-y-2">
+                  <Label>Order Number</Label>
+                  <Input
+                    value={orderNumber}
+                    onChange={(e) => setOrderNumber(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Due Date</Label>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      placeholder="dd/MM/yyyy"
+                      className="pr-10"
+                      onClick={() => {
+                        if (dueDateInputRef.current) {
+                          if (dueDateInputRef.current.showPicker) {
+                            dueDateInputRef.current.showPicker();
+                          } else {
+                            dueDateInputRef.current.click();
+                          }
+                        }
+                      }}
+                    />
+                    <input
+                      ref={dueDateInputRef}
+                      type="date"
+                      value={convertToDateInputFormat(dueDate)}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setDueDate(convertFromDateInputFormat(e.target.value));
+                        }
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 opacity-0 cursor-pointer z-10"
+                      style={{ cursor: "pointer" }}
+                      title="Select date"
+                    />
+                    <div
+                      className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer z-10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (dueDateInputRef.current) {
+                          if (dueDateInputRef.current.showPicker) {
+                            dueDateInputRef.current.showPicker();
+                          } else {
+                            dueDateInputRef.current.click();
+                          }
+                        }
+                      }}
+                      title="Open calendar"
+                    >
+                      <Calendar className="w-4 h-4 text-[#64748b] hover:text-[#2563eb] transition-colors" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label required>Source of Supply</Label>
+                  <Select value={sourceOfSupply} onChange={(e) => setSourceOfSupply(e.target.value)}>
+                    <option value="">Select Source of Supply</option>
+                    <option value="[DL] - Delhi">[DL] - Delhi</option>
+                    <option value="[KL] - Kerala">[KL] - Kerala</option>
+                    <option value="[MH] - Maharashtra">[MH] - Maharashtra</option>
+                    <option value="[TN] - Tamil Nadu">[TN] - Tamil Nadu</option>
+                    <option value="[KA] - Karnataka">[KA] - Karnataka</option>
+                    <option value="[GJ] - Gujarat">[GJ] - Gujarat</option>
+                    <option value="[RJ] - Rajasthan">[RJ] - Rajasthan</option>
+                    <option value="[UP] - Uttar Pradesh">[UP] - Uttar Pradesh</option>
+                    <option value="[WB] - West Bengal">[WB] - West Bengal</option>
+                    <option value="[AP] - Andhra Pradesh">[AP] - Andhra Pradesh</option>
+                    <option value="[TS] - Telangana">[TS] - Telangana</option>
+                    <option value="[MP] - Madhya Pradesh">[MP] - Madhya Pradesh</option>
+                    <option value="[PB] - Punjab">[PB] - Punjab</option>
+                    <option value="[HR] - Haryana">[HR] - Haryana</option>
+                    <option value="[BR] - Bihar">[BR] - Bihar</option>
+                    <option value="[OR] - Odisha">[OR] - Odisha</option>
+                    <option value="[AS] - Assam">[AS] - Assam</option>
+                    <option value="[JH] - Jharkhand">[JH] - Jharkhand</option>
+                    <option value="[CT] - Chhattisgarh">[CT] - Chhattisgarh</option>
+                    <option value="[UT] - Uttarakhand">[UT] - Uttarakhand</option>
+                    <option value="[HP] - Himachal Pradesh">[HP] - Himachal Pradesh</option>
+                    <option value="[TR] - Tripura">[TR] - Tripura</option>
+                    <option value="[MN] - Manipur">[MN] - Manipur</option>
+                    <option value="[ML] - Meghalaya">[ML] - Meghalaya</option>
+                    <option value="[NL] - Nagaland">[NL] - Nagaland</option>
+                    <option value="[GA] - Goa">[GA] - Goa</option>
+                    <option value="[AR] - Arunachal Pradesh">[AR] - Arunachal Pradesh</option>
+                    <option value="[MZ] - Mizoram">[MZ] - Mizoram</option>
+                    <option value="[SK] - Sikkim">[SK] - Sikkim</option>
+                    <option value="[AN] - Andaman and Nicobar Islands">[AN] - Andaman and Nicobar Islands</option>
+                    <option value="[CH] - Chandigarh">[CH] - Chandigarh</option>
+                    <option value="[DN] - Dadra and Nagar Haveli">[DN] - Dadra and Nagar Haveli</option>
+                    <option value="[DD] - Daman and Diu">[DD] - Daman and Diu</option>
+                    <option value="[LD] - Lakshadweep">[LD] - Lakshadweep</option>
+                    <option value="[PY] - Puducherry">[PY] - Puducherry</option>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label required>Destination of Supply</Label>
+                  <div className="w-full rounded-md border border-[#d7dcf5] bg-[#f9fafb] px-3 py-2.5 text-sm text-[#1f2937]">
+                    [KL] - Kerala
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label required>Destination of Supply</Label>
-                <div className="w-full rounded-md border border-[#d7dcf5] bg-[#f9fafb] px-3 py-2.5 text-sm text-[#1f2937]">
-                  [KL] - Kerala
+
+              <div className="grid gap-6 md:grid-cols-4 mt-6">
+                <div className="space-y-2">
+                  <Label>Branch</Label>
+                  <div className="w-full rounded-md border border-[#d7dcf5] bg-[#f9fafb] px-3 py-2.5 text-sm text-[#1f2937]">
+                    Warehouse
+                  </div>
                 </div>
               </div>
             </div>
@@ -2375,33 +2381,32 @@ const NewBillForm = ({ billId, isEditMode = false }) => {
             <div className="border-t border-[#e2e8f0] pt-8">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="h-1 w-1 rounded-full bg-[#6366f1]"></div>
-                  <h2 className="text-lg font-semibold text-[#111827]">Item Details</h2>
+                  <h2 className="text-base font-semibold text-[#111827]">Item Details</h2>
                 </div>
-                <button className="text-sm font-semibold text-[#6366f1] hover:text-[#4f46e5] hover:underline transition-colors">
+                <button className="text-sm font-semibold text-[#2563eb] hover:text-[#1d4ed8] hover:underline transition-colors">
                   Bulk Actions
                 </button>
               </div>
-              <div className="overflow-x-auto rounded-xl border border-[#e2e8f0] shadow-sm">
+              <div className="overflow-x-auto rounded-md border border-[#e2e8f0] shadow-sm">
                 <table className="min-w-full divide-y divide-[#e2e8f0]">
-                  <thead className="bg-gradient-to-r from-[#f8f9fc] to-[#f1f5f9]">
+                  <thead className="bg-[#1e1e1e]">
                     <tr>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] w-[240px]">
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-white w-[240px]">
                         ITEM DETAILS
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] w-[80px]">
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-white w-[80px]">
                         SIZE
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] w-[90px]">
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-white w-[90px]">
                         QUANTITY
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] w-[90px]">
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-white w-[90px]">
                         RATE
                       </th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] w-[140px]">
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-white w-[140px]">
                         TAX
                       </th>
-                      <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-[#64748b] w-[120px]">
+                      <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-white w-[120px]">
                         AMOUNT
                       </th>
                       <th className="px-3 py-2 w-[50px]"></th>
@@ -3035,6 +3040,7 @@ const Bills = () => {
   const isNewBill = location.pathname === "/purchase/bills/new";
   const isEditBill = id && location.pathname.includes("/edit");
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
+  const isSidebarOpen = useSidebar();
 
   // Fetch bills from MongoDB
   const [bills, setBills] = useState([]);
@@ -3451,7 +3457,7 @@ const Bills = () => {
       return;
     }
 
-    if (!confirm(`Create Purchase Receive entries for ${selected.length} selected bill(s)? This will increase stock.`)) {
+    if (!await customConfirm(`Create Purchase Receive entries for ${selected.length} selected bill(s)? This will increase stock.`)) {
       return;
     }
 
@@ -3566,7 +3572,7 @@ const Bills = () => {
       return;
     }
 
-    if (!confirm(`Undo receive for ${selected.length} selected bill(s)? This will decrease stock.`)) {
+    if (!await customConfirm(`Undo receive for ${selected.length} selected bill(s)? This will decrease stock.`)) {
       return;
     }
 
@@ -3631,7 +3637,7 @@ const Bills = () => {
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${selected.length} bill(s)? This action cannot be undone and will affect payments, stock, and purchase orders.`)) {
+    if (!await customConfirm(`Are you sure you want to delete ${selected.length} bill(s)? This action cannot be undone and will affect payments, stock, and purchase orders.`)) {
       return;
     }
 
@@ -3671,55 +3677,54 @@ const Bills = () => {
       alert(`Error: ${error.message}`);
     }
   };
-
   if (isNewBill || isEditBill) {
     return <NewBillForm billId={id} isEditMode={isEditBill} />;
   }
 
   return (
-    <div className="ml-64 min-h-screen bg-[#f8fafc] p-8">
+    <div className={`transition-all duration-300 min-h-screen bg-[#f0f4ff] ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
+      <div className="px-4 md:px-8 pt-6 pb-16">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-[#1e293b]">
-              Bills
-            </h1>
-            {!loading && (
-              <span className="px-3 py-1 rounded-full bg-[#e2e8f0] text-sm font-medium text-[#475569]">
-                {processedBills.length} {processedBills.length === 1 ? 'bill' : 'bills'}
-              </span>
-            )}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h1 className="text-[22px] font-bold text-[#101828] tracking-wide uppercase">Bills</h1>
+            <p className="text-sm text-[#6c728a] mt-0.5">Manage and track your purchase bills</p>
           </div>
           <Link
             to="/purchase/bills/new"
-            className="inline-flex items-center gap-2 rounded-lg bg-[#2563eb] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#1d4ed8] hover:shadow-md"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#9B48D7] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#7c3aaf] hover:shadow-md active:scale-95"
           >
-            <Plus size={18} />
-            <span>New Bill</span>
+            <Plus size={16} />
+            <span>New Bills</span>
           </Link>
         </div>
-        
-        {/* Search Bar */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#94a3b8]" size={18} />
-          <input
-            type="text"
-            placeholder="Search by bill number, vendor, or reference..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-[#e2e8f0] bg-white text-sm text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-transparent transition-all"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b]"
-            >
-              <X size={18} />
-            </button>
-          )}
-        </div>
+
+        {/* Search + count bar */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#94a3b8]" size={16} />
+            <input
+              type="text"
+              placeholder="Search by bill number, vendor or reference"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-[#e2e8f0] bg-white text-sm text-[#1e293b] placeholder:text-[#94a3b8] focus:outline-none focus:ring-2 focus:ring-[#9B48D7]/30 focus:border-[#9B48D7] transition-all"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#94a3b8] hover:text-[#64748b]"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          <span className="ml-auto px-3 py-1.5 rounded-md bg-[#e2e8f0] text-xs font-semibold text-[#475569]">
+            {!loading ? `${processedBills.length} Bills` : '...'}
+          </span>
       </div>
+    </div>
 
       {/* Action Buttons Bar - Show when bills are selected */}
       {selectedBills.size > 0 && (
@@ -3803,41 +3808,41 @@ const Bills = () => {
       )}
 
       {/* Bills Table */}
-      <div className="rounded-lg border border-[#e2e8f0] bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-[#e6ebfa] bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-[#e2e8f0]">
-            <thead className="bg-[#f8fafc]">
+            <thead className="bg-[#1e1e1e]">
               <tr>
-                <th scope="col" className="px-6 py-4 text-center border-r border-[#e2e8f0] text-xs font-semibold uppercase tracking-wider text-[#64748b] w-12">
+                <th scope="col" className="px-6 py-4 text-center border-r border-[#333] text-xs font-semibold uppercase tracking-wider text-white w-12">
                   <input
                     type="checkbox"
                     checked={selectedBills.size === processedBills.length && processedBills.length > 0}
                     onChange={handleSelectAll}
-                    className="h-4 w-4 rounded border-[#d1d9f2] text-[#4f46e5] focus:ring-[#4338ca]"
+                    className="h-4 w-4 rounded border-[#555] text-[#9B48D7] focus:ring-[#9B48D7]"
                   />
                 </th>
-                <th scope="col" className="px-6 py-4 text-center border-r border-[#e2e8f0] text-xs font-semibold uppercase tracking-wider text-[#64748b]">
+                <th scope="col" className="px-6 py-4 text-center border-r border-[#333] text-xs font-semibold uppercase tracking-wider text-white">
                   #
                 </th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0]">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white border-r border-[#333]">
                   Date
                 </th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0]">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white border-r border-[#333]">
                   Bill #
                 </th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0]">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white border-r border-[#333]">
                   Vendor
                 </th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0]">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white border-r border-[#333]">
                   Status
                 </th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0]">
+                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-white border-r border-[#333]">
                   Due Date
                 </th>
-                <th scope="col" className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0]">
+                <th scope="col" className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-white border-r border-[#333]">
                   Amount
                 </th>
-                <th scope="col" className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-[#64748b]">
+                <th scope="col" className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-white">
                   Balance Due
                 </th>
               </tr>
@@ -4176,6 +4181,7 @@ const Bills = () => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };

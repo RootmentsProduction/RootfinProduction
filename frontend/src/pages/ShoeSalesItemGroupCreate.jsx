@@ -1,10 +1,13 @@
+import { customConfirm } from '../utils/customConfirm';
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useEnterToSave } from "../hooks/useEnterToSave";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Trash2, ArrowLeft, X, ChevronDown, Search, Settings, Check, ShoppingBag, ShoppingCart, Edit, MoreHorizontal } from "lucide-react";
 import Head from "../components/Head";
+import Header from "../components/Header";
 import ImageUpload from "../components/ImageUpload";
 import baseUrl from "../api/api";
+import useSidebar from "../hooks/useSidebar";
 
 const STORAGE_KEYS = {
   manufacturers: "shoeSalesManufacturers",
@@ -45,9 +48,12 @@ const unitOptions = [
 ];
 
 const ShoeSalesItemGroupCreate = () => {
+  const isSidebarOpen = useSidebar();
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditMode = !!id;
+  const currentUser = JSON.parse(localStorage.getItem("rootfinuser") || "{}");
+  const canSeeCost = currentUser?.power === "admin" || currentUser?.power === "warehouse" || currentUser?.role === "superadmin" || currentUser?.role === "admin";
   const [loading, setLoading] = useState(isEditMode);
   const [showAccounts, setShowAccounts] = useState(false);
   const [itemType, setItemType] = useState("goods");
@@ -892,7 +898,7 @@ const ShoeSalesItemGroupCreate = () => {
 
   if (loading) {
     return (
-      <div className="p-6 ml-64 bg-[#f5f7fb] min-h-screen">
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="rounded-2xl border border-[#e4e6f2] bg-white shadow-lg p-8 text-center">
           <p className="text-lg font-medium text-[#475569]">Loading item group...</p>
         </div>
@@ -903,7 +909,9 @@ const ShoeSalesItemGroupCreate = () => {
   const selectedTaxRateValue = intraStateTaxRate || interStateTaxRate;
 
   return (
-    <div className="p-6 ml-64 bg-[#f5f7fb] min-h-screen">
+    <>
+      <Header title={isEditMode ? "Edit Item Group" : "New Item Group"} />
+    <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       <Head
         title={isEditMode ? "Edit Item Group" : "New Item Group"}
         description={isEditMode ? "Update item group details and attributes." : "Define a reusable item group template with shared pricing and attributes."}
@@ -1139,7 +1147,7 @@ const ShoeSalesItemGroupCreate = () => {
                       Create Attributes and Options
                     </label>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         setAttributeRows([...attributeRows, { id: Date.now(), attribute: "", options: [], optionInput: "" }]);
                       }}
                       className="text-sm font-medium text-[#2563eb] hover:text-[#1d4ed8]"
@@ -1180,7 +1188,7 @@ const ShoeSalesItemGroupCreate = () => {
                                   >
                                     {opt}
                                     <button
-                                      onClick={() => {
+                                      onClick={async () => {
                                         const updated = [...attributeRows];
                                         updated[rowIndex].options = updated[rowIndex].options.filter((_, i) => i !== idx);
                                         setAttributeRows(updated);
@@ -1214,7 +1222,7 @@ const ShoeSalesItemGroupCreate = () => {
                                 />
                               </div>
                               <button
-                                onClick={() => {
+                                onClick={async () => {
                                   setAttributeRows(attributeRows.filter((_, i) => i !== rowIndex));
                                 }}
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#f1b5b5] bg-[#fff5f5] text-[#c2410c] hover:bg-[#fee2e2]"
@@ -1241,7 +1249,7 @@ const ShoeSalesItemGroupCreate = () => {
                       Create Attributes and Options
                     </label>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         setAttributeRows([...attributeRows, { id: Date.now(), attribute: "", options: [], optionInput: "" }]);
                       }}
                       className="text-sm font-medium text-[#2563eb] hover:text-[#1d4ed8]"
@@ -1282,7 +1290,7 @@ const ShoeSalesItemGroupCreate = () => {
                                   >
                                     {opt}
                                     <button
-                                      onClick={() => {
+                                      onClick={async () => {
                                         const updated = [...attributeRows];
                                         updated[rowIndex].options = updated[rowIndex].options.filter((_, i) => i !== idx);
                                         setAttributeRows(updated);
@@ -1316,7 +1324,7 @@ const ShoeSalesItemGroupCreate = () => {
                                 />
                               </div>
                               <button
-                                onClick={() => {
+                                onClick={async () => {
                                   setAttributeRows(attributeRows.filter((_, i) => i !== rowIndex));
                                 }}
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#f1b5b5] bg-[#fff5f5] text-[#c2410c] hover:bg-[#fee2e2]"
@@ -1409,18 +1417,20 @@ const ShoeSalesItemGroupCreate = () => {
                           </button>
                         </div>
                       </th>
-                      <th className="px-4 py-3 text-left font-semibold text-[#495580]">
-                        <div>COST PRICE (₹)*</div>
-                        <div className="mt-1 flex gap-2 text-[10px] font-normal">
-                          <button className="table-link-button">PER UNIT</button>
-                          <button 
-                            onClick={() => handleCopyToAll("costPrice")}
-                            className="table-link-button"
-                          >
-                            COPY TO ALL
-                          </button>
-                        </div>
-                      </th>
+                      {canSeeCost && (
+                        <th className="px-4 py-3 text-left font-semibold text-[#495580]">
+                          <div>COST PRICE (₹)*</div>
+                          <div className="mt-1 flex gap-2 text-[10px] font-normal">
+                            <button className="table-link-button">PER UNIT</button>
+                            <button 
+                              onClick={() => handleCopyToAll("costPrice")}
+                              className="table-link-button"
+                            >
+                              COPY TO ALL
+                            </button>
+                          </div>
+                        </th>
+                      )}
                       <th className="px-4 py-3 text-left font-semibold text-[#495580]">
                         <div>SELLING PRICE (₹)*</div>
                         <div className="mt-1 flex gap-2 text-[10px] font-normal">
@@ -1539,19 +1549,21 @@ const ShoeSalesItemGroupCreate = () => {
                               className="w-full rounded border border-[#d7dcf5] bg-white px-2 py-1.5 text-sm text-[#1f2937] focus:border-[#4285f4] focus:outline-none"
                             />
                           </td>
-                          <td className="px-4 py-3">
-                            <input
-                              type="text"
-                              value={item.costPrice}
-                              onChange={(e) => {
-                                const updated = [...itemRows];
-                                updated[idx].costPrice = e.target.value;
-                                setItemRows(updated);
-                              }}
-                              placeholder="0"
-                              className="w-full rounded border border-[#d7dcf5] bg-white px-2 py-1.5 text-sm text-[#1f2937] focus:border-[#4285f4] focus:outline-none"
-                            />
-                          </td>
+                          {canSeeCost && (
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={item.costPrice}
+                                onChange={(e) => {
+                                  const updated = [...itemRows];
+                                  updated[idx].costPrice = e.target.value;
+                                  setItemRows(updated);
+                                }}
+                                placeholder="0"
+                                className="w-full rounded border border-[#d7dcf5] bg-white px-2 py-1.5 text-sm text-[#1f2937] focus:border-[#4285f4] focus:outline-none"
+                              />
+                            </td>
+                          )}
                           <td className="px-4 py-3">
                             <input
                               type="text"
@@ -1593,8 +1605,8 @@ const ShoeSalesItemGroupCreate = () => {
                           </td>
                           <td className="px-4 py-3">
                             <button
-                              onClick={() => {
-                                const confirmDelete = window.confirm(`Are you sure you want to delete "${item.name || "this item"}"?`);
+                              onClick={async () => {
+                                const confirmDelete = await customConfirm(`Are you sure you want to delete "${item.name || "this item"}"?`);
                                 if (confirmDelete) {
                                   setItemRows(itemRows.filter((_, i) => i !== idx));
                                 }
@@ -1632,7 +1644,7 @@ const ShoeSalesItemGroupCreate = () => {
                           <div className="flex items-center gap-2">
                             <span>{displayName}</span>
                             <button
-                              onClick={() => {
+                              onClick={async () => {
                                 const newName = window.prompt("Enter item name", item.name);
                                 if (newName !== null) {
                                   const trimmedName = newName.trim();
@@ -1731,19 +1743,21 @@ const ShoeSalesItemGroupCreate = () => {
                             className="w-full rounded border border-[#d7dcf5] bg-white px-2 py-1.5 text-sm text-[#1f2937] focus:border-[#4285f4] focus:outline-none"
                           />
                         </td>
-                        <td className="px-4 py-3">
-                          <input
-                            type="text"
-                            value={item.costPrice}
-                            onChange={(e) => {
-                              const updated = [...generatedItems];
-                              updated[idx].costPrice = e.target.value;
-                              setGeneratedItems(updated);
-                            }}
-                            placeholder="0"
-                            className="w-full rounded border border-[#d7dcf5] bg-white px-2 py-1.5 text-sm text-[#1f2937] focus:border-[#4285f4] focus:outline-none"
-                          />
-                        </td>
+                        {canSeeCost && (
+                          <td className="px-4 py-3">
+                            <input
+                              type="text"
+                              value={item.costPrice}
+                              onChange={(e) => {
+                                const updated = [...generatedItems];
+                                updated[idx].costPrice = e.target.value;
+                                setGeneratedItems(updated);
+                              }}
+                              placeholder="0"
+                              className="w-full rounded border border-[#d7dcf5] bg-white px-2 py-1.5 text-sm text-[#1f2937] focus:border-[#4285f4] focus:outline-none"
+                            />
+                          </td>
+                        )}
                         <td className="px-4 py-3">
                           <input
                             type="text"
@@ -1785,8 +1799,8 @@ const ShoeSalesItemGroupCreate = () => {
                         </td>
                         <td className="px-4 py-3">
                           <button 
-                            onClick={() => {
-                              const confirmDelete = window.confirm(`Are you sure you want to delete "${displayName}"?`);
+                            onClick={async () => {
+                              const confirmDelete = await customConfirm(`Are you sure you want to delete "${displayName}"?`);
                               if (confirmDelete) {
                                 const updated = generatedItems.filter((_, i) => i !== idx);
                                 setGeneratedItems(updated);
@@ -1941,6 +1955,7 @@ const ShoeSalesItemGroupCreate = () => {
         />
       )}
     </div>
+    </>
   );
 };
 
@@ -2017,7 +2032,7 @@ const InventoryValuationSelect = ({ label, value, onChange }) => {
                 return (
                   <div
                     key={option}
-                    onClick={() => {
+                    onClick={async () => {
                       onChange(option);
                       setOpen(false);
                       setSearch("");
@@ -2209,7 +2224,7 @@ const UnitSelect = ({ label, placeholder, value, onChange, options = [] }) => {
             `}</style>
             {filteredOptions.length === 0 && search.trim() ? (
               <div
-                onClick={() => {
+                onClick={async () => {
                   onChange(search.trim());
                   setOpen(false);
                   setSearch("");
@@ -2224,7 +2239,7 @@ const UnitSelect = ({ label, placeholder, value, onChange, options = [] }) => {
               <>
                 {search.trim() && !filteredOptions.includes(search.trim()) && (
                   <div
-                    onClick={() => {
+                    onClick={async () => {
                       onChange(search.trim());
                       setOpen(false);
                       setSearch("");
@@ -2239,7 +2254,7 @@ const UnitSelect = ({ label, placeholder, value, onChange, options = [] }) => {
                   return (
                     <div
                       key={option}
-                      onClick={() => {
+                      onClick={async () => {
                         onChange(option);
                         setOpen(false);
                         setSearch("");
@@ -2345,7 +2360,7 @@ const ManufacturerSelect = ({ label, placeholder, value, onChange, manufacturers
                   <button
                     key={manufacturer}
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       onChange(manufacturer);
                       setOpen(false);
                       setSearch("");
@@ -2520,7 +2535,7 @@ const BrandSelect = ({ label, placeholder, value, onChange, brands, onManageClic
                 return (
                   <div
                     key={brand}
-                    onClick={() => {
+                    onClick={async () => {
                       onChange(brand);
                       setOpen(false);
                       setSearch("");
@@ -2722,7 +2737,7 @@ const TaxRateSelect = ({ label, value, onChange, type }) => {
                   return (
                     <div
                       key={option}
-                      onClick={() => {
+                      onClick={async () => {
                         onChange(option);
                         setOpen(false);
                         setSearch("");

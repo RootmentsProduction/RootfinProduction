@@ -269,8 +269,18 @@ export const getSalesByInvoice = async (req, res) => {
       };
     });
 
-    const avgInvoiceValue = processedInvoices.length > 0 ? totalSales / processedInvoices.length : 0;
-    const totalProfit = (totalSales - totalDiscount) - totalPurchaseCost;
+    // Separate returned invoices (those with no line items) from regular sales
+    const nonReturnedInvoices = processedInvoices.filter(inv => inv.itemCount > 0);
+    const returnedInvoices = processedInvoices.filter(inv => inv.itemCount === 0);
+
+    // Recalculate totals excluding returned invoices
+    const nonReturnedSales = nonReturnedInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+    const nonReturnedItems = nonReturnedInvoices.reduce((sum, inv) => sum + inv.itemCount, 0);
+    const nonReturnedDiscount = nonReturnedInvoices.reduce((sum, inv) => sum + inv.discount, 0);
+    const nonReturnedPurchaseCost = nonReturnedInvoices.reduce((sum, inv) => sum + inv.purchaseCost, 0);
+
+    const avgInvoiceValue = nonReturnedInvoices.length > 0 ? nonReturnedSales / nonReturnedInvoices.length : 0;
+    const totalProfit = (nonReturnedSales - nonReturnedDiscount) - nonReturnedPurchaseCost;
 
     res.status(200).json({
       success: true,
@@ -278,16 +288,17 @@ export const getSalesByInvoice = async (req, res) => {
         summary: {
           dateFrom,
           dateTo,
-          totalInvoices: processedInvoices.length,
-          totalSales,
-          totalItems,
-          totalDiscount,
-          totalPurchaseCost,
+          totalInvoices: nonReturnedInvoices.length,
+          totalSales: nonReturnedSales,
+          totalItems: nonReturnedItems,
+          totalDiscount: nonReturnedDiscount,
+          totalPurchaseCost: nonReturnedPurchaseCost,
           totalProfit,
-          netSales: totalSales - totalDiscount,
-          avgInvoiceValue
+          netSales: nonReturnedSales - nonReturnedDiscount,
+          avgInvoiceValue,
+          returnedCount: returnedInvoices.length
         },
-        invoices: processedInvoices
+        invoices: processedInvoices   // still include returned rows in the list for visibility
       }
     });
   } catch (error) {

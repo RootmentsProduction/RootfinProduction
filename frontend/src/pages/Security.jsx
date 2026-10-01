@@ -7,6 +7,9 @@ import { CSVLink } from "react-csv";
 import Headers from "../components/Header.jsx";
 import useFetch from "../hooks/useFetch.jsx";
 import openingBalanceMap from "../data/openingBalance.json";
+import { useSidebar } from "../hooks/useSidebar.js";
+import { ArrowLeft, Calendar, Download, Printer, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 /* ---------- CSV helpers ---------- */
 const csvHeaders = [
@@ -14,14 +17,14 @@ const csvHeaders = [
   { label: "Customer", key: "customer" }, { label: "Category", key: "category" },
   { label: "Sub", key: "sub" },        { label: "Security In", key: "secIn" },
   { label: "Security Out (Cash)", key: "secOutCash" },
-  { label: "Security Out (RBL)", key: "secOutRbl" },
+  { label: "Security Out (Razorpay)", key: "secOutRbl" },
   { label: "Difference", key: "difference" },
 ];
 const csvHeadersAllStores = [
   { label: "Store", key: "store" }, { label: "LocCode", key: "locCode" },
   { label: "Security In", key: "secIn" },
   { label: "Security Out (Cash)", key: "secOutCash" },
-  { label: "Security Out (RBL)", key: "secOutRbl" },
+  { label: "Security Out (Razorpay)", key: "secOutRbl" },
   { label: "Difference", key: "difference" },
 ];
 
@@ -60,7 +63,28 @@ const dayBefore = (iso) => {
   return d.toISOString().split("T")[0];
 };
 
+const formatNumber = (num) => {
+  if (!num || isNaN(num) || num === 0) return "0";
+  return new Intl.NumberFormat('en-IN').format(num);
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+  const d = new Date(dateString);
+  if (isNaN(d)) return dateString;
+  const datePart = d.toLocaleDateString("en-GB", { day: '2-digit', month: 'short', year: 'numeric' });
+  const timePart = d.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+  return (
+    <div className="flex flex-col">
+      <span>{datePart}</span>
+      <span className="text-[10px] text-gray-400">{timePart}</span>
+    </div>
+  );
+};
+
 const Security = () => {
+  const navigate = useNavigate();
+  const isSidebarOpen = useSidebar();
   const _now = new Date();
   const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-${String(_now.getDate()).padStart(2, "0")}`;
   const firstOfMonth = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, "0")}-01`;
@@ -225,6 +249,9 @@ const Security = () => {
         merged:     hasBoth,
       };
     });
+
+    tableRows.sort((a, b) => new Date(a.date) - new Date(b.date));
+
   } else {
     const combined=[...rentAll,...returnAll];
     const acc = {};
@@ -293,149 +320,173 @@ const Security = () => {
   return (
     <>
       <Helmet><title>Security Report | RootFin</title></Helmet>
-      <Headers title="Security Report" />
-      <div className="ml-[240px] p-6 bg-gray-100 min-h-screen">
-
-        {/* filters */}
-        <div className="flex gap-4 mb-6 w-[1000px]">
-          <div className="w-full flex flex-col">
-            <label>From *</label>
-            <input type="date" value={fromDate}
-                   onChange={e=>setFromDate(e.target.value)}
-                   className="border p-2"/>
-          </div>
-          <div className="w-full flex flex-col">
-            <label>To *</label>
-            <input type="date" value={toDate}
-                   onChange={e=>setToDate(e.target.value)}
-                   className="border p-2"/>
-          </div>
-          <div className="w-full flex flex-col">
-            <label>Store</label>
-            <select value={selectedStore}
-                    onChange={e=>setSelectedStore(e.target.value)}
-                    className="border p-2">
-              <option value="current">
-                Current Store ({getStoreName(user.locCode)})
-              </option>
-              {isClusterManager && clusterStores.length > 0 &&
-                <option value="cluster">My Stores (All Assigned)</option>}
-              {(user.power||"").toLowerCase()==="admin" &&
-                <option value="all">All Stores (Totals)</option>}
-            </select>
-          </div>
-          <button onClick={handleFetch} disabled={loading}
-                  className="bg-blue-600 text-white px-10 h-[40px] mt-6 rounded-md disabled:opacity-70 flex items-center gap-2">
-            {loading ? (
-              <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-              </svg>Fetching...</>
-            ) : "Fetch"}
+      
+      <div className={`transition-all duration-300 min-h-screen bg-white ${isSidebarOpen ? 'ml-[240px]' : 'ml-0'}`}>
+        {/* Header */}
+        <div className="flex items-center gap-3 px-8 py-5 border-b border-gray-100">
+          <button onClick={() => navigate(-1)} className="h-8 w-8 flex items-center justify-center rounded-md bg-gray-500 text-white hover:bg-gray-600 transition shadow-sm">
+            <ArrowLeft size={16} />
           </button>
+          <div className="text-[15px] text-gray-500 flex items-center gap-1.5">
+            Reports <span className="text-gray-300">/</span> <span className="text-[#1f2937] font-medium">Security Report</span>
+          </div>
         </div>
 
-        {/* report */}
-        <div ref={printRef} className="bg-white p-4 shadow rounded-lg">
-          <div className="max-h-[420px] overflow-y-auto relative">
-            <table className="w-full border-collapse">
-              <thead className="sticky top-0 bg-gray-500 text-white z-20">
-                {(selectedStore==="all"||selectedStore==="cluster")?(
-                  <tr>
-                    <th className="border p-2">Store</th>
-                    <th className="border p-2">LocCode</th>
-                    <th className="border p-2">Security In</th>
-                    <th className="border p-2">Security Out (Cash)</th>
-                    <th className="border p-2">Security Out (RBL)</th>
-                    <th className="border p-2">Difference</th>
-                  </tr>
-                ):(
-                  <tr>
-                    <th className="border p-2">Date</th>
-                    <th className="border p-2">Invoice</th>
-                    <th className="border p-2">Customer</th>
-                    <th className="border p-2">Category</th>
-                    <th className="border p-2">Sub</th>
-                    <th className="border p-2">Security In</th>
-                    <th className="border p-2">Security Out (Cash)</th>
-                    <th className="border p-2">Security Out (RBL)</th>
-                    <th className="border p-2">Difference</th>
-                  </tr>
-                )}
-              </thead>
+        <div className="p-8">
+          {/* Filters */}
+          <div className="flex items-end gap-4 mb-8">
+            <div className="w-[180px] flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-gray-500">From Date</label>
+              <div className="relative">
+                <input type="date" value={fromDate}
+                       onChange={e=>setFromDate(e.target.value)}
+                       className="w-full border border-gray-200 rounded-md py-2 pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors z-10 bg-transparent" />
+                
+              </div>
+            </div>
+            
+            <div className="w-[180px] flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-gray-500">To Date</label>
+              <div className="relative">
+                <input type="date" value={toDate}
+                       onChange={e=>setToDate(e.target.value)}
+                       className="w-full border border-gray-200 rounded-md py-2 pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors z-10 bg-transparent" />
+                
+              </div>
+            </div>
 
-              <tbody>
-                {selectedStore==="current" && openingCash!==0 && (
-                  <tr className="font-bold bg-gray-100">
-                    <td className="border p-2">OPENING CASH</td>
-                    <td className="border p-2" colSpan={4}></td>
-                    <td className="border p-2">{openingCash}</td>
-                    <td className="border p-2">0</td>
-                    <td className="border p-2">0</td>
-                    <td className="border p-2">0</td>
-                  </tr>
-                )}
+            <div className="w-[200px] flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-gray-500">Store</label>
+              <div className="relative">
+                <select value={selectedStore}
+                        onChange={e=>setSelectedStore(e.target.value)}
+                        className="w-full border border-gray-200 rounded-md py-2 pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors appearance-none bg-transparent relative z-10 cursor-pointer">
+                  <option value="current">
+                    {getStoreName(user.locCode)}
+                  </option>
+                  {isClusterManager && clusterStores.length > 0 &&
+                    <option value="cluster">My Stores (All Assigned)</option>}
+                  {(user.power||"").toLowerCase()==="admin" &&
+                    <option value="all">All Stores (Totals)</option>}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none z-0" size={16} />
+              </div>
+            </div>
 
-                {tableRows.length ? tableRows.map((r,i)=>(
-                  (selectedStore==="all"||selectedStore==="cluster")?(
-                    <tr key={i}>
-                      <td className="border p-2">{r.store}</td>
-                      <td className="border p-2">{r.locCode}</td>
-                      <td className="border p-2">{r.secIn}</td>
-                      <td className="border p-2">{r.secOutCash}</td>
-                      <td className="border p-2">{r.secOutRbl}</td>
-                      <td className="border p-2">{r.diff}</td>
+            <button onClick={handleFetch} disabled={loading}
+                    className="bg-[#a855f7] hover:bg-[#9333ea] text-white px-8 h-[38px] rounded-md transition-colors disabled:opacity-70 flex items-center justify-center font-medium text-sm ml-2">
+              {loading ? (
+                <><svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>Fetching</>
+              ) : "Fetch Data"}
+            </button>
+
+            <div className="flex-1"></div>
+
+            <CSVLink headers={(selectedStore==="all"||selectedStore==="cluster")?csvHeadersAllStores:csvHeaders}
+                     data={csvData}
+                     filename={`${fromDate}_to_${toDate}_security_report.csv`}
+                     className="ml-auto">
+              <button className="bg-[#f3f4f6] hover:bg-[#e5e7eb] text-gray-700 px-5 h-[38px] rounded-md transition-colors flex items-center justify-center gap-2 font-medium text-sm">
+                Export CSV <Download size={16} className="text-gray-600" />
+              </button>
+            </CSVLink>
+
+            <button onClick={handlePrint}
+                    className="bg-[#f3f4f6] hover:bg-[#e5e7eb] text-gray-700 px-5 h-[38px] rounded-md transition-colors flex items-center justify-center gap-2 font-medium text-sm">
+              Print PDF <Printer size={16} className="text-gray-600" />
+            </button>
+          </div>
+
+          {/* Report Table */}
+          <div ref={printRef} className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="max-h-[600px] overflow-y-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="sticky top-0 bg-[#1f2937] text-white text-[11px] uppercase tracking-wider font-semibold z-20">
+                  {(selectedStore==="all"||selectedStore==="cluster")?(
+                    <tr>
+                      <th className="px-6 py-4">Store</th>
+                      <th className="px-6 py-4">LocCode</th>
+                      <th className="px-6 py-4 text-center">Security In</th>
+                      <th className="px-6 py-4 text-center">Security Out (Cash)</th>
+                      <th className="px-6 py-4 text-center">Security Out (Razorpay)</th>
+                      <th className="px-6 py-4 text-center">Difference</th>
                     </tr>
                   ):(
-                    <tr key={i} className={r.merged ? "bg-blue-50" : ""}>
-                      <td className="border p-2">
-                        {r.date}
-                        {r.merged && r.returnDate && (
-                          <div className="text-[10px] text-gray-400">↩ {r.returnDate}</div>
-                        )}
-                      </td>
-                      <td className="border p-2">{r.invoice}</td>
-                      <td className="border p-2">{r.customer}</td>
-                      <td className="border p-2">{r.category}</td>
-                      <td className="border p-2">{r.sub}</td>
-                      <td className="border p-2">{r.secIn}</td>
-                      <td className="border p-2">{r.secOutCash}</td>
-                      <td className="border p-2">{r.secOutRbl}</td>
-                      <td className="border p-2">{r.secIn - (r.secOutCash + r.secOutRbl)}</td>
+                    <tr>
+                      <th className="px-6 py-4">Date</th>
+                      <th className="px-6 py-4">Invoice No.</th>
+                      <th className="px-6 py-4">Customer Name</th>
+                      <th className="px-6 py-4">Category</th>
+                      <th className="px-6 py-4">Sub Category</th>
+                      <th className="px-6 py-4 text-center">Security In</th>
+                      <th className="px-6 py-4 text-center">Security Out (Cash)</th>
+                      <th className="px-6 py-4 text-center">Security Out (Razorpay)</th>
+                      <th className="px-6 py-4 text-center">Difference</th>
                     </tr>
-                  )
-                )):(
-                  <tr><td colSpan={(selectedStore==="all"||selectedStore==="cluster")?6:9}
-                          className="text-center p-4">No data found</td></tr>
-                )}
-              </tbody>
+                  )}
+                </thead>
 
-              <tfoot className="sticky bottom-0 bg-white z-20">
-                <tr className="font-semibold">
-                  <td colSpan={(selectedStore==="all"||selectedStore==="cluster")?2:5}
-                      className="border p-2 text-left">Totals</td>
-                  <td className="border p-2">{adjIn}</td>
-                  <td className="border p-2">{totOutCash}</td>
-                  <td className="border p-2">{totOutRbl}</td>
-                  <td className="border p-2">{adjIn - totOut}</td>
-                </tr>
-              </tfoot>
-            </table>
+                <tbody className="divide-y divide-gray-100">
+                  {selectedStore==="current" && (
+                    <tr className="font-bold text-[#1f2937] bg-white">
+                      <td className="px-6 py-4" colSpan={5}>Total</td>
+                      <td className="px-6 py-4 text-center">{formatNumber(openingCash)}</td>
+                      <td className="px-6 py-4 text-center">0</td>
+                      <td className="px-6 py-4 text-center">0</td>
+                      <td className="px-6 py-4 text-center">0</td>
+                    </tr>
+                  )}
+
+                  {tableRows.length > 0 ? tableRows.map((r,i)=>(
+                    (selectedStore==="all"||selectedStore==="cluster")?(
+                      <tr key={i} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 text-[#1f2937]">{r.store}</td>
+                        <td className="px-6 py-4 text-gray-600">{r.locCode}</td>
+                        <td className="px-6 py-4 text-center text-[#1f2937]">{formatNumber(r.secIn) || ""}</td>
+                        <td className="px-6 py-4 text-center text-[#1f2937]">{formatNumber(r.secOutCash) || ""}</td>
+                        <td className="px-6 py-4 text-center text-[#1f2937]">{formatNumber(r.secOutRbl) || ""}</td>
+                        <td className="px-6 py-4 text-center text-[#1f2937]">{formatNumber(r.diff) || ""}</td>
+                      </tr>
+                    ):(
+                      <tr key={i} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-3.5 text-gray-600">
+                          {formatDate(r.date)}
+                        </td>
+                        <td className="px-6 py-3.5 text-gray-600 font-medium">{r.invoice}</td>
+                        <td className="px-6 py-3.5 text-gray-600">{r.customer}</td>
+                        <td className="px-6 py-3.5 text-gray-600">{r.category}</td>
+                        <td className="px-6 py-3.5 text-gray-600">{r.sub}</td>
+                        <td className="px-6 py-3.5 text-center text-[#1f2937]">{r.secIn ? formatNumber(r.secIn) : ""}</td>
+                        <td className="px-6 py-3.5 text-center text-[#1f2937]">{r.secOutCash ? formatNumber(r.secOutCash) : ""}</td>
+                        <td className="px-6 py-3.5 text-center text-[#1f2937]">{r.secOutRbl ? formatNumber(r.secOutRbl) : ""}</td>
+                        <td className="px-6 py-3.5 text-center text-[#1f2937]">{formatNumber(r.secIn - (r.secOutCash + r.secOutRbl))}</td>
+                      </tr>
+                    )
+                  )):(
+                    <tr>
+                      <td colSpan={(selectedStore==="all"||selectedStore==="cluster")?6:9} className="px-6 py-8 text-center text-gray-500">
+                        No records found for the selected date range.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+
+                <tfoot className="sticky bottom-0 bg-[#f3f4f6] z-20 border-t border-gray-200">
+                  <tr className="font-bold text-[#1f2937]">
+                    <td colSpan={(selectedStore==="all"||selectedStore==="cluster")?2:5} className="px-6 py-4">Total</td>
+                    <td className="px-6 py-4 text-center">{formatNumber(adjIn)}</td>
+                    <td className="px-6 py-4 text-center">{formatNumber(totOutCash)}</td>
+                    <td className="px-6 py-4 text-center">{formatNumber(totOutRbl)}</td>
+                    <td className="px-6 py-4 text-center">{formatNumber(adjIn - totOut)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </div>
-
-        {/* buttons */}
-        <button onClick={handlePrint}
-                className="mt-6 w-[200px] float-right bg-blue-600 text-white py-2 rounded-lg">
-          📄 Print / PDF
-        </button>
-        <CSVLink headers={(selectedStore==="all"||selectedStore==="cluster")?csvHeadersAllStores:csvHeaders}
-                 data={csvData}
-                 filename={`${fromDate}_to_${toDate}_security_report.csv`}>
-          <button className="mt-6 me-4 w-[200px] float-right bg-green-600 text-white py-2 rounded-lg">
-            ⬇️ Download CSV
-          </button>
-        </CSVLink>
       </div>
     </>
   );

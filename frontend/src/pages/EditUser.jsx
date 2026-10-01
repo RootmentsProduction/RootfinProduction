@@ -3,8 +3,10 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import baseUrl from "../api/api";
+import useSidebar from "../hooks/useSidebar";
 
 const EditUser = () => {
+  const isSidebarOpen = useSidebar();
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
@@ -97,14 +99,14 @@ const EditUser = () => {
     return (
         <>
             <Header title="Edit User" />
-            <div className="ml-[290px] mt-[80px] p-4">
+            <div className={`transition-all duration-300 ${isSidebarOpen ? 'ml-[290px]' : 'ml-0'} mt-[80px] p-4`}>
                 <div className="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-8">
                     <h2 className="text-2xl font-semibold text-center mb-6 text-[#016E5B]">
                         Edit User
                     </h2>
                     
-                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-sm text-blue-800">
+                    <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                        <p className="text-sm text-purple-800">
                             Editing: <span className="font-semibold">{username}</span>
                         </p>
                     </div>

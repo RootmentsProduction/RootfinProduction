@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
 import { UserPlus } from "lucide-react";
 import baseUrl from "../api/api";
+import { useSidebar } from "../hooks/useSidebar.js";
 
 const AddNewUser = () => {
+    const isSidebarOpen = useSidebar();
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -181,11 +183,11 @@ const AddNewUser = () => {
     };
 
     return (
-        <div className="ml-[240px] bg-white min-h-screen">
+        <div className={`bg-white min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-[240px]' : 'ml-0'}`}>
             {/* Header Section */}
             <div className="bg-white px-8 py-6 border-b border-gray-200">
                 <div className="flex items-center gap-4">
-                    <div className="bg-blue-600 p-4 rounded-xl">
+                    <div className="bg-purple-600 p-4 rounded-xl">
                         <UserPlus className="text-white" size={28} />
                     </div>
                     <div>
@@ -207,7 +209,7 @@ const AddNewUser = () => {
                             <select
                                 value={role}
                                 onChange={(e) => { setRole(e.target.value); setAllowedLocCodes([]); }}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-700"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none bg-white text-gray-700"
                                 required
                             >
                                 <option value="">Select Role</option>
@@ -228,7 +230,7 @@ const AddNewUser = () => {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 placeholder="e.g., G.MG Road"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                                 required
                             />
                         </div>
@@ -240,7 +242,7 @@ const AddNewUser = () => {
                             <select
                                 value={power}
                                 onChange={(e) => setPower(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white text-gray-700"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none bg-white text-gray-700"
                                 required
                             >
                                 <option value="normal">Normal</option>
@@ -266,7 +268,7 @@ const AddNewUser = () => {
                                         }}
                                         onFocus={() => setShowStoreDropdown(true)}
                                         placeholder="e.g., Z Edappally"
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                                     />
                                     
                                     {/* Dropdown */}
@@ -281,7 +283,7 @@ const AddNewUser = () => {
                                                         className={`px-4 py-2 text-sm flex items-center justify-between ${
                                                             isTaken
                                                                 ? "text-gray-400 bg-gray-50 cursor-not-allowed"
-                                                                : "hover:bg-blue-50 cursor-pointer text-gray-700"
+                                                                : "hover:bg-purple-50 cursor-pointer text-gray-700"
                                                         }`}
                                                     >
                                                         <span>{store.locName}</span>
@@ -299,11 +301,11 @@ const AddNewUser = () => {
                                         {allowedLocCodes.map((locCode) => (
                                             <span
                                                 key={locCode}
-                                                className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium"
+                                                className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium"
                                             >
                                                 {getStoreName(locCode)}
                                                 <FaTimes
-                                                    className="cursor-pointer hover:text-blue-900"
+                                                    className="cursor-pointer hover:text-purple-900"
                                                     size={12}
                                                     onClick={() => handleRemoveStore(locCode)}
                                                 />
@@ -323,7 +325,7 @@ const AddNewUser = () => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="e.g., store@example.com"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                                 required
                             />
                         </div>
@@ -341,11 +343,11 @@ const AddNewUser = () => {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Enter new password"
-                                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                                     required
                                 />
                                 <span
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 cursor-pointer hover:text-blue-700"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-600 cursor-pointer hover:text-purple-700"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
                                     {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
@@ -363,11 +365,11 @@ const AddNewUser = () => {
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     placeholder="Confirm Password"
-                                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                                     required
                                 />
                                 <span
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 cursor-pointer hover:text-blue-700"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-600 cursor-pointer hover:text-purple-700"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                 >
                                     {showConfirmPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
@@ -399,7 +401,7 @@ const AddNewUser = () => {
                             className={`px-8 py-3 rounded-lg font-medium text-white transition-colors ${
                                 loading
                                     ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-blue-600 hover:bg-blue-700"
+                                    : "bg-purple-600 hover:bg-purple-700"
                             }`}
                         >
                             {loading ? "SAVING..." : "SAVE USER"}

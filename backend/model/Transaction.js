@@ -136,6 +136,8 @@ const transactionSchema = new mongoose.Schema(
     editedBy:     { type: String },
     editedAt:     { type: Date },
     editReason:   { type: String, default: "" },
+    
+    isAdminLevel: { type: Boolean, default: false },
 
     /* 🔺 NEW – stores the uploaded file inside MongoDB */
     attachment: {

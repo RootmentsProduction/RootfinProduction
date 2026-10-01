@@ -1,6 +1,8 @@
 import { IoPersonCircleOutline } from "react-icons/io5";
 import Rootments from '../assets/Rootments.jpg';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Bell } from 'lucide-react';
 import baseUrl from '../api/api';
 import salesInventoryAccessConfig from '../config/salesInventoryAccess.json';
 
@@ -59,11 +61,82 @@ const Header = (prop) => {
     ];
 
     const [AllLoation, setAllLoation] = useState(fallbackLocations);
-
     const [Value, setValue] = useState({ locCode: '', locName: '' });
-
     const [logOut, setlogOut] = useState(false);
     const [selectedValue, setSelectedValue] = useState("");
+    
+    // Dropdown state
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
+    
+    const [pendingClosuresCount, setPendingClosuresCount] = useState(0);
+    const [pendingAdjustmentsCount, setPendingAdjustmentsCount] = useState(0);
+    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+    const notificationRef = useRef(null);
+
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // Generate breadcrumbs from path
+    const getBreadcrumbs = () => {
+        const paths = location.pathname.split('/').filter(Boolean);
+        if (paths.length === 0) return null; // Root path (Day Book, etc)
+        
+        // Map common path segments
+        const pathMap = {
+            'shoe-sales': 'Sales',
+            'invoices': 'Invoice',
+            'orders': 'Order',
+            'customers': 'Customer',
+            'inventory': 'Inventory',
+            'items': 'Items',
+            'item-groups': 'Item Groups',
+            'adjustments': 'Adjustments',
+            'transfer-orders': 'Transfer Orders',
+            'store-orders': 'Store Orders',
+            'manage-users': 'Manage Users',
+        };
+
+        const breadcrumbs = [];
+        
+        for (let i = 0; i < paths.length; i++) {
+            const path = paths[i];
+            const isLast = i === paths.length - 1;
+            
+            // Skip ID segments unless it's the last one
+            if (path.length > 20 || !isNaN(path)) {
+                if (isLast) breadcrumbs.push({ name: prop.title || 'Details', isLast: true });
+                continue;
+            }
+            
+            // If it's the last part ("new", "edit", etc) or just standard last part, use prop.title if available to be accurate
+            if (isLast && prop.title) {
+                 breadcrumbs.push({ name: prop.title, isLast: true });
+                 continue;
+            }
+
+            const name = pathMap[path] || (path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' '));
+            breadcrumbs.push({ name, isLast });
+        }
+        
+        return breadcrumbs;
+    };
+    
+    const breadcrumbs = getBreadcrumbs();
+
+    // Close on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsDropdownOpen(false);
+            }
+            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+                setIsNotificationOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
     
     // Initialize currentUser from localStorage immediately to prevent blank display
     const getInitialUser = () => {
@@ -144,6 +217,33 @@ const Header = (prop) => {
         };
 
         fetchStores();
+
+        // Fetch notifications for admins
+        const fetchNotifications = async () => {
+            const user = getInitialUser();
+            if (user?.power === 'admin' || user?.role === 'superadmin') {
+                try {
+                    const closuresRes = await fetch(`${API_URL}/user/pendingClosures`);
+                    if (closuresRes.ok) {
+                        const closuresData = await closuresRes.json();
+                        setPendingClosuresCount(closuresData.data?.length || 0);
+                    }
+                } catch (e) {
+                    console.error("Error fetching pending closures", e);
+                }
+
+                try {
+                    const adjRes = await fetch(`${API_URL}/inventory/adjustments?status=pending_approval`);
+                    if (adjRes.ok) {
+                        const adjData = await adjRes.json();
+                        setPendingAdjustmentsCount(adjData.data?.length || 0);
+                    }
+                } catch (e) {
+                    console.error("Error fetching pending adjustments", e);
+                }
+            }
+        };
+        fetchNotifications();
     }, []);
 
     // Additional useEffect to periodically sync user from localStorage
@@ -227,74 +327,160 @@ const Header = (prop) => {
         .map(email => email.toLowerCase())
         .includes(userEmail);
     const hasBetaAccess = !isAdmin && isInBetaList; // Only show badge for non-admin beta testers
+    const isClusterManager = (currentUser?.role || "").toLowerCase() === "cluster_manager";
 
     return (
-        <nav className="bg-white ml-[250px] border-gray-200 dark:border-gray-700">
-            <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-                <a href="#" className="flex items-center space-x-3 rtl:space-x-reverse">
-                    <img src={Rootments} className="h-8 rounded-md" alt="Flowbite Logo" />
-                    <span className="self-center text-2xl font-semibold whitespace-nowrap text-black">{prop.title}</span>
-                    {hasBetaAccess && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md animate-pulse">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                            BETA
-                        </span>
-                    )}
-                </a>
-
-                <div
-                    onClick={() => setlogOut((prev) => !prev)}
-                    className="hidden cursor-pointer w-full md:block md:w-auto"
-                    id="navbar-multi-level"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="text-right">
-                            <h2 className="text-sm font-semibold text-gray-800">{formatLocationName(displayName)}</h2>
-                            <p className="text-xs text-gray-500">Location: {formatLocationName(displayName)}</p>
+        <nav className="bg-white border-b border-gray-200 shadow-sm">
+            <div className="max-w-full px-4 md:px-6 py-3.5 flex flex-wrap items-center justify-between mx-auto">
+                <div className="flex items-center gap-2 md:gap-3">
+                    <button 
+                        onClick={() => document.dispatchEvent(new CustomEvent('toggle-sidebar'))}
+                        className="lg:hidden p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors flex items-center justify-center shrink-0 mr-1"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    {breadcrumbs && breadcrumbs.length > 0 ? (
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => navigate(-1)} className="p-2.5 rounded-lg bg-[#5a5a5a] hover:bg-[#4a4a4a] text-white transition-colors flex items-center justify-center">
+                                <ArrowLeft size={18} />
+                            </button>
+                            <div className="flex items-center gap-2 text-[15px]">
+                                {breadcrumbs.map((crumb, idx) => (
+                                    <div key={idx} className="flex items-center gap-2">
+                                        <span className={crumb.isLast ? "font-semibold text-gray-900 text-lg" : "text-gray-500"}>
+                                            {crumb.name}
+                                        </span>
+                                        {!crumb.isLast && <span className="text-gray-400">/</span>}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        <IoPersonCircleOutline className="text-4xl text-green-600" />
-                    </div>
+                    ) : (
+                        prop.title && <h1 className="text-xl font-bold text-gray-800">{prop.title}</h1>
+                    )}
+                </div>
+                
+                <div className="flex items-center gap-4 shrink-0">
+                    {/* Notification Bell */}
+                    {(isAdmin || currentUser?.role === 'superadmin') && (
+                        <div className="relative" ref={notificationRef}>
+                            <button
+                                type="button"
+                                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                                className="relative p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
+                            >
+                                <Bell size={20} />
+                                {(pendingClosuresCount + pendingAdjustmentsCount) > 0 && (
+                                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full transform translate-x-1/4 -translate-y-1/4">
+                                        {pendingClosuresCount + pendingAdjustmentsCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {isNotificationOpen && (
+                                <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+                                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                                        <h3 className="text-sm font-semibold text-gray-800">Pending Requests</h3>
+                                    </div>
+                                    <div className="max-h-64 overflow-y-auto">
+                                        {pendingClosuresCount > 0 ? (
+                                            <Link 
+                                                to="/PendingDaybookClosures" 
+                                                onClick={() => setIsNotificationOpen(false)}
+                                                className="block px-4 py-3 hover:bg-purple-50 transition-colors border-b border-gray-50"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-800">Late Daybook Closures</p>
+                                                        <p className="text-xs text-gray-500 mt-0.5">Require super admin approval</p>
+                                                    </div>
+                                                    <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">{pendingClosuresCount}</span>
+                                                </div>
+                                            </Link>
+                                        ) : null}
+                                        
+                                        {pendingAdjustmentsCount > 0 ? (
+                                            <Link 
+                                                to="/inventory/adjustments" 
+                                                onClick={() => setIsNotificationOpen(false)}
+                                                className="block px-4 py-3 hover:bg-purple-50 transition-colors"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-800">Inventory Adjustments</p>
+                                                        <p className="text-xs text-gray-500 mt-0.5">Require super admin approval</p>
+                                                    </div>
+                                                    <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">{pendingAdjustmentsCount}</span>
+                                                </div>
+                                            </Link>
+                                        ) : null}
+
+                                        {pendingClosuresCount === 0 && pendingAdjustmentsCount === 0 && (
+                                            <div className="px-4 py-6 text-center text-sm text-gray-500">
+                                                No pending requests.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    
+                    {/* Location Selector */}
+                    {location.pathname !== '/' && (
+                        (isAdmin || isClusterManager) ? (
+                            <div className="relative" ref={dropdownRef}>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                    className="bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 shadow-sm transition-colors cursor-pointer"
+                                    style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'nowrap', whiteSpace: 'nowrap', width: 'max-content', gap: '8px' }}
+                                >
+                                    <span className="text-gray-500 flex-shrink-0 flex items-center">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    </span>
+                                    <span className="text-sm font-medium text-gray-700" style={{ whiteSpace: 'nowrap' }}>
+                                        {currentUser?.locCode 
+                                            ? formatLocationName(AllLoation.find(l => l.locCode === currentUser.locCode)?.locName || "Select Location") 
+                                            : "-- Select Location --"}
+                                    </span>
+                                    <svg className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                </button>
+                                
+                                {isDropdownOpen && (
+                                    <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
+                                        {(isAdmin
+                                            ? AllLoation
+                                            : AllLoation.filter(item => (currentUser?.allowedLocCodes || []).includes(item.locCode))
+                                        ).map((item) => (
+                                            <button
+                                                key={item.locCode}
+                                                type="button"
+                                                onClick={() => {
+                                                    handleChange({ target: { value: item.locCode } });
+                                                    setIsDropdownOpen(false);
+                                                }}
+                                                className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 ${currentUser?.locCode === item.locCode ? 'bg-purple-50 text-purple-700 font-semibold' : 'text-gray-700'}`}
+                                            >
+                                                {formatLocationName(item.locName)}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            currentUser?.locCode && (
+                                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 shadow-sm text-sm font-medium text-gray-700">
+                                    <span className="text-purple-500 mr-1.5">📍</span>
+                                    {formatLocationName(displayName)}
+                                </div>
+                            )
+                        )
+                    )}
                 </div>
             </div>
-
-            {logOut && (
-                <div className="flex flex-col items-stretch w-64 rounded-lg shadow-lg bg-white absolute right-5 top-16 p-4 space-y-3 border border-gray-100 z-50">
-                    <div className="pb-3 border-b border-gray-200">
-                        <p className="text-xs text-gray-500 mb-1">Current Location</p>
-                        <p className="text-sm font-semibold text-gray-800">{formatLocationName(displayName)}</p>
-                    </div>
-                    
-                    {(currentUser.power === 'admin' || (currentUser.role || '').toLowerCase() === 'cluster_manager') && (
-                        <div className="space-y-2">
-                            <label className="block text-xs font-semibold text-gray-600">Switch Location</label>
-                            <select
-                                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-gray-700 bg-white hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm transition-colors"
-                                value={selectedValue}
-                                onChange={handleChange}
-                            >
-                                <option value="">-- Select a location --</option>
-                                {(currentUser.power === 'admin'
-                                    ? AllLoation
-                                    : AllLoation.filter(item => (currentUser.allowedLocCodes || []).includes(item.locCode))
-                                ).map((item) => (
-                                    <option key={item.locCode} value={item.locCode}>
-                                        {formatLocationName(item.locName)}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
-                    
-                    <button
-                        className="w-full px-3 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 cursor-pointer font-medium text-sm transition-colors"
-                        onClick={HanndleRemove}
-                    >
-                        Logout
-                    </button>
-                </div>
-            )}
         </nav>
     );
 };

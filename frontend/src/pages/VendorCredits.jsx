@@ -5,9 +5,11 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ChevronDown, List, Grid, Camera, MoreHorizontal, ArrowUp, Search, Filter, X, Plus, Pencil, Image as ImageIcon, Check, Info, Upload, FileText } from "lucide-react";
 import baseUrl from "../api/api";
 import { mapLocNameToWarehouse as mapWarehouse } from "../utils/warehouseMapping";
+import useSidebar from "../hooks/useSidebar";
 
 // Vendor Credit Number Preferences Modal Component
 const CreditNumberPreferencesModal = ({ isOpen, onClose, onSave, currentPrefix, currentNextNumber, autoGenerate, restartYearly }) => {
+  const isSidebarOpen = useSidebar();
   const [localAutoGenerate, setLocalAutoGenerate] = useState(autoGenerate);
   const [localPrefix, setLocalPrefix] = useState(currentPrefix);
   const [localNextNumber, setLocalNextNumber] = useState(currentNextNumber);
@@ -934,6 +936,7 @@ const ItemDropdown = ({ rowId, value, onChange, onNewItem, selectedWarehouse = "
 // New Vendor Credit Form Component
 const NewVendorCreditForm = ({ creditId, isEditMode = false }) => {
   const navigate = useNavigate();
+  const isSidebarOpen = useSidebar();
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [branch, setBranch] = useState("Head Office");
@@ -1825,7 +1828,7 @@ const NewVendorCreditForm = ({ creditId, isEditMode = false }) => {
   };
 
   return (
-    <div className="ml-64 min-h-screen bg-[#f5f7fb]">
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       {/* Header */}
       <div className="sticky top-0 z-50 bg-white border-b border-[#e6eafb] px-6 py-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-[#1f2937]">{isEditMode ? "Edit Vendor Credit" : "New Vendor Credit"}</h1>
@@ -2369,6 +2372,7 @@ const VendorCredits = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams();
+  const isSidebarOpen = useSidebar();
   const isNewCredit = location.pathname === "/purchase/vendor-credits/new";
   const isEditCredit = id && location.pathname.includes("/edit");
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
@@ -2376,6 +2380,7 @@ const VendorCredits = () => {
   const [vendorCredits, setVendorCredits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
 
   useEffect(() => {
     if (isNewCredit || isEditCredit) return;
@@ -2508,7 +2513,7 @@ const VendorCredits = () => {
   };
 
   return (
-    <div className="ml-64 min-h-screen bg-[#f5f7fb] p-6">
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
@@ -2569,42 +2574,42 @@ const VendorCredits = () => {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-[#e6eafb] shadow-sm overflow-hidden">
+        <div className="bg-white border border-gray-200 shadow-sm overflow-hidden mb-8">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-[#f8fafc] border-b border-[#e6eafb]">
-                <tr>
-                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0] w-10">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#1c1c1c] text-white">
+                  <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider text-center w-10">
                     #
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0]">
+                  <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider">
                     Credit Note#
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0]">
+                  <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0]">
+                  <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider">
                     Vendor
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0]">
+                  <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider">
                     Order#
                   </th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0]">
+                  <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider text-right">
                     Amount
                   </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-[#64748b] border-r border-[#e2e8f0]">
+                  <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-[#64748b]">
+                  <th className="py-3.5 px-4 text-[11px] font-bold uppercase tracking-wider text-right">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#eef2ff]">
+              <tbody className="divide-y divide-gray-100 text-sm">
                 {filteredCredits.map((credit, index) => (
                   <tr 
                     key={credit._id || credit.id} 
-                    className="hover:bg-[#f8fafc] transition-colors cursor-pointer group"
+                    className="hover:bg-gray-50/70 transition-colors cursor-pointer group text-gray-800"
                     onClick={() => {
                       if (credit._id || credit.id) {
                         navigate(`/purchase/vendor-credits/${credit._id || credit.id}`);
@@ -2613,27 +2618,25 @@ const VendorCredits = () => {
                       }
                     }}
                   >
-                    <td className="px-5 py-4 text-center text-sm text-[#64748b] border-r border-[#e2e8f0]">
+                    <td className="px-5 py-4 text-center text-sm font-medium text-gray-500">
                       {index + 1}
                     </td>
-                    <td className="px-5 py-4 border-r border-[#e2e8f0]">
-                      <span className="font-medium text-[#2563eb] group-hover:text-[#1d4ed8] group-hover:underline">
-                        {credit.creditNoteNumber}
-                      </span>
+                    <td className="px-5 py-4 font-medium text-blue-600 group-hover:text-blue-700 group-hover:underline">
+                      {credit.creditNoteNumber}
                     </td>
-                    <td className="px-5 py-4 text-sm text-[#334155] border-r border-[#e2e8f0]">
+                    <td className="px-5 py-4 text-gray-600">
                       {formatDate(credit.creditDate)}
                     </td>
-                    <td className="px-5 py-4 text-sm text-[#334155] border-r border-[#e2e8f0]">
+                    <td className="px-5 py-4 text-gray-600">
                       {credit.vendorName || "-"}
                     </td>
-                    <td className="px-5 py-4 text-sm text-[#334155] border-r border-[#e2e8f0]">
+                    <td className="px-5 py-4 text-gray-600">
                       {credit.orderNumber || "-"}
                     </td>
-                    <td className="px-5 py-4 text-right text-sm font-semibold text-[#0f172a] border-r border-[#e2e8f0]">
+                    <td className="px-5 py-4 text-right font-medium text-gray-900">
                       {formatCurrency(credit.finalTotal || 0)}
                     </td>
-                    <td className="px-5 py-4 border-r border-[#e2e8f0]">
+                    <td className="px-5 py-4">
                       <span
                         className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           credit.status === "open"
@@ -2652,7 +2655,7 @@ const VendorCredits = () => {
                           e.stopPropagation();
                           navigate(`/purchase/vendor-credits/${credit._id || credit.id}/edit`);
                         }}
-                        className="text-[#2563eb] hover:text-[#1d4ed8] transition-colors"
+                        className="text-gray-400 hover:text-blue-600 transition-colors"
                       >
                         <Pencil size={16} />
                       </button>

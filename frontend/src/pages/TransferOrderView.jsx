@@ -1,3 +1,4 @@
+import { customConfirm } from '../utils/customConfirm';
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Edit, Printer, Download, PackageCheck, Scan, X, CheckCircle } from "lucide-react";
@@ -5,8 +6,10 @@ import { Html5Qrcode } from "html5-qrcode";
 import Head from "../components/Head";
 import baseUrl from "../api/api";
 import { mapLocNameToWarehouse } from "../utils/warehouseMapping";
+import useSidebar from "../hooks/useSidebar";
 
 const TransferOrderView = () => {
+  const isSidebarOpen = useSidebar();
   const { id } = useParams();
   const navigate = useNavigate();
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
@@ -541,7 +544,7 @@ const TransferOrderView = () => {
       return;
     }
     
-    if (!confirm("Are you sure you want to receive this transfer order? This will update the stock in your warehouse.")) {
+    if (!await customConfirm("Are you sure you want to receive this transfer order? This will update the stock in your warehouse.")) {
       return;
     }
     
@@ -629,7 +632,7 @@ const TransferOrderView = () => {
   
   if (loading) {
     return (
-      <div className="p-6 ml-64 bg-[#f5f7fb] min-h-screen flex items-center justify-center">
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen flex items-center justify-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-[#64748b]">Loading transfer order...</div>
       </div>
     );
@@ -637,7 +640,7 @@ const TransferOrderView = () => {
   
   if (!transferOrder) {
     return (
-      <div className="p-6 ml-64 bg-[#f5f7fb] min-h-screen flex items-center justify-center">
+      <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen flex items-center justify-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-center">
           <p className="text-[#64748b] mb-4">Transfer order not found</p>
           <Link
@@ -655,7 +658,7 @@ const TransferOrderView = () => {
   const statusLabel = transferOrder.status === "transferred" ? "Transferred" : transferOrder.status === "in_transit" ? "In Transit" : "Draft";
   
   return (
-    <div className="ml-64 min-h-screen bg-[#f5f7fb] p-6">
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       {/* Top Bar with Actions */}
       <div className="mb-4 flex items-center justify-between bg-white rounded-lg border border-[#e2e8f0] px-4 py-3 shadow-sm">
         <div className="flex items-center gap-3">

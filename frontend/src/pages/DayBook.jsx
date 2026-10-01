@@ -1,21 +1,52 @@
 import { useRef, useState, useEffect } from 'react';
-import Headers from '../components/Header.jsx';
+import Header from '../components/Header.jsx';
 import { Helmet } from "react-helmet";
-import baseUrl from '../api/api.js';
 import dataCache from '../utils/cache.js';
+import { useSidebar } from '../hooks/useSidebar.js';
+import { ArrowLeft, Calendar, Download, Printer } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import html2pdf from 'html2pdf.js';
 
 const DayBook = () => {
+    const navigate = useNavigate();
+    const isSidebarOpen = useSidebar();
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
     const [allTransactions, setAllTransactions] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [data, setData] = useState(null);
     const [data1, setData1] = useState(null);
-    const [data2, setData2] = useState(null);
-    const [data3, setData3] = useState(null);
-    const [mongoTransactions, setMongoTransactions] = useState([]);
     const currentusers = JSON.parse(localStorage.getItem("rootfinuser"));
     const abortControllerRef = useRef(null);
+
+    const processData = (rentoutData) => {
+        const rentoutList = (rentoutData?.dataSet?.data || []).map(item => {
+            const advance = Number(item.advanceAmount || 0);
+            const billVal = Number(item.invoiceAmount || 0);
+            const balPayable = Math.max(0, billVal - advance);
+
+            return {
+                ...item,
+                date: (item.rentOutDate || "").split("T")[0],
+                invoiceNo: item.invoiceNo,
+                customerName: item.customerName,
+                quantity: item.quantity || 1,
+                Category: "RentOut",
+                SubCategory: "Balance Payable",
+                billValue: billVal,
+                balancePayable: balPayable,
+                cash: Number(item.rentoutCashAmount || 0),
+                rbl: Number(item.rblRazorPay || 0),
+                bank: Number(item.rentoutBankAmount || 0),
+                upi: Number(item.rentoutUPIAmount || 0),
+                amount: Number(item.rentoutCashAmount || 0) + Number(item.rblRazorPay || 0) + Number(item.rentoutBankAmount || 0) + Number(item.rentoutUPIAmount || 0),
+                totalTransaction: Number(item.rentoutCashAmount || 0) + Number(item.rblRazorPay || 0) + Number(item.rentoutBankAmount || 0) + Number(item.rentoutUPIAmount || 0),
+                source: "rentout"
+            };
+        });
+
+        const sortedRentoutList = rentoutList.sort((a, b) => new Date(a.date) - new Date(b.date));
+        setAllTransactions(sortedRentoutList);
+    };
 
     const handleFetch = async () => {
         const twsBase = "https://rentalapi.rootments.live/api/GetBooking";
@@ -23,30 +54,10 @@ const DayBook = () => {
             return alert("select date ");
         }
 
-        const bookingU = `${twsBase}/GetBookingList?LocCode=${currentusers?.locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
         const rentoutU = `${twsBase}/GetRentoutList?LocCode=${currentusers?.locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
-        const returnU = `${twsBase}/GetReturnList?LocCode=${currentusers?.locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
-        const deleteU = `${twsBase}/GetDeleteList?LocCode=${currentusers?.locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
-        const mongoU = `${baseUrl.baseUrl}user/Getpayment?LocCode=${currentusers?.locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
 
-        // Check cache for all URLs
-        const cachedBooking = dataCache.get(bookingU);
-        const cachedRentout = dataCache.get(rentoutU);
-        const cachedReturn = dataCache.get(returnU);
-        const cachedDelete = dataCache.get(deleteU);
-        const cachedMongo = dataCache.get(mongoU);
+        dataCache.delete?.(rentoutU);
 
-        if (cachedBooking && cachedRentout && cachedReturn && cachedDelete && cachedMongo) {
-            setData(cachedBooking);
-            setData1(cachedRentout);
-            setData2(cachedReturn);
-            setData3(cachedDelete);
-            setMongoTransactions(cachedMongo.data || []);
-            console.log("Data loaded from cache");
-            return;
-        }
-
-        // Cancel previous request if exists
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
@@ -57,38 +68,12 @@ const DayBook = () => {
         setIsLoading(true);
 
         try {
-            // Fetch all APIs in parallel
-            const [bookingRes, rentoutRes, returnRes, deleteRes, mongoRes] = await Promise.all([
-                fetch(bookingU, { signal }),
-                fetch(rentoutU, { signal }),
-                fetch(returnU, { signal }),
-                fetch(deleteU, { signal }),
-                fetch(mongoU, { signal })
-            ]);
+            const rentoutRes = await fetch(rentoutU, { signal });
+            const rentoutData = await rentoutRes.json();
 
-            // Parse all responses in parallel
-            const [bookingData, rentoutData, returnData, deleteData, mongoData] = await Promise.all([
-                bookingRes.json(),
-                rentoutRes.json(),
-                returnRes.json(),
-                deleteRes.json(),
-                mongoRes.json()
-            ]);
-
-            // Cache all results (5 minutes TTL)
-            dataCache.set(bookingU, bookingData);
             dataCache.set(rentoutU, rentoutData);
-            dataCache.set(returnU, returnData);
-            dataCache.set(deleteU, deleteData);
-            dataCache.set(mongoU, mongoData);
-
-            setData(bookingData);
             setData1(rentoutData);
-            setData2(returnData);
-            setData3(deleteData);
-            setMongoTransactions(mongoData.data || []);
-
-            console.log("All data fetched successfully");
+            processData(rentoutData);
         } catch (err) {
             if (err.name !== 'AbortError') {
                 console.error('Fetch error:', err);
@@ -99,7 +84,6 @@ const DayBook = () => {
         }
     };
 
-    // Cleanup on unmount
     useEffect(() => {
         return () => {
             if (abortControllerRef.current) {
@@ -108,322 +92,245 @@ const DayBook = () => {
         };
     }, []);
 
-    // Process and merge all transaction data
     useEffect(() => {
-        const bookingList = (data?.dataSet?.data || []).map(item => ({
-            ...item,
-            date: item.bookingDate?.split("T")[0],
-            invoiceNo: item.invoiceNo,
-            customerName: item.customerName,
-            quantity: item.quantity || 1,
-            Category: "Booking",
-            SubCategory: "Advance",
-            billValue: Number(item.invoiceAmount || 0),
-            cash: Number(item.bookingCashAmount || 0),
-            rbl: Number(item.rblRazorPay || 0),
-            bank: Number(item.bookingBankAmount || 0),
-            upi: Number(item.bookingUPIAmount || 0),
-            amount: Number(item.bookingCashAmount || 0) + Number(item.rblRazorPay || 0) + Number(item.bookingBankAmount || 0) + Number(item.bookingUPIAmount || 0),
-            totalTransaction: Number(item.bookingCashAmount || 0) + Number(item.rblRazorPay || 0) + Number(item.bookingBankAmount || 0) + Number(item.bookingUPIAmount || 0),
-            source: "booking"
-        }));
+        if (data1) {
+            processData(data1);
+        }
+    }, [data1]);
 
-        const rentoutList = (data1?.dataSet?.data || []).map(item => ({
-            ...item,
-            date: (item.rentOutDate || "").split("T")[0],
-            invoiceNo: item.invoiceNo,
-            customerName: item.customerName,
-            quantity: item.quantity || 1,
-            Category: "RentOut",
-            SubCategory: "Security",
-            billValue: Number(item.invoiceAmount || 0),
-            cash: Number(item.rentoutCashAmount || 0),
-            rbl: Number(item.rblRazorPay || 0),
-            bank: Number(item.rentoutBankAmount || 0),
-            upi: Number(item.rentoutUPIAmount || 0),
-            amount: Number(item.rentoutCashAmount || 0) + Number(item.rblRazorPay || 0) + Number(item.rentoutBankAmount || 0) + Number(item.rentoutUPIAmount || 0),
-            totalTransaction: Number(item.rentoutCashAmount || 0) + Number(item.rblRazorPay || 0) + Number(item.rentoutBankAmount || 0) + Number(item.rentoutUPIAmount || 0),
-            source: "rentout"
-        }));
-
-        const returnList = (data2?.dataSet?.data || []).map(item => {
-            const returnCashAmount = -Math.abs(Number(item.returnCashAmount || 0));
-            const returnRblAmount = -Math.abs(Number(item.rblRazorPay || 0));
-            
-            // Only process bank/UPI if no RBL value
-            const returnBankAmount = returnRblAmount !== 0 ? 0 : -Math.abs(Number(item.returnBankAmount || 0));
-            const returnUPIAmount = returnRblAmount !== 0 ? 0 : -Math.abs(Number(item.returnUPIAmount || 0));
-
-            return {
-                ...item,
-                date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
-                customerName: item.customerName || item.custName || item.customer || "",
-                invoiceNo: item.invoiceNo,
-                Category: "Return",
-                SubCategory: "Security Refund",
-                billValue: Number(item.invoiceAmount || 0),
-                cash: returnCashAmount,
-                rbl: returnRblAmount,
-                bank: returnBankAmount,
-                upi: returnUPIAmount,
-                amount: returnCashAmount + returnRblAmount + returnBankAmount + returnUPIAmount,
-                totalTransaction: returnCashAmount + returnRblAmount + returnBankAmount + returnUPIAmount,
-                source: "return"
-            };
-        });
-
-        const deleteList = (data3?.dataSet?.data || []).map(item => {
-            const deleteCashAmount = -Math.abs(Number(item.deleteCashAmount || 0));
-            const deleteRblAmount = -Math.abs(Number(item.rblRazorPay || 0));
-            
-            // Only process bank/UPI if no RBL value
-            const deleteBankAmount = deleteRblAmount !== 0 ? 0 : -Math.abs(Number(item.deleteBankAmount || 0));
-            const deleteUPIAmount = deleteRblAmount !== 0 ? 0 : -Math.abs(Number(item.deleteUPIAmount || 0));
-
-            return {
-                ...item,
-                date: item.cancelDate?.split("T")[0],
-                invoiceNo: item.invoiceNo,
-                customerName: item.customerName,
-                Category: "Cancel",
-                SubCategory: "Cancellation Refund",
-                billValue: Number(item.invoiceAmount || 0),
-                cash: deleteCashAmount,
-                rbl: deleteRblAmount,
-                bank: deleteBankAmount,
-                upi: deleteUPIAmount,
-                amount: deleteCashAmount + deleteRblAmount + deleteBankAmount + deleteUPIAmount,
-                totalTransaction: deleteCashAmount + deleteRblAmount + deleteBankAmount + deleteUPIAmount,
-                source: "deleted"
-            };
-        });
-
-        const mongoList = (mongoTransactions || []).map(tx => ({
-            ...tx,
-            date: tx.date?.split("T")[0] || "",
-            Category: tx.type,
-            SubCategory: tx.category,
-            customerName: tx.customerName || "",
-            billValue: Number(tx.billValue ?? tx.invoiceAmount ?? tx.amount),
-            cash: Number(tx.cash),
-            rbl: Number(tx.rbl || tx.rblRazorPay || 0),
-            bank: Number(tx.bank),
-            upi: Number(tx.upi),
-            amount: Number(tx.cash) + Number(tx.rbl || 0) + Number(tx.bank) + Number(tx.upi),
-            totalTransaction: Number(tx.cash) + Number(tx.rbl || 0) + Number(tx.bank) + Number(tx.upi),
-            source: "mongo"
-        }));
-
-        const allTws = [...bookingList, ...rentoutList, ...returnList, ...deleteList];
-        const allData = [...allTws, ...mongoList];
-        
-        // Remove duplicates
-        const deduped = Array.from(
-            new Map(
-                allData.map((tx) => {
-                    const dateKey = new Date(tx.date).toISOString().split("T")[0];
-                    const key = `${tx.invoiceNo || tx._id || tx.locCode}-${dateKey}-${tx.Category || ""}`;
-                    return [key, tx];
-                })
-            ).values()
-        );
-
-        setAllTransactions(deduped);
-    }, [data, data1, data2, data3, mongoTransactions]);
-
-    console.log("All transactions:", allTransactions);
-    const printRef = useRef(null);
-
-    const handlePrint = () => {
-        const printContent = printRef.current.innerHTML;
-        const originalContent = document.body.innerHTML;
-        console.log(originalContent);
-
-
-        document.body.innerHTML = `<html><head><title>Dummy Report</title>
-                <style>
-                    @page { size: tabloid; margin: 10mm; }
-                    body { font-family: Arial, sans-serif; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { border: 1px solid black; padding: 8px; text-align: left; white-space: nowrap; }
-                    tr { break-inside: avoid; }
-                </style>
-            </head><body>${printContent}</body></html>`;
-
-        window.print();
-        window.location.reload(); // Reload to restore content
+    const formatDate = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = date.toLocaleString('default', { month: 'short' });
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
     };
 
+    const formatNumber = (num) => {
+        if (!num && num !== 0) return "0";
+        return new Intl.NumberFormat('en-IN').format(num);
+    };
 
+    const calculateTotal = (key) => {
+        if (!allTransactions) return 0;
+        return allTransactions.reduce((sum, item) => sum + (Number(item[key]) || 0), 0);
+    };
+
+    const handleExportCSV = () => {
+        if (!allTransactions || allTransactions.length === 0) return;
+        
+        const csvRows = [];
+        csvRows.push(['Date', 'Invoice No.', 'Customer Name', 'Quantity', 'Bill Value', 'Cash', 'Razorpay', 'Card/Bank', 'UPI', 'Total Amount']);
+        
+        allTransactions.forEach(item => {
+            csvRows.push([
+                formatDate(item.date),
+                item.invoiceNo || "-",
+                item.customerName || "-",
+                item.quantity || 1,
+                item.billValue || 0,
+                item.cash || 0,
+                item.rbl || 0,
+                item.bank || 0,
+                item.upi || 0,
+                item.amount || 0
+            ]);
+        });
+        
+        csvRows.push([
+            'TOTAL',
+            '-',
+            '-',
+            '-',
+            '-',
+            calculateTotal('cash'),
+            calculateTotal('rbl'),
+            calculateTotal('bank'),
+            calculateTotal('upi'),
+            calculateTotal('amount')
+        ]);
+        
+        const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        const storeName = (currentusers.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_");
+        const dateRange = fromDate === toDate ? fromDate : `${fromDate}_to_${toDate}`;
+        link.setAttribute("download", `Rentout_Report_${dateRange}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handlePrintPDF = () => {
+        const element = document.getElementById('report-table-container');
+        const storeName = (currentusers.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_");
+        const dateRange = fromDate === toDate ? fromDate : `${fromDate}_to_${toDate}`;
+        const opt = {
+            margin: [0.3, 0.3, 0.3, 0.3],
+            filename: `daybook_${storeName}_${dateRange}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 1.5, useCORS: true },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+        };
+        html2pdf().set(opt).from(element).save();
+    };
 
     return (
         <>
-          {/* ✅ Page title in browser tab */}
             <Helmet>
                 <title>Rentout | RootFin</title>
             </Helmet>
-            <div>
-      <Headers title={'Rent out Report'} />
-      <div className='ml-[240px]'>
-        <div className="p-6 bg-gray-100 min-h-screen">
-          {/* Date Inputs */}
-          <div className="flex gap-4 mb-6 w-[600px]">
-            <div className='w-full flex flex-col '>
-              <label htmlFor="from">From *</label>
-              <input
-                type="date"
-                id="from"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className='border border-gray-300 py-[6px]'
-              />
+            
+            <Header title="Rent Out Report" />
+            <div className={`transition-all duration-300 min-h-screen bg-white ${isSidebarOpen ? 'ml-[240px]' : 'ml-0'}`}>
+                
+                {/* Filters Section */}
+                <div className="pt-6 px-8 flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+                    <div className="flex flex-wrap items-end gap-6">
+                        <div className="flex flex-col gap-1.5 w-[160px]">
+                            <label className="text-[12px] font-medium text-gray-400">From Date</label>
+                            <div className="relative">
+                                <input 
+                                    type="date" 
+                                    value={fromDate}
+                                    onChange={(e) => setFromDate(e.target.value)}
+                                    className="w-full border border-gray-200 rounded-md h-[38px] pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 transition-colors z-10 bg-transparent"
+                                />
+                                
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-1.5 w-[160px]">
+                            <label className="text-[12px] font-medium text-gray-400">To Date</label>
+                            <div className="relative">
+                                <input 
+                                    type="date" 
+                                    value={toDate}
+                                    onChange={(e) => setToDate(e.target.value)}
+                                    className="w-full border border-gray-200 rounded-md h-[38px] pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 transition-colors z-10 bg-transparent"
+                                />
+                                
+                            </div>
+                        </div>
+                        
+                        <button 
+                            onClick={handleFetch}
+                            disabled={isLoading}
+                            className="h-[38px] px-6 bg-[#a855f7] hover:bg-[#9333ea] text-white text-sm font-medium rounded-md transition-colors flex items-center justify-center disabled:opacity-70"
+                        >
+                            {isLoading ? (
+                                <><svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                </svg>Fetching...</>
+                            ) : 'Fetch Data'}
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button onClick={handleExportCSV} className="h-[38px] px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-md transition-colors flex items-center gap-2">
+                            Export CSV <Download size={16} />
+                        </button>
+                        <button onClick={handlePrintPDF} className="h-[38px] px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-md transition-colors flex items-center gap-2">
+                            Print PDF <Printer size={16} />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="px-4 pb-8" id="report-table-container">
+                    <div className="border border-gray-200 rounded-md overflow-x-auto bg-white">
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px" }}>
+                            <thead className="bg-[#1f2937]">
+                                <tr>
+                                    <th style={{ padding: "8px 6px", textAlign: "left", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Date</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "left", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Invoice No.</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "left", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Customer Name</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Qty</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Bill Value</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Cash</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Razorpay</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Card/Bank</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>UPI</th>
+                                    <th style={{ padding: "8px 6px", textAlign: "center", fontSize: "10px", fontWeight: 600, color: "white", textTransform: "uppercase", whiteSpace: "nowrap" }}>Total Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {allTransactions.length > 0 ? (
+                                    allTransactions.map((transaction, index) => (
+                                        <tr key={index} style={{ borderBottom: "1px solid #f1f3f4" }}>
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151" }}>
+                                                {formatDate(transaction.date)}
+                                            </td>
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151" }}>
+                                                {transaction.invoiceNo || transaction._id || transaction.locCode || "-"}
+                                            </td>
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151" }}>
+                                                {transaction.customerName || "-"}
+                                            </td>
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
+                                                {transaction.quantity || 1}
+                                            </td>
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
+                                                {formatNumber(transaction.billValue)}
+                                            </td>
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
+                                                {formatNumber(transaction.cash)}
+                                            </td>
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
+                                                {formatNumber(transaction.rbl)}
+                                            </td>
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
+                                                {formatNumber(transaction.bank)}
+                                            </td>
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
+                                                {formatNumber(transaction.upi)}
+                                            </td>
+                                            <td style={{ padding: "6px 6px", whiteSpace: "nowrap", fontSize: "11px", color: "#374151", textAlign: "center" }}>
+                                                {formatNumber(transaction.amount)}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="10" className="px-6 py-12 text-center text-gray-500 text-sm">
+                                            {!toDate || !fromDate
+                                                ? "Select a date range and click Fetch Data"
+                                                : "No transactions found"}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                            {allTransactions.length > 0 && (
+                                <tfoot style={{ backgroundColor: "#e5e7eb" }}>
+                                    <tr>
+                                        <td colSpan="5" style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 700, color: "#1f2937", textTransform: "uppercase" }}>
+                                            Total
+                                        </td>
+                                        <td style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 700, color: "#1f2937", textAlign: "center" }}>
+                                            {formatNumber(calculateTotal('cash'))}
+                                        </td>
+                                        <td style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 700, color: "#1f2937", textAlign: "center" }}>
+                                            {formatNumber(calculateTotal('rbl'))}
+                                        </td>
+                                        <td style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 700, color: "#1f2937", textAlign: "center" }}>
+                                            {formatNumber(calculateTotal('bank'))}
+                                        </td>
+                                        <td style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 700, color: "#1f2937", textAlign: "center" }}>
+                                            {formatNumber(calculateTotal('upi'))}
+                                        </td>
+                                        <td style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 700, color: "#1f2937", textAlign: "center" }}>
+                                            {formatNumber(calculateTotal('amount'))}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            )}
+                        </table>
+                    </div>
+                </div>
             </div>
-            <div className='w-full flex flex-col '>
-              <label htmlFor="to">To *</label>
-              <input
-                type="date"
-                id="to"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className='border border-gray-300 py-[6px]'
-              />
-            </div>
-    
-            <button
-              className='bg-blue-500 w-[400px] h-[40px] mt-[20px] rounded-md text-white flex items-center justify-center gap-2'
-              onClick={handleFetch}
-              disabled={isLoading}
-              style={{ opacity: isLoading ? 0.7 : 1 }}
-            >
-              {isLoading && (
-                <svg
-                  className="animate-spin h-5 w-5"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              )}
-              {isLoading ? 'Loading...' : 'Fetch'}
-            </button>
-          </div>
-    
-          {/* Table */}
-          <div ref={printRef}>
-            <div className="bg-white p-4 shadow-md rounded-lg">
-              <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-                <table className="w-full border-collapse border rounded-md border-gray-300">
-                  <thead
-                    className="rounded-md"
-                    style={{
-                      position: "sticky",
-                      top: 0,
-                      background: "#7C7C7C",
-                      color: "white",
-                      zIndex: 2
-                    }}
-                  >
-                    <tr className="rounded-md">
-                      <th className="border p-2">Date</th>
-                      <th className="border p-2">Invoice No</th>
-                      <th className="border p-2">Customer Name</th>
-                      <th className="border p-2">Quantity</th>
-                      <th className="border p-2">Bill Value</th>
-                      <th className="border p-2">Cash</th>
-                      <th className="border p-2">RBL</th>
-                      <th className="border p-2">Bank</th>
-                      <th className="border p-2">UPI</th>
-                      <th className="border p-2">Total Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allTransactions.length > 0 ? (
-                      allTransactions.map((transaction, index) => (
-                        <tr key={index}>
-                          <td className="border p-2">{transaction.date}</td>
-                          <td className="border p-2">{transaction.invoiceNo || transaction._id || transaction.locCode}</td>
-                          <td className="border p-2">{transaction.customerName || "-"}</td>
-                          <td className="border p-2">{transaction.quantity || 1}</td>
-                          <td className="border p-2">{transaction.billValue}</td>
-                          <td className="border p-2">{transaction.cash}</td>
-                          <td className="border p-2">{transaction.rbl}</td>
-                          <td className="border p-2">{transaction.bank}</td>
-                          <td className="border p-2">{transaction.upi}</td>
-                          <td className="border p-2">{transaction.amount}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="10" className="text-center border p-4">
-                          {!toDate || !fromDate
-                            ? "Select Data range first"
-                            : "No transactions found"}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-    
-                  {/* Footer Totals */}
-                  <tfoot>
-                    <tr
-                      className="bg-white text-center font-semibold"
-                      style={{
-                        position: "sticky",
-                        bottom: 0,
-                        background: "#ffffff",
-                        zIndex: 1
-                      }}
-                    >
-                      <td className="border border-gray-300 px-4 py-2 text-left" colSpan="5">
-                        Total:
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {allTransactions.reduce((sum, item) => sum + Number(item.cash || 0), 0)}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {allTransactions.reduce((sum, item) => sum + Number(item.rbl || 0), 0)}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {allTransactions.reduce((sum, item) => sum + Number(item.bank || 0), 0)}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {allTransactions.reduce((sum, item) => sum + Number(item.upi || 0), 0)}
-                      </td>
-                      <td className="border border-gray-300 px-4 py-2">
-                        {allTransactions.reduce((sum, item) => sum + Number(item.amount || 0), 0)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-          </div>
-    
-          <button
-            onClick={handlePrint}
-            className="mt-6 w-[200px] float-right cursor-pointer bg-blue-600 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-          >
-            <span>📥 Take pdf</span>
-          </button>
-        </div>
-      </div>
-    </div>
         </>
+    );
+};
 
-    )
-}
-
-export default DayBook
+export default DayBook;

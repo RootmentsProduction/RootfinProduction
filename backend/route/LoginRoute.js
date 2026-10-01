@@ -1,7 +1,7 @@
 import express from 'express';
 import { Login, SignUp, GetAllStores, GetAllUsers, UpdateUser, ResetPassword, DeleteUser } from '../controllers/LoginAndSignup.js';
 import { CreatePayment, GetPayment } from '../controllers/TransactionController.js';
-import { CloseController, GetAllCloseData, GetCloseController, getFinancialSummaryWithEdit } from '../controllers/CloseController.js';
+import { CloseController, GetAllCloseData, GetCloseController, getFinancialSummaryWithEdit, GetPendingClosures, ApproveClosure } from '../controllers/CloseController.js';
 import { editTransaction} from '../controllers/EditController.js';
 import Transaction from '../model/Transaction.js';
 import CloseTransaction from '../model/Closing.js';
@@ -219,6 +219,9 @@ router.post('/saveCashBank', CloseController)
  *         description: Internal server error.
  */
 router.get('/getsaveCashBank', GetCloseController)
+
+router.get('/pendingClosures', GetPendingClosures)
+router.put('/approveClosure/:id', ApproveClosure)
 
 /**
  * @swagger

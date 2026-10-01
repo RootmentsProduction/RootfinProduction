@@ -1,11 +1,30 @@
 import Headers from '../components/Header.jsx';
-import { useEffect, useRef, useState } from "react";
+import { customAlert } from '../utils/customAlert.jsx';
+import React, { useEffect, useRef, useState } from "react";
 import { useEnterToSave } from "../hooks/useEnterToSave";
-import Select from "react-select";
+import Select, { components } from "react-select";
 import baseUrl from '../api/api.js';
 import { CSVLink } from 'react-csv';
 import { Helmet } from "react-helmet";
 import { FiDownload } from "react-icons/fi";
+import useSidebar from "../hooks/useSidebar";
+import LoadingScreen from "../components/LoadingScreen.jsx";
+
+const CheckboxOption = (props) => {
+  return (
+    <components.Option {...props}>
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={props.isSelected}
+          onChange={() => null}
+          className="w-4 h-4 text-[#9B48D7] rounded border-gray-300 focus:ring-0 pointer-events-none accent-[#9B48D7]"
+        />
+        <span>{props.label}</span>
+      </div>
+    </components.Option>
+  );
+};
 
 const categories = [
   { value: "all", label: "All" },
@@ -19,23 +38,23 @@ const categories = [
   { value: "money transfer", label: "Cash to Bank" },
 ];
 
+const DEPT_LOC_CODES = ["759", "102", "101", "858", "103"];
+
+
 const headers = [
   { label: "Date", key: "date" },
   { label: "Invoice No", key: "invoiceNo" },
   { label: "Customer Name", key: "customerName" },
-  { label: "Quantity", key: "quantity" },
+  { label: "QTY", key: "quantity" },
   { label: "Category", key: "Category" },
   { label: "Sub Category", key: "SubCategory" },
-  { label: "Balance Payable", key: "SubCategory1" },
+  { label: "Remarks", key: "remark" },
   { label: "Amount", key: "amount" },
-  { label: "Total Transaction", key: "totalTransaction" },
-  { label: "security", key: "securityAmount" },
-  { label: "Balance Payable", key: "Balance" },
-  { label: "Remark", key: "remark" },
+  { label: "Total Txn", key: "totalTransaction" },
   { label: "Discount", key: "discountAmount" },
   { label: "Bill Value", key: "billValue" },
   { label: "Cash", key: "cash" },
-  { label: "Razorpay", key: "rbl" }, // ✅ Added RBL to headers
+  { label: "Razorpay", key: "rbl" },
   { label: "Card/Bank", key: "bank" },
   { label: "UPI", key: "upi" },
   { label: "Attachment", key: "attachment" },
@@ -55,6 +74,24 @@ const subCategories = [
   { value: "mixed sales", label: "Mixed Sales (Shoes & Shirts)" },
   { value: "bulk amount transfer", label: "Cash to Bank" },
   // Expense sub-categories
+  { value: "ac service", label: "Ac service" },
+  { value: "interior maintenance", label: "Interior Maintenance" },
+  { value: "glass cleaning", label: "Glass Cleaning" },
+  { value: "electrical work", label: "Electrical work" },
+  { value: "telephone/wifi", label: "Telephone/wifi" },
+  { value: "printout", label: "Printout" },
+  { value: "books/pen/checklist/register/bill book/voucher", label: "Books/pen/Checklist/Register/Bill Book/Voucher" },
+  { value: "stationary items", label: "Stationary Items" },
+  { value: "cake purchase", label: "Cake purchase" },
+  { value: "food allowance on special occassion", label: "Food allowance on Special Occassion" },
+  { value: "other refreshment", label: "Other Refreshment" },
+  { value: "staff room rent/electricity", label: "Staff room rent/Electricity" },
+  { value: "steamer", label: "Steamer" },
+  { value: "chairs", label: "Chairs" },
+  { value: "electronic items", label: "Electronic Items" },
+  { value: "any other furniture items", label: "Any other Furniture items" },
+  { value: "spot incentive", label: "Spot incentive" },
+  { value: "weekly incentive", label: "Weekly incentive" },
   { value: "dry cleaning", label: "Dry Cleaning" },
   { value: "altration", label: "Altration" },
   { value: "material", label: "Material" },
@@ -70,7 +107,7 @@ const subCategories = [
   { value: "printing stationary", label: "Printing & Stationary" },
   { value: "staff welfare", label: "Staff Welfare" },
   { value: "staff reimbursement", label: "Staff Accommodation" },
-  { value: "rent", label: "Rent" },
+  { value: "rent", label: "Store Rent" },
   { value: "asset purchase", label: "Asset Purchase" },
   { value: "incentive", label: "Incentive" },
   { value: "spot incentive", label: "Incentive (Spot)" },
@@ -87,32 +124,33 @@ const subCategories = [
 
 // Maps raw DB category/subCategory values → human-readable labels
 const CATEGORY_LABEL_MAP = {
-  "dry cleaning":         "Dry Cleaning",
-  "altration":            "Altration",
-  "material":             "Material",
-  "courier charges":      "Courier Charges",
+  "dry cleaning": "Dry Cleaning",
+  "altration": "Altration",
+  "material": "Material",
+  "courier charges": "Courier Charges",
   "maintenance expenses": "Repairs & Maintenance",
-  "travel exp":           "Travel Exp",
-  "fuel exp":             "Fuel Exp",
-  "petty expenses":       "Office Expense",
-  "telephone internet":   "Internet Expense",
-  "utility bill":         "Electricity Charges",
-  "waste management":     "Waste Management",
-  "water charges":        "Water Charges",
-  "salary":               "Salary / Salary Advance",
-  "printing stationary":  "Printing & Stationary",
-  "staff welfare":        "Staff Welfare",
-  "staff reimbursement":  "Staff Accommodation",
-  "rent":                 "Rent",
-  "asset purchase":       "Asset Purchase",
-  "incentive":            "Incentive",
-  "spot incentive":       "Incentive",
-  "other expenses":       "Refund",
+  "travel exp": "Travel Exp",
+  "fuel exp": "Fuel Exp",
+  "petty expenses": "Office Expense",
+  "telephone internet": "Internet Expense",
+  "utility bill": "Electricity Charges",
+  "waste management": "Waste Management",
+  "water charges": "Water Charges",
+  "salary": "Salary / Salary Advance",
+  "printing stationary": "Printing & Stationary",
+  "staff welfare": "Staff Welfare",
+  "staff reimbursement": "Staff Accommodation",
+  "rent": "Store Rent",
+  "store rent": "Store Rent",
+  "asset purchase": "Asset Purchase",
+  "incentive": "Incentive",
+  "spot incentive": "Incentive",
+  "other expenses": "Refund",
   "bulk amount transfer": "Cash to Bank",
-  "write off":            "Write Off",
-  "promotion_services":   "Promotion / Services",
-  "shoe sales return":    "Shoe Sales Return",
-  "shirt sales return":   "Shirt Sales Return",
+  "write off": "Write Off",
+  "promotion_services": "Promotion / Services",
+  "shoe sales return": "Shoe Sales Return",
+  "shirt sales return": "Shirt Sales Return",
 };
 const getCatLabel = (val) => CATEGORY_LABEL_MAP[(val || "").toLowerCase().trim()] || val;
 
@@ -156,23 +194,20 @@ const multiBranchCsvHeaders = [
   { label: "Date", key: "date" },
   { label: "Invoice No", key: "invoiceNo" },
   { label: "Customer Name", key: "customerName" },
-  { label: "Quantity", key: "quantity" },
+  { label: "QTY", key: "quantity" },
   { label: "Category", key: "Category" },
   { label: "Sub Category", key: "SubCategory" },
-  { label: "Balance Payable", key: "SubCategory1" },
+  { label: "Remarks", key: "remark" },
   { label: "Amount", key: "amount" },
-  { label: "Total Transaction", key: "totalTransaction" },
-  { label: "security", key: "securityAmount" },
-  { label: "Balance Payable", key: "Balance" },
-  { label: "Remark", key: "remark" },
+  { label: "Total Txn", key: "totalTransaction" },
   { label: "Discount", key: "discountAmount" },
   { label: "Bill Value", key: "billValue" },
   { label: "Cash", key: "cash" },
   { label: "Razorpay", key: "rbl" },
   { label: "Card/Bank", key: "bank" },
   { label: "UPI", key: "upi" },
-  { label: "Attachment", key: "attachment" },
   { label: "Branch", key: "branch" },
+  { label: "Attachment", key: "attachment" },
 ];
 
 const Datewisedaybook = () => {
@@ -188,18 +223,54 @@ const Datewisedaybook = () => {
   const isClusterManager = (currentusers.role || "").toLowerCase() === "cluster_manager";
   const clusterAllowedLocCodes = currentusers.allowedLocCodes || [];
 
+  // Admin-level dept loc codes — expenses from these are only visible to admin/superadmin
+  const ADMIN_DEPT_LOC_CODES = new Set(["759", "102", "101", "858", "103"]);
+  const isAdminOrSuperAdmin = (currentusers.power || "").toLowerCase() === "admin" || (currentusers.role || "").toLowerCase() === "superadmin";
+  // Expense categories that should be hidden from store/cluster users when entered by admin depts
+  const EXPENSE_CATEGORIES_SET = new Set([
+    "expense", "petty expenses", "staff reimbursement", "maintenance expenses",
+    "telephone internet", "utility bill", "salary", "rent", "courier charges",
+    "asset purchase", "promotion_services", "spot incentive", "other expenses",
+    "shoe sales return", "shirt sales return", "dry cleaning", "altration",
+    "material", "travel exp", "fuel exp", "waste management", "water charges",
+    "printing stationary", "staff welfare", "staff accommodation", "incentive", "write off",
+  ]);
+
+  // Returns true if a transaction is an admin-entered expense that should be hidden from store/cluster users
+  const isAdminExpense = (tx) => {
+    if (isAdminOrSuperAdmin) return false; // admins always see everything
+    const type = (tx.Category || tx.type || "").toLowerCase();
+    const cat  = (tx.SubCategory || tx.category || "").toLowerCase().trim();
+    const txLocCode = String(tx.locCode || "");
+    const isExpense = type === "expense" || EXPENSE_CATEGORIES_SET.has(type) || EXPENSE_CATEGORIES_SET.has(cat);
+    const isFromAdminDept = ADMIN_DEPT_LOC_CODES.has(txLocCode);
+    return isExpense && (isFromAdminDept || tx.isAdminLevel);
+  };
+
   // For cluster managers, filter AllLoation to only their allowed stores
   const visibleLocations = isClusterManager
     ? AllLoation.filter(s => clusterAllowedLocCodes.includes(s.locCode))
     : AllLoation;
 
   const [selectedStore, setSelectedStore] = useState("current");
+  const [selectedDepartment, setSelectedDepartment] = useState("all_departments"); // ✅ Reverted to single select, defaulting to all_departments
   const [allStoresSummary, setAllStoresSummary] = useState([]);
   const [allStoresTotals, setAllStoresTotals] = useState({ cash: 0, rbl: 0, bank: 0, upi: 0, amount: 0 }); // ✅ Added rbl
   const [selectedStores, setSelectedStores] = useState([]); // stores selected for multi-branch view
   const [showStoreSelector, setShowStoreSelector] = useState(false);
   const [multiBranchData, setMultiBranchData] = useState([]); // merged transactions from all selected stores
   const [multiBranchFetching, setMultiBranchFetching] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    const handleSidebarChange = (e) => {
+      if (e.detail && typeof e.detail.isOpen === "boolean") {
+        setIsSidebarOpen(e.detail.isOpen);
+      }
+    };
+    window.addEventListener("sidebar-changed", handleSidebarChange);
+    return () => window.removeEventListener("sidebar-changed", handleSidebarChange);
+  }, []);
 
   const handleFetch = async () => {
     setIsFetching(true);
@@ -239,7 +310,7 @@ const Datewisedaybook = () => {
         // The 'cash' field contains the previous day's total closing cash, which should be today's opening
         openingCash = Number(openData?.data?.cash ?? openData?.data?.Closecash ?? 0);
         openingRbl = Number(openData?.data?.rbl ?? 0); // ✅ Added RBL opening
-      } catch {}
+      } catch { }
 
       const twsBase = "https://rentalapi.rootments.live/api/GetBooking";
       const bookingU = `${twsBase}/GetBookingList?LocCode=${locCode}&DateFrom=${fromDate}&DateTo=${toDate}`;
@@ -255,7 +326,7 @@ const Datewisedaybook = () => {
         );
         const json = await res.json();
         overrideRowsStore = json?.data || [];
-      } catch {}
+      } catch { }
 
       let bookingData = {}, rentoutData = {}, returnData = {}, deleteData = {}, mongoData = {};
       try {
@@ -265,11 +336,12 @@ const Datewisedaybook = () => {
         [bookingData, rentoutData, returnData, deleteData, mongoData] = await Promise.all([
           bookingRes.json(), rentoutRes.json(), returnRes.json(), deleteRes.json(), mongoRes.json()
         ]);
-      } catch {}
+      } catch { }
 
       const bookingList = (bookingData?.dataSet?.data || []).map(item => ({
         ...item,
         date: item.bookingDate?.split("T")[0],
+        time: item?.time || item?.bookingTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
         invoiceNo: item.invoiceNo,
         customerName: item.customerName,
         quantity: item.quantity || 1,
@@ -294,6 +366,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.rentOutDate || "").split("T")[0],
+          time: item?.time || item?.rentOutTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           quantity: item.quantity || 1,
@@ -318,7 +391,7 @@ const Datewisedaybook = () => {
       const returnList = (returnData?.dataSet?.data || []).map(item => {
         const returnCashAmount = -Math.abs(Number(item.returnCashAmount || 0));
         const returnRblAmount = -Math.abs(Number(item.rblRazorPay || 0));
-       
+
         // ✅ Only process bank/UPI if no RBL value
         const returnBankAmount = returnRblAmount !== 0 ? 0 : -Math.abs(Number(item.returnBankAmount || 0));
         const returnUPIAmount = returnRblAmount !== 0 ? 0 : -Math.abs(Number(item.returnUPIAmount || 0));
@@ -326,6 +399,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
+          time: item?.time || item?.returnedTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           customerName: item.customerName || item.custName || item.customer || "",
           invoiceNo: item.invoiceNo,
           Category: "Return",
@@ -346,7 +420,7 @@ const Datewisedaybook = () => {
       const deleteList = (deleteData?.dataSet?.data || []).map(item => {
         const deleteCashAmount = -Math.abs(Number(item.deleteCashAmount || 0));
         const deleteRblAmount = -Math.abs(Number(item.rblRazorPay || 0));
-       
+
         // ✅ Only process bank/UPI if no RBL value
         const deleteBankAmount = deleteRblAmount !== 0 ? 0 : -Math.abs(Number(item.deleteBankAmount || 0));
         const deleteUPIAmount = deleteRblAmount !== 0 ? 0 : -Math.abs(Number(item.deleteUPIAmount || 0));
@@ -354,6 +428,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: item.cancelDate?.split("T")[0],
+          time: item?.time || item?.cancelTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           Category: "Cancel",
@@ -383,6 +458,7 @@ const Datewisedaybook = () => {
         return {
           ...tx,
           date: tx.date?.split("T")[0] || "",
+          time: tx?.time || (tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (tx?.date && tx.date.includes("T") ? new Date(tx.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           Category: tx.type,
           SubCategory: subCatLabel,
           SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
@@ -441,6 +517,7 @@ const Datewisedaybook = () => {
             SubCategory1: override.SubCategory1 || override.subCategory1 || t.SubCategory1 || t.subCategory1 || "",
             customerName: override.customerName || t.customerName || "",
             date: override.date || t.date || "",
+            time: override.time || t.time || "",
             securityAmount: isRentOutStore
               ? Number(override.securityAmount ?? t.securityAmount ?? 0)
               : 0,
@@ -459,10 +536,10 @@ const Datewisedaybook = () => {
       const deduped = Array.from(
         new Map(
           allTransactions.map((tx) => {
-            const dateKey = new Date(tx.date).toISOString().split("T")[0];
+            const dateKey = (tx.date ? new Date(tx.date).toISOString().split("T")[0] : "");
             // Use _id as primary key if available (for mongo transactions), otherwise use invoiceNo + category + date + source
-            const key = tx._id 
-              ? tx._id 
+            const key = tx._id
+              ? tx._id
               : `${tx.invoiceNo || tx.locCode}-${dateKey}-${tx.Category || tx.type || ""}-${tx.source || ""}`;
             return [key, tx];
           })
@@ -479,9 +556,34 @@ const Datewisedaybook = () => {
       return { cash, rbl, bank, upi, amount: cash + rbl + bank + upi }; // ✅ Added rbl
     }
 
+    let locCodesToFetch = [];
+
+    // Process combined Store/Department Dropdown Selection
     if (selectedStore === "all") {
+      locCodesToFetch = [...AllLoation.map(loc => loc.locCode).filter(c => !DEPT_LOC_CODES.includes(c))];
+    } else if (selectedStore === "current") {
+      locCodesToFetch = [currentusers.locCode];
+    } else if (selectedStore === "multi") {
+      locCodesToFetch = [...selectedStores];
+    } else if (selectedStore === "all_departments") {
+      locCodesToFetch = DEPT_LOC_CODES;
+    } else {
+      // Could be an individual store or dept locCode
+      locCodesToFetch = [selectedStore];
+    }
+
+    // Ensure uniqueness
+    locCodesToFetch = [...new Set(locCodesToFetch)];
+
+    if (locCodesToFetch.length === 0) {
+      locCodesToFetch = [currentusers.locCode];
+    }
+
+    if (selectedStore === "all" || selectedStore === "all_departments") {
+      const filteredLocations = visibleLocations.filter(loc => locCodesToFetch.includes(loc.locCode));
+      
       const results = await Promise.all(
-        visibleLocations.map(async ({ locCode, locName }) => {
+        filteredLocations.map(async ({ locCode, locName }) => {
           const summary = await getStoreFooterTotals(locCode, fromDate, toDate);
           return { store: locName, locCode, ...summary };
         })
@@ -521,7 +623,7 @@ const Datewisedaybook = () => {
             );
             const json = await res.json();
             overrideRowsMulti = json?.data || [];
-          } catch {}
+          } catch { }
 
           let bookingData = {}, rentoutData = {}, returnData = {}, deleteData = {}, mongoData = {};
           try {
@@ -531,11 +633,12 @@ const Datewisedaybook = () => {
             [bookingData, rentoutData, returnData, deleteData, mongoData] = await Promise.all([
               bRes.json(), rRes.json(), retRes.json(), dRes.json(), mRes.json()
             ]);
-          } catch {}
+          } catch { }
 
           const bList = (bookingData?.dataSet?.data || []).map(item => ({
             ...item,
             date: item.bookingDate?.split("T")[0],
+        time: item?.time || item?.bookingTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
             invoiceNo: item.invoiceNo,
             customerName: item.customerName,
             quantity: item.quantity || 1,
@@ -562,6 +665,7 @@ const Datewisedaybook = () => {
             return {
               ...item,
               date: (item.rentOutDate || "").split("T")[0],
+          time: item?.time || item?.rentOutTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
               invoiceNo: item.invoiceNo,
               customerName: item.customerName,
               quantity: item.quantity || 1,
@@ -592,6 +696,7 @@ const Datewisedaybook = () => {
             return {
               ...item,
               date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
+          time: item?.time || item?.returnedTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
               customerName: item.customerName || item.custName || item.customer || "",
               invoiceNo: item.invoiceNo,
               Category: "Return",
@@ -618,6 +723,7 @@ const Datewisedaybook = () => {
             return {
               ...item,
               date: item.cancelDate?.split("T")[0],
+          time: item?.time || item?.cancelTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
               invoiceNo: item.invoiceNo,
               customerName: item.customerName,
               Category: "Cancel",
@@ -650,6 +756,7 @@ const Datewisedaybook = () => {
             return {
               ...tx,
               date: tx.date?.split("T")[0] || "",
+          time: tx?.time || (tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (tx?.date && tx.date.includes("T") ? new Date(tx.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
               Category: tx.type,
               SubCategory: subCatLabel,
               SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
@@ -706,6 +813,7 @@ const Datewisedaybook = () => {
                 SubCategory1: override.SubCategory1 || override.subCategory1 || t.SubCategory1 || t.subCategory1 || "",
                 customerName: override.customerName || t.customerName || "",
                 date: override.date || t.date || "",
+            time: override.time || t.time || "",
                 securityAmount: isRentOutMulti ? Number(override.securityAmount ?? t.securityAmount ?? 0) : 0,
                 Balance: isRentOutMulti ? Number(override.Balance ?? t.Balance ?? 0) : 0,
                 amount: Number(override.amount ?? t.amount),
@@ -721,7 +829,7 @@ const Datewisedaybook = () => {
           const dedupedMulti = Array.from(
             new Map(
               allTransactionsMulti.map((tx) => {
-                const dateKey = new Date(tx.date).toISOString().split("T")[0];
+                const dateKey = (tx.date ? new Date(tx.date).toISOString().split("T")[0] : "");
                 const key = tx._id
                   ? `${tx._id}-${locCode}`
                   : `${tx.invoiceNo || tx.locCode}-${dateKey}-${tx.Category || tx.type || ""}-${tx.source || ""}-${locCode}`;
@@ -756,6 +864,7 @@ const Datewisedaybook = () => {
       const bookingList = (bookingData?.dataSet?.data || []).map(item => ({
         ...item,
         date: item.bookingDate?.split("T")[0],
+        time: item?.time || item?.bookingTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.bookingDate && item.bookingDate.includes("T") ? new Date(item.bookingDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
         invoiceNo: item.invoiceNo,
         customerName: item.customerName,
         quantity: item.quantity || 1,
@@ -782,6 +891,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.rentOutDate || "").split("T")[0],
+          time: item?.time || item?.rentOutTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.rentOutDate && item.rentOutDate.includes("T") ? new Date(item.rentOutDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           quantity: item.quantity || 1,
@@ -807,7 +917,7 @@ const Datewisedaybook = () => {
       const returnList = (returnData?.dataSet?.data || []).map(item => {
         const returnCashAmount = -Math.abs(Number(item.returnCashAmount || 0));
         const returnRblAmount = -Math.abs(Number(item.rblRazorPay || 0));
-       
+
         // ✅ Only process bank/UPI if no RBL value
         const returnBankAmount = returnRblAmount !== 0 ? 0 : -Math.abs(Number(item.returnBankAmount || 0));
         const returnUPIAmount = returnRblAmount !== 0 ? 0 : -Math.abs(Number(item.returnUPIAmount || 0));
@@ -815,6 +925,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: (item.returnedDate || item.returnDate || item.createdDate || "").split("T")[0],
+          time: item?.time || item?.returnedTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.returnedDate && item.returnedDate.includes("T") ? new Date(item.returnedDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           customerName: item.customerName || item.custName || item.customer || "",
           invoiceNo: item.invoiceNo,
           Category: "Return",
@@ -836,7 +947,7 @@ const Datewisedaybook = () => {
       const deleteList = (deleteData?.dataSet?.data || []).map(item => {
         const deleteCashAmount = -Math.abs(Number(item.deleteCashAmount || 0));
         const deleteRblAmount = -Math.abs(Number(item.rblRazorPay || 0));
-       
+
         // ✅ Only process bank/UPI if no RBL value
         const deleteBankAmount = deleteRblAmount !== 0 ? 0 : -Math.abs(Number(item.deleteBankAmount || 0));
         const deleteUPIAmount = deleteRblAmount !== 0 ? 0 : -Math.abs(Number(item.deleteUPIAmount || 0));
@@ -844,6 +955,7 @@ const Datewisedaybook = () => {
         return {
           ...item,
           date: item.cancelDate?.split("T")[0],
+          time: item?.time || item?.cancelTime || (item?.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (item?.cancelDate && item.cancelDate.includes("T") ? new Date(item.cancelDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           invoiceNo: item.invoiceNo,
           customerName: item.customerName,
           Category: "Cancel",
@@ -875,6 +987,7 @@ const Datewisedaybook = () => {
         return {
           ...tx,
           date: tx.date?.split("T")[0] || "",
+          time: tx?.time || (tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : (tx?.date && tx.date.includes("T") ? new Date(tx.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase() : "")),
           Category: tx.type,
           SubCategory: subCatLabel,
           SubCategory1: tx.subCategory1 || tx.SubCategory1 || "",
@@ -948,6 +1061,7 @@ const Datewisedaybook = () => {
             SubCategory1: override.SubCategory1 || override.subCategory1 || t.SubCategory1 || t.subCategory1 || "",
             customerName: override.customerName || t.customerName || "",
             date: override.date || t.date || "",
+            time: override.time || t.time || "",
             securityAmount: isRentOut
               ? Number(override.securityAmount ?? t.securityAmount ?? 0)
               : 0,
@@ -963,13 +1077,13 @@ const Datewisedaybook = () => {
       });
 
       const allTransactions = [...finalTws, ...mongoList];
-      
+
       const deduped = Array.from(
         new Map(
           allTransactions.map((tx) => {
-            const dateKey = new Date(tx.date).toISOString().split("T")[0];
-            const key = tx._id 
-              ? tx._id 
+            const dateKey = (tx.date ? new Date(tx.date).toISOString().split("T")[0] : "");
+            const key = tx._id
+              ? tx._id
               : `${tx.invoiceNo || tx.locCode}-${dateKey}-${tx.Category || tx.type || ""}-${tx.source || ""}`;
             return [key, tx];
           })
@@ -996,14 +1110,17 @@ const Datewisedaybook = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Error saving data');
+        if (response.status === 404) {
+          setPreOpen({});
+          return;
+        }
+        throw new Error(`HTTP error ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("Data saved successfully:", data);
-      setPreOpen(data?.data)
+      setPreOpen(data?.data || {});
     } catch (error) {
-      console.error("Error saving data:", error);
+      console.error("Error fetching cash/bank opening data:", error);
     }
   };
 
@@ -1023,10 +1140,13 @@ const Datewisedaybook = () => {
     const tableHtml = printRef.current.innerHTML;
     const w = window.open("", "_blank", "width=900,height=600");
 
+    const storeName = selectedStore === "all" ? "All_Branches" : selectedStore === "multi" ? "Multiple_Branches" : (AllLoation.find(loc => loc.locCode === currentusers.locCode)?.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_");
+    const dateRange = fromDate === toDate ? fromDate : `${fromDate}_to_${toDate}`;
+
     w.document.write(`
     <html>
       <head>
-        <title>Financial Summary</title>
+        <title>financial_summary_${storeName}_${dateRange}</title>
         <style>
           @page { margin: 10mm; }
           body  { font-family: Arial, sans-serif; }
@@ -1047,30 +1167,68 @@ const Datewisedaybook = () => {
   const [mongoTransactions, setMongoTransactions] = useState([]);
   const [mergedTransactions, setMergedTransactions] = useState([]);
 
-  const [selectedCategory, setSelectedCategory] = useState(categories[0]);
-  const [selectedSubCategory, setSelectedSubCategory] = useState(subCategories[0]);
+  const [selectedCategory, setSelectedCategory] = useState([categories[0]]);
+  const [selectedSubCategory, setSelectedSubCategory] = useState([subCategories[0]]);
 
-  const selectedCategoryValue = selectedCategory?.value?.toLowerCase() || "all";
-  const selectedSubCategoryValue = selectedSubCategory?.value?.toLowerCase() || "all";
+  const catValues = Array.isArray(selectedCategory)
+    ? selectedCategory.map(c => c?.value?.toLowerCase()).filter(Boolean)
+    : (selectedCategory?.value ? [selectedCategory.value.toLowerCase()] : []);
+  const isAllCategories = catValues.length === 0 || catValues.includes("all");
+
+  const subCatValues = Array.isArray(selectedSubCategory)
+    ? selectedSubCategory.map(sc => sc?.value?.toLowerCase()).filter(Boolean)
+    : (selectedSubCategory?.value ? [selectedSubCategory.value.toLowerCase()] : []);
+  const isAllSubCategories = subCatValues.length === 0 || subCatValues.includes("all");
+
+  const filterTransaction = (t) => {
+    // Hide admin-dept expenses from store-level and cluster manager users
+    if (isAdminExpense(t)) return false;
+
+    const category = (t.Category ?? t.category ?? t.type ?? "").toLowerCase();
+    const subCategory = (t.SubCategory ?? t.subCategory ?? t.type ?? "").toLowerCase();
+    const subCategory1 = (t.SubCategory1 ?? t.subCategory1 ?? "").toLowerCase();
+
+    const matchesCategory = isAllCategories || catValues.includes(category);
+    const matchesSubCategory = isAllSubCategories ||
+      subCatValues.includes(subCategory) ||
+      subCatValues.includes(subCategory1) ||
+      subCatValues.includes(category);
+
+    return matchesCategory && matchesSubCategory;
+  };
 
   const toNumber = (v) => (isNaN(+v) ? 0 : +v);
 
-  const displayedRows = mergedTransactions.filter((t) => {
-    const category = (t.Category ?? t.type ?? "").toLowerCase();
-    const subCategory = (t.SubCategory ?? "").toLowerCase();
-    const subCategory1 = (t.SubCategory1 ?? "").toLowerCase();
-    const isRentOut = category === "rentout";
-
-    const matchesCategory =
-      selectedCategoryValue === "all" || category === selectedCategoryValue;
-
-    const matchesSubCategory =
-      selectedSubCategoryValue === "all" ||
-      subCategory === selectedSubCategoryValue ||
-      (isRentOut && subCategory1 === selectedSubCategoryValue);
-
-    return matchesCategory && matchesSubCategory;
-  });
+  const displayedRows = mergedTransactions
+    .filter(filterTransaction)
+    .sort((a, b) => {
+      // Define category order
+      const categoryOrder = {
+        booking: 1,
+        rentout: 2,
+        return: 3,
+        cancel: 4,
+        income: 5,
+        expense: 6
+      };
+      
+      const catA = (a.Category || a.category || a.type || "").toLowerCase().replace(/\s+/g, '');
+      const catB = (b.Category || b.category || b.type || "").toLowerCase().replace(/\s+/g, '');
+      
+      const orderA = categoryOrder[catA] || 99;
+      const orderB = categoryOrder[catB] || 99;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // Secondary sort by date
+      const dateAStr = a.date ? a.date.replace(/-/g, '/') + (a.time ? " " + a.time : "") : "";
+      const dateBStr = b.date ? b.date.replace(/-/g, '/') + (b.time ? " " + b.time : "") : "";
+      const dateA = new Date(dateAStr).getTime() || 0;
+      const dateB = new Date(dateBStr).getTime() || 0;
+      return dateB - dateA;
+    });
 
   // ✅ CRITICAL FIX: Use 'cash' field (calculated closing cash) for opening balance, not 'Closecash' (physical cash)
   // The 'cash' field contains the previous day's total closing cash, which should be today's opening
@@ -1085,11 +1243,14 @@ const Datewisedaybook = () => {
   const totals = displayedRows.reduce(
     (acc, r) => ({
       cash: acc.cash + toNumber(r.cash),
-      rbl: acc.rbl + toNumber(r.rbl), // ✅ Added RBL calculation
+      rbl: acc.rbl + toNumber(r.rbl),
       bank: acc.bank + toNumber(r.bank),
       upi: acc.upi + toNumber(r.upi),
+      amount: acc.amount + toNumber(r.amount),
+      totalTransaction: acc.totalTransaction + toNumber(r.totalTransaction),
+      discountAmount: acc.discountAmount + toNumber(r.discountAmount),
     }),
-    { cash: openingCash, rbl: openingRbl, bank: 0, upi: 0 } // ✅ Added rbl with opening
+    { cash: openingCash, rbl: openingRbl, bank: 0, upi: 0, amount: openingCash + openingRbl, totalTransaction: openingCash + openingRbl, discountAmount: 0 }
   );
 
   const totalCash = totals.cash;
@@ -1127,15 +1288,7 @@ const Datewisedaybook = () => {
       attachment: "",
     },
 
-    ...(mergedTransactions)
-      .filter(
-        (t) =>
-          (selectedCategoryValue === "all" ||
-            (t.Category ?? t.type ?? "").toLowerCase() === selectedCategoryValue) &&
-          (selectedSubCategoryValue === "all" ||
-            (t.SubCategory ?? "").toLowerCase() === selectedSubCategoryValue ||
-            (t.SubCategory1 ?? "").toLowerCase() === selectedSubCategoryValue)
-      )
+    ...(displayedRows)
       .map((t) => {
         const isReturn = t.Category === "Return";
         const isCancel = t.Category === "Cancel";
@@ -1164,7 +1317,11 @@ const Datewisedaybook = () => {
           customerName: t.customerName || "",
           quantity: t.quantity || 1,
           Category: t.Category || t.type || "",
-          SubCategory: getCatLabel(t.SubCategory || t.category || ""),
+          SubCategory: [t.SubCategory || t.category || ""]
+            .concat(isRent ? [t.SubCategory1 || t.subCategory1 || ""] : [])
+            .filter(Boolean)
+            .map(getCatLabel)
+            .join(" + ") || "-", 
           SubCategory1: t.SubCategory1 || t.subCategory1 || "",
           amount,
           totalTransaction: t.totalTransaction ?? amount,
@@ -1190,7 +1347,9 @@ const Datewisedaybook = () => {
   const handleEditClick = async (transaction, index) => {
     setIsSyncing(true);
 
-    if (!transaction._id) {
+    let resolvedId = transaction._id;
+
+    if (!resolvedId) {
       const patchedTransaction = {
         ...transaction,
         customerName: transaction.customerName || "",
@@ -1200,7 +1359,7 @@ const Datewisedaybook = () => {
         paymentMethod: 'cash',
         date: transaction.date || new Date().toISOString().split('T')[0],
         cash: transaction.cash || 0,
-        rbl: transaction.rbl || 0, // ✅ Added RBL to sync
+        rbl: transaction.rbl || 0,
         bank: transaction.bank || 0,
         upi: transaction.upi || 0,
       };
@@ -1216,23 +1375,38 @@ const Datewisedaybook = () => {
 
         if (!response.ok) {
           console.error("❌ Sync failed:", result);
-          alert("❌ Failed to sync transaction.\n" + (result?.error || 'Unknown error'));
+          customAlert("Failed to sync transaction.\n" + (result?.error || 'Unknown error'), "error");
           setIsSyncing(false);
           return;
         }
 
-        transaction._id = result.data._id;
+        resolvedId = result.data._id;
+        // ✅ Properly update state so _id is stored — don't just mutate local reference
+        setMergedTransactions(prev =>
+          prev.map(tx => {
+            if (
+              tx.invoiceNo === transaction.invoiceNo &&
+              (tx.Category || tx.type) === (transaction.Category || transaction.type) &&
+              !tx._id
+            ) {
+              return { ...tx, _id: resolvedId };
+            }
+            return tx;
+          })
+        );
       } catch (err) {
-        alert("❌ Sync error: " + err.message);
+        customAlert("Sync error: " + err.message, "error");
         setIsSyncing(false);
         return;
       }
     }
 
+    // ✅ Spread original transaction so all display fields are preserved during editing
     setEditedTransaction({
-      _id: transaction._id,
+      ...transaction,
+      _id: resolvedId,
       cash: transaction.cash || 0,
-      rbl: transaction.rbl || 0, // ✅ Added RBL to edit
+      rbl: transaction.rbl || 0,
       bank: transaction.bank || 0,
       upi: transaction.upi || 0,
       securityAmount: transaction.securityAmount || 0,
@@ -1247,18 +1421,14 @@ const Datewisedaybook = () => {
       billValue: transaction.billValue || 0,
       totalTransaction:
         (transaction.Category === "RentOut")
-          ? (Number(transaction.securityAmount || 0) +
-            Number(transaction.Balance || 0))
+          ? (Number(transaction.securityAmount || 0) + Number(transaction.Balance || 0))
           : (Number(transaction.totalTransaction) ||
             Number(transaction.amount) ||
-            (Number(transaction.cash || 0) +
-              Number(transaction.rbl || 0) + // ✅ Added rbl
-              Number(transaction.bank || 0) +
-              Number(transaction.upi || 0))),
+            (Number(transaction.cash || 0) + Number(transaction.rbl || 0) +
+              Number(transaction.bank || 0) + Number(transaction.upi || 0))),
       amount:
         (transaction.Category === "RentOut")
-          ? (Number(transaction.securityAmount || 0) +
-            Number(transaction.Balance || 0))
+          ? (Number(transaction.securityAmount || 0) + Number(transaction.Balance || 0))
           : (transaction.amount || 0)
     });
 
@@ -1319,7 +1489,7 @@ const Datewisedaybook = () => {
     } = editedTransaction;
 
     if (!_id) {
-      alert("❌ Cannot update: missing transaction ID.");
+      customAlert("Cannot update: missing transaction ID.", "error");
       return;
     }
 
@@ -1383,15 +1553,15 @@ const Datewisedaybook = () => {
       const json = await res.json();
 
       if (!res.ok) {
-        alert("❌ Update failed: " + (json?.message || "Unknown error"));
+        customAlert("Update failed: " + (json?.message || "Unknown error"), "error");
         return;
       }
-      alert("✅ Transaction updated.");
+      customAlert("Transaction updated.", "success");
 
       const updatedRow = {
-        ...editedTransaction,
+        ...editedTransaction,  // ✅ Preserve all original display fields (source, locCode, time, etc.)
         cash: adjCash,
-        rbl: adjRbl, // ✅ Added RBL to updated row
+        rbl: adjRbl,
         bank: adjBank,
         upi: adjUpi,
         securityAmount: numSec,
@@ -1401,18 +1571,20 @@ const Datewisedaybook = () => {
         billValue: originalBillValue,
         date,
         invoiceNo: invoiceNo || invoice,
+        _id,
       };
 
+      // ✅ Match by _id only (Category check removed — type casing can differ between TWS and Mongo)
       setMongoTransactions(prev =>
-        prev.map(tx => (tx._id === _id && (tx.Category || tx.type) === editedTransaction.Category ? updatedRow : tx))
+        prev.map(tx => tx._id === _id ? updatedRow : tx)
       );
       setMergedTransactions(prev =>
-        prev.map(t => (t._id === _id && (t.Category || t.type) === editedTransaction.Category ? updatedRow : t))
+        prev.map(t => t._id === _id ? updatedRow : t)
       );
       setEditingIndex(null);
     } catch (err) {
       console.error("Update error:", err);
-      alert("❌ Update failed: " + err.message);
+      customAlert("Update failed: " + err.message, "error");
     }
   };
 
@@ -1429,14 +1601,18 @@ const Datewisedaybook = () => {
         <title> Financial Summary | RootFin</title>
       </Helmet>
 
-      <div>
+      <div className="bg-slate-50 min-h-screen">
         <Headers title={"Financial Summary Report"} />
-        <div className='ml-[240px]'>
-          <div className="p-6 bg-slate-50 min-h-screen">
+        <div className={`transition-all duration-300 ${isSidebarOpen ? "ml-64" : "ml-0"}`}>
+          <div className="p-6">
             <style>{`
               @keyframes fadeIn {
                 from { opacity: 0; transform: translateY(-4px); }
                 to   { opacity: 1; transform: translateY(0); }
+              }
+              @keyframes dropdownOpen {
+                from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+                to   { opacity: 1; transform: translateY(0) scale(1); }
               }
               @keyframes shimmer {
                 0%   { background-position: -400px 0; }
@@ -1464,412 +1640,462 @@ const Datewisedaybook = () => {
             `}</style>
 
             {/* Filter Bar */}
-            <div className="flex flex-wrap items-end gap-4 mb-5 p-4 bg-white rounded border border-slate-200 shadow-sm no-print">
-              {/* Date range group */}
-              <div className="flex items-end gap-3">
-                <div className='flex flex-col'>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">From</label>
-                  <input
-                    type="date"
-                    id="fromDate"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                    max="2099-12-31"
-                    min="2000-01-01"
-                    style={{ height: '36px' }}
-                    className="border border-slate-300 rounded-sm px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all box-border"
-                  />
-                </div>
-                <div className='flex flex-col'>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">To</label>
-                  <input
-                    type="date"
-                    id="toDate"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                    max="2099-12-31"
-                    min="2000-01-01"
-                    style={{ height: '36px' }}
-                    className="border border-slate-300 rounded-sm px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all box-border"
-                  />
-                </div>
-                <button
-                  onClick={handleFetch}
-                  disabled={isFetching}
-                  style={{ height: '36px' }}
-                  className={`rounded-sm text-white px-6 text-sm font-semibold transition-all duration-200 flex items-center gap-2 shadow-sm ${
-                    isFetching
-                      ? 'bg-blue-400 cursor-not-allowed scale-95'
-                      : 'bg-blue-600 hover:bg-blue-700 hover:shadow-md active:scale-95 cursor-pointer'
-                  }`}
-                >
-                  {isFetching ? (
-                    <>
-                      <svg className="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                      </svg>
-                      <span>Fetching...</span>
-                    </>
-                  ) : 'Fetch'}
-                </button>
-              </div>
+            <div className="bg-white rounded-none p-6 border border-gray-200 shadow-sm mb-6 no-print">
+              <div className="flex flex-col gap-5">
+                {/* Inputs & Selects Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+                  {/* From Date */}
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-500 mb-1.5">From Date</label>
+                    <input
+                      type="date"
+                      id="fromDate"
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                      max="2099-12-31"
+                      min="2000-01-01"
+                      className="h-[42px] border border-gray-200 rounded-none px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#9B48D7]/20 focus:border-[#9B48D7] transition-all bg-white text-gray-700 font-medium"
+                    />
+                  </div>
 
-              {/* Divider */}
-              <div className="w-px self-stretch bg-slate-200 mx-1" />
+                  {/* To Date */}
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-500 mb-1.5">To Date</label>
+                    <input
+                      type="date"
+                      id="toDate"
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                      max="2099-12-31"
+                      min="2000-01-01"
+                      className="h-[42px] border border-gray-200 rounded-none px-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#9B48D7]/20 focus:border-[#9B48D7] transition-all bg-white text-gray-700 font-medium"
+                    />
+                  </div>
 
-              {/* Filter group */}
-              <div className="flex items-end gap-3">
-                <div className='flex flex-col w-40'>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Category</label>
-                  <Select
-                    options={categories}
-                    value={selectedCategory}
-                    onChange={setSelectedCategory}
-                    menuPortalTarget={document.body}
-                    styles={{
-                      control: (base, state) => ({
-                        ...base,
-                        minHeight: '36px',
-                        height: '36px',
-                        border: state.isFocused ? '1px solid #3b82f6' : '1px solid #cbd5e1',
-                        borderRadius: '2px',
-                        boxShadow: state.isFocused ? '0 0 0 2px rgba(59,130,246,0.2)' : 'none',
-                        fontSize: '0.875rem',
-                        transition: 'all 0.15s ease',
-                        '&:hover': { border: '1px solid #94a3b8' }
-                      }),
-                      valueContainer: base => ({ ...base, height: '34px', padding: '0 8px' }),
-                      input: base => ({ ...base, margin: '0px', padding: '0px' }),
-                      indicatorSeparator: base => ({ ...base, display: 'none' }),
-                      dropdownIndicator: (base, state) => ({
-                        ...base,
-                        padding: '0 8px',
-                        transition: 'transform 0.2s ease',
-                        transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                      }),
-                      menu: base => ({
-                        ...base,
-                        zIndex: 9999,
-                        borderRadius: '2px',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-                        animation: 'fadeIn 0.15s ease',
-                      }),
-                      menuPortal: base => ({ ...base, zIndex: 9999 }),
-                      option: (base, state) => ({
-                        ...base,
-                        fontSize: '0.875rem',
-                        backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                        color: state.isSelected ? 'white' : '#374151',
-                        cursor: 'pointer',
-                      }),
-                    }}
-                  />
-                </div>
-                <div className='flex flex-col w-44'>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Sub Category</label>
-                  <Select
-                    options={subCategories}
-                    value={selectedSubCategory}
-                    onChange={setSelectedSubCategory}
-                    menuPortalTarget={document.body}
-                    styles={{
-                      control: (base, state) => ({
-                        ...base,
-                        minHeight: '36px',
-                        height: '36px',
-                        border: state.isFocused ? '1px solid #3b82f6' : '1px solid #cbd5e1',
-                        borderRadius: '2px',
-                        boxShadow: state.isFocused ? '0 0 0 2px rgba(59,130,246,0.2)' : 'none',
-                        fontSize: '0.875rem',
-                        transition: 'all 0.15s ease',
-                        '&:hover': { border: '1px solid #94a3b8' }
-                      }),
-                      valueContainer: base => ({ ...base, height: '34px', padding: '0 8px' }),
-                      input: base => ({ ...base, margin: '0px', padding: '0px' }),
-                      indicatorSeparator: base => ({ ...base, display: 'none' }),
-                      dropdownIndicator: (base, state) => ({
-                        ...base,
-                        padding: '0 8px',
-                        transition: 'transform 0.2s ease',
-                        transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                      }),
-                      menu: base => ({
-                        ...base,
-                        zIndex: 9999,
-                        borderRadius: '2px',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-                        animation: 'fadeIn 0.15s ease',
-                      }),
-                      menuPortal: base => ({ ...base, zIndex: 9999 }),
-                      option: (base, state) => ({
-                        ...base,
-                        fontSize: '0.875rem',
-                        backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
-                        color: state.isSelected ? 'white' : '#374151',
-                        cursor: 'pointer',
-                      }),
-                    }}
-                  />
-                </div>
-                <div className='flex flex-col w-44'>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Store</label>
-                  <select
-                    value={selectedStore}
-                    onChange={e => setSelectedStore(e.target.value)}
-                    style={{ height: '36px' }}
-                    className="border border-slate-300 rounded-sm px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all box-border"
-                  >
-                    <option value="current">Current Store ({currentusers.locCode})</option>
-                    {((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager) && (
-                      <option value="all">All Stores (Totals)</option>
-                    )}
-                    {(currentusers.power || '').toLowerCase() === 'admin' && (
-                      <option value="multi">Multiple Branches</option>
-                    )}
-                  </select>
-                </div>
-
-                {/* Select Branches dropdown — inline in filter bar */}
-                {selectedStore === "multi" && (
-                  <div className="flex flex-col" style={{ alignSelf: 'flex-end' }}>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Branches</label>
-                    <button
-                      onClick={() => setShowStoreSelector(prev => !prev)}
-                      className="branch-select-btn"
-                      style={{
-                        height: '36px',
-                        borderRadius: '2px',
-                        fontSize: '0.875rem',
-                        fontWeight: '400',
-                        padding: '0 12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        cursor: 'pointer',
-                        boxSizing: 'border-box',
-                        outline: 'none',
-                        whiteSpace: 'nowrap',
+                  {/* Category */}
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-500 mb-1.5">Category</label>
+                    <Select
+                      isMulti
+                      options={categories}
+                      value={selectedCategory}
+                      onChange={setSelectedCategory}
+                      components={{ Option: CheckboxOption }}
+                      closeMenuOnSelect={false}
+                      hideSelectedOptions={false}
+                      menuPortalTarget={document.body}
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          minHeight: '42px',
+                          height: '42px',
+                          border: state.isFocused ? '1px solid #9B48D7' : '1px solid #e5e7eb',
+                          borderRadius: '0px',
+                          boxShadow: state.isFocused ? '0 0 0 2px rgba(155,72,215,0.15)' : 'none',
+                          fontSize: '0.875rem',
+                          backgroundColor: 'white',
+                          transition: 'all 0.15s ease',
+                          '&:hover': { border: '1px solid #cbd5e1' }
+                        }),
+                        valueContainer: base => ({ ...base, height: '40px', padding: '0 12px' }),
+                        input: base => ({ ...base, margin: '0px', padding: '0px' }),
+                        indicatorSeparator: base => ({ ...base, display: 'none' }),
+                        dropdownIndicator: (base, state) => ({
+                          ...base,
+                          padding: '0 12px',
+                          transition: 'transform 0.2s ease',
+                          transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                          color: '#6b7280'
+                        }),
+                        menu: base => ({
+                          ...base,
+                          zIndex: 9999,
+                          borderRadius: '0px',
+                          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+                          animation: 'dropdownOpen 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                          overflow: 'hidden'
+                        }),
+                        menuPortal: base => ({ ...base, zIndex: 9999 }),
+                        option: (base, state) => ({
+                          ...base,
+                          fontSize: '0.875rem',
+                          backgroundColor: state.isSelected ? '#f3e8ff' : state.isFocused ? '#f5f3ff' : 'white',
+                          color: '#374151',
+                          cursor: 'pointer',
+                        }),
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f8fafc'; e.currentTarget.style.borderColor = '#94a3b8'; }}
-                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                    />
+                  </div>
+
+                  {/* Sub Category */}
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-500 mb-1.5">Sub Category</label>
+                    <Select
+                      isMulti
+                      options={subCategories}
+                      value={selectedSubCategory}
+                      onChange={setSelectedSubCategory}
+                      components={{ Option: CheckboxOption }}
+                      closeMenuOnSelect={false}
+                      hideSelectedOptions={false}
+                      menuPortalTarget={document.body}
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          minHeight: '42px',
+                          height: '42px',
+                          border: state.isFocused ? '1px solid #9B48D7' : '1px solid #e5e7eb',
+                          borderRadius: '0px',
+                          boxShadow: state.isFocused ? '0 0 0 2px rgba(155,72,215,0.15)' : 'none',
+                          fontSize: '0.875rem',
+                          backgroundColor: 'white',
+                          transition: 'all 0.15s ease',
+                          '&:hover': { border: '1px solid #cbd5e1' }
+                        }),
+                        valueContainer: base => ({ ...base, height: '40px', padding: '0 12px' }),
+                        input: base => ({ ...base, margin: '0px', padding: '0px' }),
+                        indicatorSeparator: base => ({ ...base, display: 'none' }),
+                        dropdownIndicator: (base, state) => ({
+                          ...base,
+                          padding: '0 12px',
+                          transition: 'transform 0.2s ease',
+                          transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                          color: '#6b7280'
+                        }),
+                        menu: base => ({
+                          ...base,
+                          zIndex: 9999,
+                          borderRadius: '0px',
+                          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+                          animation: 'dropdownOpen 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                          overflow: 'hidden'
+                        }),
+                        menuPortal: base => ({ ...base, zIndex: 9999 }),
+                        option: (base, state) => ({
+                          ...base,
+                          fontSize: '0.875rem',
+                          backgroundColor: state.isSelected ? '#f3e8ff' : state.isFocused ? '#f5f3ff' : 'white',
+                          color: '#374151',
+                          cursor: 'pointer',
+                        }),
+                      }}
+                    />
+                  </div>
+
+                  {/* Store / Department Combined */}
+                  <div className="flex flex-col">
+                    <label className="text-sm font-medium text-gray-500 mb-1.5">Store / Department</label>
+                    <Select
+                      placeholder="Select Store..."
+                      options={[
+                        { value: "current", label: `Current Store (${currentusers.locCode})` },
+                        ...(((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager)
+                          ? [{ value: "all", label: "All Stores" }]
+                          : []),
+                        ...(showAction
+                          ? [{ value: "all_departments", label: "All Departments" }]
+                          : []),
+                        ...(((currentusers.power || '').toLowerCase() === 'admin')
+                          ? [{ value: "multi", label: "Multiple Branches" }]
+                          : []),
+                        ...(((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager) ? [{
+                          label: "Stores",
+                          options: (isClusterManager
+                            ? AllLoation.filter(s => clusterAllowedLocCodes.includes(s.locCode) && !DEPT_LOC_CODES.includes(s.locCode))
+                            : AllLoation.filter(s => !DEPT_LOC_CODES.includes(s.locCode))
+                          ).map(s => ({ value: s.locCode, label: s.locName }))
+                        }] : []),
+                        ...(showAction ? [{
+                          label: "Departments",
+                          options: [
+                            ...AllLoation.filter(s => DEPT_LOC_CODES.includes(s.locCode))
+                              .map(s => ({ value: s.locCode, label: s.locName })),
+                            { value: "Office", label: "Office" },
+                            { value: "Production", label: "Production" },
+                          ]
+                        }] : [])
+                      ]}
+                      value={(() => {
+                        if (selectedStore === "current") return { value: "current", label: `Current Store (${currentusers.locCode})` };
+                        if (selectedStore === "all") return { value: "all", label: "All Stores" };
+                        if (selectedStore === "all_departments") return { value: "all_departments", label: "All Departments" };
+                        if (selectedStore === "multi") return { value: "multi", label: "Multiple Branches" };
+                        const found = AllLoation.find(s => s.locCode === selectedStore);
+                        return found ? { value: found.locCode, label: found.locName } : null;
+                      })()}
+                      onChange={(opt) => setSelectedStore(opt ? opt.value : "current")}
+                      menuPortalTarget={document.body}
+                      styles={{
+                        control: (base, state) => ({
+                          ...base,
+                          minHeight: '42px',
+                          height: '42px',
+                          border: state.isFocused ? '1px solid #9B48D7' : '1px solid #e5e7eb',
+                          borderRadius: '0px',
+                          boxShadow: state.isFocused ? '0 0 0 2px rgba(155,72,215,0.15)' : 'none',
+                          fontSize: '0.875rem',
+                          backgroundColor: 'white',
+                          transition: 'all 0.15s ease',
+                          '&:hover': { border: '1px solid #cbd5e1' }
+                        }),
+                        valueContainer: base => ({ ...base, height: '40px', padding: '0 12px' }),
+                        input: base => ({ ...base, margin: '0px', padding: '0px' }),
+                        indicatorSeparator: base => ({ ...base, display: 'none' }),
+                        dropdownIndicator: (base, state) => ({
+                          ...base,
+                          padding: '0 12px',
+                          transition: 'transform 0.2s ease',
+                          transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                          color: '#6b7280'
+                        }),
+                        menu: base => ({
+                          ...base,
+                          zIndex: 9999,
+                          borderRadius: '0px',
+                          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+                          animation: 'dropdownOpen 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                          overflow: 'hidden'
+                        }),
+                        menuPortal: base => ({ ...base, zIndex: 9999 }),
+                        groupHeading: base => ({
+                          ...base,
+                          fontSize: '0.7rem',
+                          fontWeight: '700',
+                          color: '#9B48D7',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          padding: '6px 12px 4px',
+                          backgroundColor: '#faf5ff'
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          fontSize: '0.875rem',
+                          backgroundColor: state.isSelected ? '#9B48D7' : state.isFocused ? '#f5f3ff' : 'white',
+                          color: state.isSelected ? 'white' : '#374151',
+                          cursor: 'pointer',
+                        }),
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Bottom Row Actions: Fetch Data on Left, Export & Print on Right */}
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleFetch}
+                      disabled={isFetching}
+                      style={{ backgroundColor: isFetching ? 'rgba(155, 72, 215, 0.6)' : '#9B48D7', color: '#ffffff' }}
+                      className="h-[42px] rounded-none text-white px-6 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:opacity-90 active:scale-95 cursor-pointer"
                     >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4 text-slate-500 shrink-0"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
-                      <span className="whitespace-nowrap">
-                        {selectedStores.length === 0 ? "Select Branches" : `${selectedStores.length} Branch${selectedStores.length > 1 ? "es" : ""}`}
-                      </span>
-                      {selectedStores.length > 0 && (
-                        <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-blue-600 text-white text-[9px] font-bold">
-                          {selectedStores.length}
+                      {isFetching ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                          </svg>
+                          <span>Fetching...</span>
+                        </>
+                      ) : 'Fetch Data'}
+                    </button>
+
+                    {/* Select Branches dropdown button */}
+                    {selectedStore === "multi" && (
+                      <button
+                        onClick={() => setShowStoreSelector(prev => !prev)}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          whiteSpace: 'nowrap',
+                          height: '42px',
+                          padding: '0 16px',
+                          border: '1px solid #e5e7eb',
+                          backgroundColor: '#ffffff',
+                          color: '#374151',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          boxSizing: 'border-box'
+                        }}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4 text-gray-500 shrink-0" style={{ display: 'block' }}><path d="M3 6h18M7 12h10M11 18h2" /></svg>
+                        <span style={{ display: 'inline-block' }}>
+                          {selectedStores.length === 0 ? "Select Branches" : `${selectedStores.length} Branch${selectedStores.length > 1 ? "es" : ""}`}
                         </span>
-                      )}
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`w-3.5 h-3.5 text-slate-400 transition-transform shrink-0 ${showStoreSelector ? "rotate-180" : ""}`}><path d="M6 9l6 6 6-6"/></svg>
+                        {selectedStores.length > 0 && (
+                          <span
+                            style={{ backgroundColor: '#9B48D7', color: '#ffffff' }}
+                            className="inline-flex items-center justify-center h-5 px-1.5 rounded-none text-white text-[10px] font-bold"
+                          >
+                            {selectedStores.length}
+                          </span>
+                        )}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`w-3.5 h-3.5 text-gray-400 transition-transform shrink-0 ${showStoreSelector ? "rotate-180" : ""}`} style={{ display: 'block' }}><path d="M6 9l6 6 6-6" /></svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Action Buttons Right Side */}
+                  <div className="flex items-center gap-3">
+                    <CSVLink
+                      data={(selectedStore === "all" || selectedStore === "all_departments") ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
+                      headers={(selectedStore === "all" || selectedStore === "all_departments") ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
+                      filename={`financial_summary_${selectedStore === "all" ? "All_Branches" : selectedStore === "all_departments" ? "All_Departments" : selectedStore === "multi" ? "Multiple_Branches" : (AllLoation.find(loc => loc.locCode === currentusers.locCode)?.locName || currentusers.locCode || "Store").replace(/[^a-zA-Z0-9]/g, "_")}_${fromDate === toDate ? fromDate : fromDate + "_to_" + toDate}.csv`}
+                    >
+                      <button
+                        type="button"
+                        style={{ backgroundColor: '#EEEEEE', color: '#111827', borderRadius: '0px' }}
+                        className="h-[40px] rounded-none bg-[#EEEEEE] hover:bg-[#E2E2E2] text-[#111827] px-5 text-sm font-medium flex flex-row items-center justify-center gap-2.5 whitespace-nowrap flex-shrink-0 transition-colors cursor-pointer shadow-none"
+                      >
+                        <FiDownload className="w-4 h-4 text-[#111827]" />
+                        <span>Export CSV</span>
+                      </button>
+                    </CSVLink>
+                    <button
+                      type='button'
+                      onClick={handlePrint}
+                      style={{ backgroundColor: '#EEEEEE', color: '#111827', borderRadius: '0px' }}
+                      className="h-[42px] rounded-none bg-[#EEEEEE] hover:bg-[#E2E2E2] text-[#111827] px-5 text-sm font-medium flex flex-row items-center justify-center gap-2.5 whitespace-nowrap flex-shrink-0 transition-colors cursor-pointer shadow-none"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-[#111827]"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" /><path d="M6 14h12v8H6z" /></svg>
+                      <span>Print PDF</span>
                     </button>
                   </div>
-                )}
+                </div>
               </div>
             </div>
 
             <div ref={printRef}>
-              {/* Loading skeleton */}
-              {isFetching && (
-                <div className="bg-white shadow-sm rounded border border-slate-200 overflow-hidden p-4">
-                  <div className="shimmer h-8 w-full mb-2 rounded" />
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex gap-2 mb-2">
-                      <div className="shimmer h-6 rounded" style={{ width: '10%' }} />
-                      <div className="shimmer h-6 rounded" style={{ width: '14%' }} />
-                      <div className="shimmer h-6 rounded" style={{ width: '16%' }} />
-                      <div className="shimmer h-6 rounded" style={{ width: '8%' }} />
-                      <div className="shimmer h-6 rounded" style={{ width: '10%' }} />
-                      <div className="shimmer h-6 rounded flex-1" />
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Loading Screen */}
 
-              {!isFetching && selectedStore === "all" ? (
-                <div className="bg-white shadow-sm rounded border border-slate-200 overflow-hidden">
+              {(selectedStore === "all" || selectedStore === "all_departments") ? (
+                <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "500px", overflowY: "auto" }}>
                     <table className="w-full border-collapse min-w-full text-sm">
                       <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
-                        <tr className="bg-slate-700 text-white text-xs uppercase tracking-wide">
-                          <th className="px-2 py-2 text-left font-semibold text-xs">Store</th>
-                          <th className="px-2 py-2 text-left font-semibold text-xs">LocCode</th>
-                          <th className="px-2 py-2 text-right font-semibold text-xs">Cash</th>
-                          <th className="px-2 py-2 text-right font-semibold text-xs">Razorpay</th>
-                          <th className="px-2 py-2 text-right font-semibold text-xs">Card/Bank</th>
-                          <th className="px-2 py-2 text-right font-semibold text-xs">UPI</th>
-                          <th className="px-2 py-2 text-right font-semibold text-xs">Total Amount</th>
+                        <tr className="bg-[#1e1e1e] text-white text-xs uppercase tracking-wide">
+                          <th className="px-3 py-3 text-left font-bold border-r border-[#333333] text-xs">Store</th>
+                          <th className="px-3 py-3 text-left font-bold border-r border-[#333333] text-xs">LocCode</th>
+                          <th className="px-3 py-3 text-right font-bold border-r border-[#333333] text-xs">Cash</th>
+                          <th className="px-3 py-3 text-right font-bold border-r border-[#333333] text-xs">Razorpay</th>
+                          <th className="px-3 py-3 text-right font-bold border-r border-[#333333] text-xs">Card/Bank</th>
+                          <th className="px-3 py-3 text-right font-bold border-r border-[#333333] text-xs">UPI</th>
+                          <th className="px-3 py-3 text-right font-bold border-r border-[#333333] text-xs">Total Amount</th>
                         </tr>
                       </thead>
                       <tbody>
                         {allStoresSummary.map((s, idx) => (
-                          <tr key={s.locCode} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                            <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{s.store}</td>
-                            <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">{s.locCode}</td>
-                            <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Number(s.cash).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
-                            <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Number(s.rbl).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
-                            <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Number(s.bank).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
-                            <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Number(s.upi).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
-                            <td className="px-3 py-2 text-right font-medium text-slate-800">{Number(s.amount).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                          <tr key={s.locCode} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
+                            <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs font-medium">{s.store}</td>
+                            <td className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">{s.locCode}</td>
+                            <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Number(s.cash).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                            <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Number(s.rbl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                            <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Number(s.bank).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                            <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Number(s.upi).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                            <td className="px-3 py-2 text-right font-semibold text-gray-900 text-xs">{Number(s.amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
-                        <tr className="bg-slate-100 font-semibold border-t-2 border-slate-300">
-                          <td className="px-3 py-2.5 text-slate-700" colSpan={2}>Totals</td>
-                          <td className="px-3 py-2.5 text-right text-slate-800">{Number(allStoresTotals.cash).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
-                          <td className="px-3 py-2.5 text-right text-slate-800">{Number(allStoresTotals.rbl).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
-                          <td className="px-3 py-2.5 text-right text-slate-800">{Number(allStoresTotals.bank).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
-                          <td className="px-3 py-2.5 text-right text-slate-800">{Number(allStoresTotals.upi).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
-                          <td className="px-3 py-2.5 text-right text-slate-800">{Number(allStoresTotals.amount).toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                        <tr className="bg-[#e2e8f0] font-bold border-t-2 border-gray-300">
+                          <td className="px-3 py-2.5 text-gray-800 uppercase tracking-wide text-xs font-bold" colSpan={2}>Total</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Number(allStoresTotals.cash).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Number(allStoresTotals.rbl).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Number(allStoresTotals.bank).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Number(allStoresTotals.upi).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Number(allStoresTotals.amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                         </tr>
                       </tfoot>
                     </table>
                   </div>
                 </div>
-              ) : !isFetching && selectedStore === "multi" ? (
-                <div className="bg-white shadow-sm rounded border border-slate-200 overflow-hidden">
+              ) : selectedStore === "multi" ? (
+                <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "600px", overflowY: "auto", overflowX: "auto" }}>
                     <table className="w-full border-collapse text-xs" style={{ minWidth: '1300px' }}>
                       <thead style={{ position: "sticky", top: 0, zIndex: 2 }}>
-                        <tr className="bg-slate-700 text-white text-xs uppercase tracking-wide">
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Date</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Invoice No.</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Customer Name</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Qty</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Category</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Sub Category</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Remarks</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Amount</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Total Txn</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Discount</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Bill Value</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Cash</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Razorpay</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Card/Bank</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">UPI</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Attachment</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Branch</th>
+                        <tr className="bg-[#1e1e1e] text-white text-xs uppercase tracking-wide font-bold">
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs min-w-[110px]">Date</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Invoice No.</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Customer Name</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Category</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Sub Category</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Remarks</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Amount</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Total Txn</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Discount</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Branch</th>
                         </tr>
                       </thead>
                       <tbody>
                         {multiBranchData
-                          .filter(t =>
-                            (selectedCategoryValue === "all" ||
-                              t.category?.toLowerCase() === selectedCategoryValue ||
-                              t.Category?.toLowerCase() === selectedCategoryValue ||
-                              t.type?.toLowerCase() === selectedCategoryValue) &&
-                            (selectedSubCategoryValue === "all" ||
-                              t.subCategory?.toLowerCase() === selectedSubCategoryValue ||
-                              t.SubCategory?.toLowerCase() === selectedSubCategoryValue ||
-                              t.type?.toLowerCase() === selectedSubCategoryValue ||
-                              t.subCategory1?.toLowerCase() === selectedSubCategoryValue ||
-                              t.SubCategory1?.toLowerCase() === selectedSubCategoryValue ||
-                              t.category?.toLowerCase() === selectedSubCategoryValue)
-                          )
+                          .filter(filterTransaction)
                           .map((t, index) => {
                             if (t.Category === "RentOut") {
                               return (
-                                <>
-                                  <tr key={`mb-${index}-sec`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.date}</td>
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.invoiceNo || t.locCode}</td>
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.customerName || "-"}</td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.quantity}</td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.Category}</td>
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.SubCategory}</td>
-                                    <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">{t.remark}</td>
-                                    <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.securityAmount}</td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.totalTransaction}</td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.discountAmount || 0}</td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.billValue}</td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.cash}</td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.rbl ?? 0}</td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.bank}</td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.upi}</td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">
-                                      {t.hasAttachment && t._id ? (
-                                        <a href={`${baseUrl.baseUrl}user/transaction/${t._id}/attachment`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View</a>
-                                      ) : "-"}
-                                    </td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs font-medium">{t.branch}</td>
+                                <React.Fragment key={`mb-frag-${t._id || t.invoiceNo || index}`}>
+                                  <tr key={`mb-${index}-sec`} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.customerName || "-"}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.Category}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.SubCategory}</td>
+                                    <td className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">{t.remark}</td>
+                                    <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.securityAmount}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.totalTransaction}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.discountAmount || 0}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs font-medium">{t.branch}</td>
                                   </tr>
-                                  <tr key={`mb-${index}-bal`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.date}</td>
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.invoiceNo || t.locCode}</td>
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.customerName || "-"}</td>
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.SubCategory1}</td>
-                                    <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">{t.remark}</td>
-                                    <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.Balance}</td>
+                                  <tr key={`mb-${index}-bal`} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.customerName || "-"}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.SubCategory1}</td>
+                                    <td className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">{t.remark}</td>
+                                    <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.Balance}</td>
                                   </tr>
-                                </>
+                                </React.Fragment>
                               );
                             }
                             return (
-                              <tr key={`mb-${t.invoiceNo || t._id || t.locCode}-${index}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.date}</td>
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.invoiceNo || t.locCode}</td>
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.customerName || "-"}</td>
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.quantity}</td>
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.Category || t.type}</td>
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">
+                              <tr key={`mb-${t.invoiceNo || t._id || t.locCode}-${index}`} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.customerName || "-"}</td>
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.Category || t.type}</td>
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                   {[t.SubCategory].concat(t.Category === "RentOut" ? [t.SubCategory1 || t.subCategory1] : []).filter(Boolean).map(getCatLabel).join(" + ") || "-"}
                                 </td>
-                                <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">{t.remark}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Math.round(Number(t.amount)).toLocaleString()}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Math.round(Number(t.totalTransaction)).toLocaleString()}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Math.round(Number(t.discountAmount || 0)).toLocaleString()}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Math.round(Number(t.billValue)).toLocaleString()}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.cash}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.rbl ?? 0}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.bank}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{t.upi}</td>
-                                <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">
-                                  {t.hasAttachment && t._id ? (
-                                    <a href={`${baseUrl.baseUrl}user/transaction/${t._id}/attachment`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline text-xs">
-                                      <FiDownload size={14} />Download
-                                    </a>
-                                  ) : "-"}
-                                </td>
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs font-medium">{t.branch}</td>
+                                <td className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">{t.remark}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.amount)).toLocaleString()}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.totalTransaction)).toLocaleString()}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.discountAmount || 0)).toLocaleString()}</td>
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs font-medium">{t.branch}</td>
                               </tr>
                             );
                           })}
                         {multiBranchData.length === 0 && (
                           <tr>
-                            <td colSpan={17} className="text-center py-8 text-slate-400 text-sm">
-                              {selectedStores.length === 0 ? "Select branches above and click Fetch" : "No transactions found"}
+                            <td colSpan={10} className="text-center py-8 text-gray-400 text-sm">
+                              {selectedStores.length === 0 ? "Select branches above and click Fetch Data" : "No transactions found"}
                             </td>
                           </tr>
                         )}
                       </tbody>
                       <tfoot>
-                        <tr className="bg-slate-100 font-semibold border-t-2 border-slate-300" style={{ position: "sticky", bottom: 0, zIndex: 2 }}>
-                          <td colSpan="10" className="px-2 py-1.5 text-left text-slate-700 text-xs font-semibold">Total</td>
-                          <td className="px-2 py-1.5"></td>
-                          <td className="px-2 py-1.5 text-right text-slate-800 text-xs font-semibold">
-                            {Math.round(multiBranchData.reduce((s, r) => s + (isNaN(+r.cash) ? 0 : +r.cash), 0)).toLocaleString()}
-                          </td>
-                          <td className="px-2 py-1.5 text-right text-slate-800 text-xs font-semibold">
-                            {Math.round(multiBranchData.reduce((s, r) => s + (isNaN(+r.rbl) ? 0 : +r.rbl), 0)).toLocaleString()}
-                          </td>
-                          <td className="px-2 py-1.5 text-right text-slate-800 text-xs font-semibold">
-                            {Math.round(multiBranchData.reduce((s, r) => s + (isNaN(+r.bank) ? 0 : +r.bank), 0)).toLocaleString()}
-                          </td>
-                          <td className="px-2 py-1.5 text-right text-slate-800 text-xs font-semibold">
-                            {Math.round(multiBranchData.reduce((s, r) => s + (isNaN(+r.upi) ? 0 : +r.upi), 0)).toLocaleString()}
-                          </td>
-                          <td className="px-2 py-1.5"></td>
-                          <td className="px-2 py-1.5"></td>
+                        <tr className="bg-[#e2e8f0] font-bold border-t-2 border-gray-300" style={{ position: "sticky", bottom: 0, zIndex: 2 }}>
+                          <td colSpan="10" className="px-3 py-2.5 text-left text-gray-800 text-xs font-bold uppercase tracking-wide">TOTAL</td>
                         </tr>
                       </tfoot>
                     </table>
                   </div>
                 </div>
               ) : (
-                !isFetching && <div className="bg-white shadow-sm rounded border border-slate-200 overflow-hidden">
+                <div className="bg-white shadow-sm rounded-none border border-gray-200 overflow-hidden">
                   <div style={{ maxHeight: "600px", overflowY: "auto", overflowX: "auto" }}>
                     <table className="w-full border-collapse text-xs" style={{ minWidth: '1200px' }}>
                       <thead
@@ -1879,89 +2105,77 @@ const Datewisedaybook = () => {
                           zIndex: 2,
                         }}
                       >
-                        <tr className="bg-slate-700 text-white text-xs uppercase tracking-wide">
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Date</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Invoice No.</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Customer Name</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Qty</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Category</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Sub Category</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Remarks</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Amount</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Total Txn</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Discount</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Bill Value</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Cash</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Razorpay</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Card/Bank</th>
-                          <th className="px-2 py-1 text-right font-semibold whitespace-nowrap border-r border-slate-600 text-xs">UPI</th>
-                          <th className="px-2 py-1 text-left font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Attachment</th>
-                          {showAction && <th className="px-2 py-1 text-center font-semibold whitespace-nowrap border-r border-slate-600 text-xs">Action</th>}
+                        <tr className="bg-[#1e1e1e] text-white text-xs uppercase tracking-wide font-bold">
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs min-w-[110px]">Date</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Invoice No.</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Customer Name</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">QTY</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Category</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Sub Category</th>
+                          <th className="px-3 py-3 text-left font-bold whitespace-nowrap border-r border-[#333333] text-xs">Remarks</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Amount</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Total Txn</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Discount</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Bill Value</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Cash</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Razorpay</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">Card/Bank</th>
+                          <th className="px-3 py-3 text-right font-bold whitespace-nowrap border-r border-[#333333] text-xs">UPI</th>
+                          <th className="px-3 py-3 text-center font-bold whitespace-nowrap border-r border-[#333333] text-xs">Attachment</th>
+                          {showAction && <th className="px-3 py-3 text-center font-bold whitespace-nowrap border-r border-[#333333] text-xs">Action</th>}
                         </tr>
                       </thead>
 
                       <tbody>
-                        <tr className="bg-slate-50 font-semibold text-slate-600 border-b border-slate-200">
-                          <td colSpan="10" className="px-2 py-1.5 text-xs uppercase tracking-wide">
-                            Opening Balance
+                        {/* OPENING BALANCE ROW */}
+                        <tr className="bg-white font-bold text-gray-900 border-b border-gray-200">
+                          <td colSpan={11} className="px-3 py-2.5 text-xs uppercase tracking-wide font-bold">
+                            OPENING BALANCE
                           </td>
-                          <td className="px-2 py-1.5"></td>
-                          <td className="px-2 py-1.5 text-right">{preOpen.cash || 0}</td>
-                          <td className="px-2 py-1.5 text-right">{preOpen.rbl ?? 0}</td>
-                          <td className="px-2 py-1.5 text-right">0</td>
-                          <td className="px-2 py-1.5 text-right">0</td>
-                          <td className="px-2 py-1.5"></td>
-                          {showAction && <td className="px-2 py-1.5"></td>}
+                          <td className="px-3 py-2.5 text-right text-xs font-semibold whitespace-nowrap">{openingCash ? Math.round(openingCash).toLocaleString() : "-"}</td>
+                          <td className="px-3 py-2.5 text-right text-xs font-semibold whitespace-nowrap">{openingRbl ? Math.round(openingRbl).toLocaleString() : "-"}</td>
+                          <td className="px-3 py-2.5 text-right text-xs font-semibold whitespace-nowrap">-</td>
+                          <td className="px-3 py-2.5 text-right text-xs font-semibold whitespace-nowrap">-</td>
+                          <td className="px-3 py-2.5"></td>
+                          {showAction && <td className="px-3 py-2.5"></td>}
                         </tr>
 
-                        {mergedTransactions
-                          .filter(
-                            (t) =>
-                              (selectedCategoryValue === "all" ||
-                                t.category?.toLowerCase() === selectedCategoryValue ||
-                                t.Category?.toLowerCase() === selectedCategoryValue ||
-                                t.type?.toLowerCase() === selectedCategoryValue) &&
-                              (selectedSubCategoryValue === "all" ||
-                                t.subCategory?.toLowerCase() === selectedSubCategoryValue ||
-                                t.SubCategory?.toLowerCase() === selectedSubCategoryValue ||
-                                t.type?.toLowerCase() === selectedSubCategoryValue ||
-                                t.subCategory1?.toLowerCase() === selectedSubCategoryValue ||
-                                t.SubCategory1?.toLowerCase() === selectedSubCategoryValue ||
-                                t.category?.toLowerCase() === selectedSubCategoryValue)
-                          )
+                        {displayedRows
                           .map((transaction, index) => {
                             const isEditing = editingIndex === index;
                             const t = isEditing ? editedTransaction : transaction;
+                            const paymentInputClass = "w-full min-w-[72px] border border-gray-300 rounded-none p-1 text-xs text-right bg-white";
+                            const renderPaymentCell = (field) => {
+                              if (isEditing) {
+                                return (
+                                  <input
+                                    type="number"
+                                    value={editedTransaction[field] ?? ""}
+                                    onChange={(e) => handleInputChange(field, e.target.value)}
+                                    className={paymentInputClass}
+                                  />
+                                );
+                              }
+                              const val = t[field];
+                              return val ? Math.round(Number(val)).toLocaleString() : "-";
+                            };
 
                             if (t.Category === "RentOut") {
                               return (
-                                <>
-                                  <tr key={`${index}-sec`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.date}</td>
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.invoiceNo || t.locCode}</td>
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">
+                                <React.Fragment key={`sb-frag-${t._id || t.invoiceNo || index}`}>
+                                  <tr key={`${index}-sec`} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                       {t.customerName || t.customer || t.name || "-"}
                                     </td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">
-                                      {isEditing ? (
-                                        <input
-                                          type="number"
-                                          value={editedTransaction.quantity}
-                                          onChange={(e) =>
-                                            handleInputChange("quantity", e.target.value)
-                                          }
-                                          className="w-full border border-slate-300 rounded p-1 text-sm"
-                                        />
-                                      ) : (
-                                        t.quantity
-                                      )}
-                                    </td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.qty || t.quantity || "-"}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                       {t.Category}
                                     </td>
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.SubCategory}</td>
-                                    <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">{t.remark}</td>
-                                    <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.SubCategory}</td>
+                                    <td className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">{t.remark}</td>
+                                    <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
                                       {isEditing ? (
                                         <input
                                           type="number"
@@ -1969,110 +2183,47 @@ const Datewisedaybook = () => {
                                           onChange={(e) =>
                                             handleInputChange("securityAmount", e.target.value)
                                           }
-                                          className="w-full border border-slate-300 rounded p-1 text-sm"
+                                          className="w-full border border-gray-300 rounded-none p-1 text-sm"
                                         />
                                       ) : (
                                         t.securityAmount
                                       )}
                                     </td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
                                       {t.totalTransaction}
                                     </td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
                                       {t.discountAmount || 0}
                                     </td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
-                                      {t.billValue}
-                                    </td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
-                                      {isEditing && editedTransaction._id ? (
-                                        <input
-                                          type="number"
-                                          step="any"
-                                          value={editedTransaction.cash}
-                                          onChange={(e) =>
-                                            handleInputChange("cash", e.target.value)
-                                          }
-                                          className="w-full border border-slate-300 rounded p-1 text-sm"
-                                        />
-                                      ) : (
-                                        t.cash
-                                      )}
-                                    </td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
-                                      {isEditing && editedTransaction._id ? (
-                                        <input
-                                          type="number"
-                                          value={editedTransaction.rbl}
-                                          onChange={(e) =>
-                                            handleInputChange("rbl", e.target.value)
-                                          }
-                                          className="w-full border border-slate-300 rounded p-1 text-sm"
-                                        />
-                                      ) : (
-                                        t.rbl ?? 0
-                                      )}
-                                    </td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
-                                      {isEditing && editedTransaction._id ? (
-                                        <input
-                                          type="number"
-                                          step="any"
-                                          value={editedTransaction.bank}
-                                          onChange={(e) =>
-                                            handleInputChange("bank", e.target.value)
-                                          }
-                                          className="w-full border border-slate-300 rounded p-1 text-sm"
-                                        />
-                                      ) : (
-                                        t.bank
-                                      )}
-                                    </td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
-                                      {isEditing && editedTransaction._id ? (
-                                        <input
-                                          type="number"
-                                          step="any"
-                                          value={editedTransaction.upi}
-                                          onChange={(e) =>
-                                            handleInputChange("upi", e.target.value)
-                                          }
-                                          className="w-full border border-slate-300 rounded p-1 text-sm"
-                                        />
-                                      ) : (
-                                        t.upi
-                                      )}
-                                    </td>
-                                    <td rowSpan="2" className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">
-                                      {t.hasAttachment && t._id ? (
-                                        <a
-                                          href={`${baseUrl.baseUrl}user/transaction/${t._id}/attachment`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-blue-600 hover:underline text-xs"
-                                        >
-                                          View
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.billValue ? Math.round(Number(t.billValue)).toLocaleString() : "-"}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("cash")}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("rbl")}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("bank")}</td>
+                                    <td rowSpan="2" className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("upi")}</td>
+
+                                    <td rowSpan="2" className="px-3 py-2 text-center border-r border-gray-100 text-xs">
+                                      {(t.attachment || t.file || t.documentUrl || t.image) ? (
+                                        <a href={t.attachment || t.file || t.documentUrl || t.image} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-1">
+                                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
                                         </a>
-                                      ) : (
-                                        "-"
-                                      )}
+                                      ) : "-"}
                                     </td>
 
                                     {showAction && (
-                                      <td rowSpan="2" className="px-2 py-1.5 text-center border-r border-slate-100 text-xs">
+                                      <td rowSpan="2" className="px-3 py-2 text-center border-r border-gray-100 text-xs">
                                         {isSyncing && editingIndex === index ? (
-                                          <span className="text-slate-400 text-xs">Syncing…</span>
+                                          <span className="text-gray-400 text-xs">Syncing…</span>
                                         ) : isEditing ? (
                                           <button
                                             onClick={handleSave}
-                                            className="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-700"
+                                            className="bg-emerald-600 text-white px-3 py-1 rounded-none text-xs font-medium hover:bg-emerald-700"
                                           >
                                             Save
                                           </button>
                                         ) : (
                                           <button
                                             onClick={() => handleEditClick(transaction, index)}
-                                            className="bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-blue-700"
+                                            className="bg-[#18181b] text-white px-3 py-1 rounded-none text-xs font-medium hover:bg-black cursor-pointer"
                                           >
                                             Edit
                                           </button>
@@ -2081,15 +2232,16 @@ const Datewisedaybook = () => {
                                     )}
                                   </tr>
 
-                                  <tr key={`${index}-bal`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.date}</td>
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.invoiceNo || t.locCode}</td>
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">
+                                  <tr key={`${index}-bal`} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                       {t.customerName || t.customer || t.name || "-"}
                                     </td>
-                                    <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.SubCategory1}</td>
-                                    <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">{t.remark}</td>
-                                    <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.qty || t.quantity || "-"}</td>
+                                    <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.SubCategory1}</td>
+                                    <td className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">{t.remark}</td>
+                                    <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">
                                       {isEditing ? (
                                         <input
                                           type="number"
@@ -2097,45 +2249,30 @@ const Datewisedaybook = () => {
                                           onChange={(e) =>
                                             handleInputChange("Balance", e.target.value)
                                           }
-                                          className="w-full border border-slate-300 rounded p-1 text-sm"
+                                          className="w-full border border-gray-300 rounded-none p-1 text-sm"
                                         />
                                       ) : (
                                         t.Balance
                                       )}
                                     </td>
                                   </tr>
-                                </>
+                                </React.Fragment>
                               );
                             }
 
                             return (
                               <tr
-                                key={`${t.invoiceNo || t._id || t.locCode}-${new Date(
-                                  t.date
-                                ).toISOString().split("T")[0]}-${index}`}
-                                className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                                key={`${t.invoiceNo || t._id || t.locCode}-${(t.date ? new Date(t.date).toISOString().split("T")[0] : "")}-${index}`}
+                                className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors"
                               >
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.date}</td>
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.invoiceNo || t.locCode}</td>
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs"><div>{t.date}</div>{t.time && <div className="text-[10px] text-gray-500 mt-0.5">{t.time}</div>}</td>
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.invoiceNo || t.locCode}</td>
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                   {t.customerName || t.customer || t.name || "-"}
                                 </td>
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      value={editedTransaction.quantity}
-                                      onChange={(e) =>
-                                        handleInputChange("quantity", e.target.value)
-                                      }
-                                      className="w-full border border-slate-300 rounded p-1 text-sm"
-                                    />
-                                  ) : (
-                                    t.quantity
-                                  )}
-                                </td>
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">{t.Category || t.type}</td>
-                                <td className="px-2 py-1.5 text-slate-700 border-r border-slate-100 text-xs">
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.qty || t.quantity || "-"}</td>
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">{t.Category || t.type}</td>
+                                <td className="px-3 py-2 text-gray-700 border-r border-gray-100 text-xs">
                                   {[t.SubCategory]
                                     .concat(
                                       t.Category === "RentOut" ? [t.SubCategory1 || t.subCategory1] : []
@@ -2144,92 +2281,37 @@ const Datewisedaybook = () => {
                                     .map(getCatLabel)
                                     .join(" + ") || "-"}
                                 </td>
-                                <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">{t.remark}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Math.round(Number(t.amount)).toLocaleString()}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Math.round(Number(t.totalTransaction)).toLocaleString()}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Math.round(Number(t.discountAmount || 0)).toLocaleString()}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">{Math.round(Number(t.billValue)).toLocaleString()}</td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
-                                  {isEditing && editedTransaction._id ? (
-                                    <input
-                                      type="number"
-                                      value={editedTransaction.cash}
-                                      onChange={(e) => handleInputChange("cash", e.target.value)}
-                                      className="w-full border border-slate-300 rounded p-1 text-sm"
-                                    />
-                                  ) : (
-                                    t.cash
-                                  )}
-                                </td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
-                                  {isEditing &&
-                                    editedTransaction._id &&
-                                    t.SubCategory !== "Cash to Bank" ? (
-                                    <input
-                                      type="number"
-                                      value={editedTransaction.rbl}
-                                      onChange={(e) => handleInputChange("rbl", e.target.value)}
-                                      className="w-full border border-slate-300 rounded p-1 text-sm"
-                                    />
-                                  ) : (
-                                    t.rbl ?? 0
-                                  )}
-                                </td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
-                                  {isEditing && editedTransaction._id ? (
-                                    <input
-                                      type="number"
-                                      value={editedTransaction.bank}
-                                      onChange={(e) => handleInputChange("bank", e.target.value)}
-                                      className="w-full border border-slate-300 rounded p-1 text-sm"
-                                    />
-                                  ) : (
-                                    t.bank
-                                  )}
-                                </td>
-                                <td className="px-2 py-1.5 text-right text-slate-700 border-r border-slate-100 text-xs">
-                                  {isEditing && editedTransaction._id ? (
-                                    <input
-                                      type="number"
-                                      value={editedTransaction.upi}
-                                      onChange={(e) => handleInputChange("upi", e.target.value)}
-                                      className="w-full border border-slate-300 rounded p-1 text-sm"
-                                    />
-                                  ) : (
-                                    t.upi
-                                  )}
-                                </td>
-                                <td className="px-2 py-1.5 text-slate-600 border-r border-slate-100 text-xs">
-                                  {t.hasAttachment && t._id ? (
-                                    <a
-                                      href={`${baseUrl.baseUrl}user/transaction/${t._id}/attachment`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-1 text-blue-600 hover:underline text-xs"
-                                    >
-                                      <FiDownload size={14} />
-                                      Download
+                                <td className="px-3 py-2 text-gray-500 border-r border-gray-100 text-xs">{t.remark}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.amount)).toLocaleString()}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.totalTransaction)).toLocaleString()}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{Math.round(Number(t.discountAmount || 0)).toLocaleString()}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{t.billValue ? Math.round(Number(t.billValue)).toLocaleString() : "-"}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("cash")}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("rbl")}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("bank")}</td>
+                                <td className="px-3 py-2 text-right text-gray-700 border-r border-gray-100 text-xs">{renderPaymentCell("upi")}</td>
+                                <td className="px-3 py-2 text-center border-r border-gray-100 text-xs">
+                                  {(t.attachment || t.file || t.documentUrl || t.image) ? (
+                                    <a href={t.attachment || t.file || t.documentUrl || t.image} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-1">
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
                                     </a>
-                                  ) : (
-                                    "-"
-                                  )}
+                                  ) : "-"}
                                 </td>
-
                                 {showAction && (
-                                  <td className="px-2 py-1.5 text-center border-r border-slate-100 text-xs">
+                                  <td className="px-3 py-2 text-center border-r border-gray-100 text-xs">
                                     {isSyncing && editingIndex === index ? (
-                                      <span className="text-slate-400 text-xs">Syncing…</span>
+                                      <span className="text-gray-400 text-xs">Syncing…</span>
                                     ) : isEditing ? (
                                       <button
                                         onClick={handleSave}
-                                        className="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-emerald-700"
+                                        className="bg-emerald-600 text-white px-3 py-1 rounded-none text-xs font-medium hover:bg-emerald-700"
                                       >
                                         Save
                                       </button>
                                     ) : (
                                       <button
                                         onClick={() => handleEditClick(transaction, index)}
-                                        className="bg-blue-600 text-white px-3 py-1 rounded text-xs font-medium hover:bg-blue-700"
+                                        className="bg-[#18181b] text-white px-3 py-1 rounded-none text-xs font-medium hover:bg-black cursor-pointer"
                                       >
                                         Edit
                                       </button>
@@ -2242,7 +2324,7 @@ const Datewisedaybook = () => {
 
                         {mergedTransactions.length === 0 && (
                           <tr>
-                            <td colSpan={showAction ? 17 : 16} className="text-center py-8 text-slate-400 text-sm">
+                            <td colSpan={showAction ? 15 : 14} className="text-center py-8 text-gray-400 text-sm">
                               No transactions found
                             </td>
                           </tr>
@@ -2251,19 +2333,22 @@ const Datewisedaybook = () => {
 
                       <tfoot>
                         <tr
-                          className="bg-slate-100 font-semibold border-t-2 border-slate-300"
+                          className="bg-[#e2e8f0] font-bold border-t-2 border-gray-300"
                           style={{ position: "sticky", bottom: 0, zIndex: 2 }}
                         >
-                          <td colSpan="10" className="px-2 py-1.5 text-left text-slate-700 text-xs font-semibold">
+                          <td colSpan="7" className="px-3 py-2.5 text-left text-gray-800 text-xs font-bold uppercase tracking-wider">
                             Total
                           </td>
-                          <td className="px-2 py-1.5"></td>
-                          <td className="px-2 py-1.5 text-right text-slate-800 text-xs font-semibold">{Math.round(Number(totalCash)).toLocaleString()}</td>
-                          <td className="px-2 py-1.5 text-right text-slate-800 text-xs font-semibold">{Math.round(Number(totalRblAmount)).toLocaleString()}</td>
-                          <td className="px-2 py-1.5 text-right text-slate-800 text-xs font-semibold">{Math.round(Number(totalBankAmount)).toLocaleString()}</td>
-                          <td className="px-2 py-1.5 text-right text-slate-800 text-xs font-semibold">{Math.round(Number(totalUpiAmount)).toLocaleString()}</td>
-                          <td className="px-2 py-1.5"></td>
-                          {showAction && <td className="px-2 py-1.5"></td>}
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totals.amount)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totals.totalTransaction)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totals.discountAmount)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">-</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalCash)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalRblAmount)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalBankAmount)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right text-gray-900 text-xs font-bold">{Math.round(Number(totalUpiAmount)).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-center text-gray-900 text-xs font-bold"></td>
+                          {showAction && <td className="px-3 py-2.5"></td>}
                         </tr>
                       </tfoot>
                     </table>
@@ -2275,25 +2360,25 @@ const Datewisedaybook = () => {
             {/* Branch selector dropdown panel — fixed position to escape overflow */}
             {selectedStore === "multi" && showStoreSelector && (
               <div
-                className="fixed z-[9999] bg-white rounded-xl border border-slate-200 shadow-2xl no-print"
-                style={{ top: '160px', left: '400px', minWidth: '560px' }}
+                className="fixed z-[9999] bg-white rounded-none border border-gray-200 shadow-2xl no-print"
+                style={{ top: '180px', left: '400px', minWidth: '560px' }}
               >
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50 rounded-t-xl">
-                  <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50 rounded-none">
+                  <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">
                     {selectedStores.length} of {visibleLocations.length} selected
                   </span>
                   <div className="flex gap-2">
-                    <button onClick={() => setSelectedStores(visibleLocations.map(l => l.locCode))} className="px-2.5 py-1 text-xs font-semibold rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors">All</button>
-                    <button onClick={() => setSelectedStores([])} className="px-2.5 py-1 text-xs font-semibold rounded-md border border-slate-300 text-slate-600 hover:bg-slate-100 transition-colors">None</button>
-                    <button onClick={() => setShowStoreSelector(false)} className="px-2.5 py-1 text-xs font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors">Done ✓</button>
+                    <button onClick={() => setSelectedStores(visibleLocations.map(l => l.locCode))} className="px-3 py-1 text-xs font-medium rounded-none bg-[#9B48D7] text-white hover:bg-[#8836c2] transition-colors">All</button>
+                    <button onClick={() => setSelectedStores([])} className="px-3 py-1 text-xs font-medium rounded-none border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors">None</button>
+                    <button onClick={() => setShowStoreSelector(false)} className="px-3 py-1 text-xs font-medium rounded-none bg-[#9B48D7] text-white hover:bg-[#8836c2] transition-colors">Done ✓</button>
                   </div>
                 </div>
-                <div className="p-3 grid grid-cols-4 gap-1.5 max-h-56 overflow-y-auto">
+                <div className="p-3 grid grid-cols-4 gap-2 max-h-56 overflow-y-auto">
                   {visibleLocations.map(loc => {
                     const isChecked = selectedStores.includes(loc.locCode);
                     return (
-                      <label key={loc.locCode} className={`flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 text-xs font-medium transition-all border ${isChecked ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-white border-slate-200 text-slate-600 hover:border-blue-200 hover:bg-slate-50"}`}>
-                        <input type="checkbox" checked={isChecked} onChange={e => { if (e.target.checked) { setSelectedStores(prev => [...prev, loc.locCode]); } else { setSelectedStores(prev => prev.filter(c => c !== loc.locCode)); } }} className="accent-blue-600 shrink-0" />
+                      <label key={loc.locCode} className={`flex items-center gap-2 cursor-pointer rounded-xl px-3 py-2 text-xs font-medium transition-all border ${isChecked ? "bg-purple-50 border-[#9B48D7] text-[#9B48D7]" : "bg-white border-gray-200 text-gray-600 hover:border-purple-200 hover:bg-gray-50"}`}>
+                        <input type="checkbox" checked={isChecked} onChange={e => { if (e.target.checked) { setSelectedStores(prev => [...prev, loc.locCode]); } else { setSelectedStores(prev => prev.filter(c => c !== loc.locCode)); } }} className="accent-[#9B48D7] shrink-0" />
                         <span className="truncate">{loc.locName}</span>
                       </label>
                     );
@@ -2301,22 +2386,6 @@ const Datewisedaybook = () => {
                 </div>
               </div>
             )}
-
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3 mt-5 no-print">
-              <CSVLink
-                data={selectedStore === "all" ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
-                headers={selectedStore === "all" ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
-                filename={`${fromDate} to ${toDate} report.csv`}
-              >
-                <button className="border border-blue-600 text-blue-600 py-2 px-5 rounded-sm text-sm font-medium hover:bg-blue-50 transition-colors">
-                  Export CSV
-                </button>
-              </CSVLink>
-              <button type='button' onClick={handlePrint} className="bg-blue-600 text-white py-2 px-5 rounded-sm text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer">
-                Print PDF
-              </button>
-            </div>
 
           </div>
         </div>

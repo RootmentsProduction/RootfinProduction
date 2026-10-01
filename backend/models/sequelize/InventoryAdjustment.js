@@ -25,7 +25,7 @@ const InventoryAdjustment = sequelize.define('InventoryAdjustment', {
     defaultValue: 'quantity',
   },
   status: {
-    type: DataTypes.ENUM('draft', 'adjusted'),
+    type: DataTypes.ENUM('draft', 'pending_approval', 'adjusted'),
     defaultValue: 'draft',
   },
   

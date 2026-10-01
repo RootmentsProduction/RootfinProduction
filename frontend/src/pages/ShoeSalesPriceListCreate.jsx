@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Head from "../components/Head";
+import useSidebar from "../hooks/useSidebar";
 
 const ShoeSalesPriceListCreate = () => {
+  const isSidebarOpen = useSidebar();
   const [showExamples, setShowExamples] = useState(false);
 
   return (
-    <div className="p-6 ml-64 bg-[#f5f7fb] min-h-screen">
+    <div className={`transition-all duration-300 p-3 sm:p-6 bg-[#f5f7fb] min-h-screen ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       <Head
         title="New Price List"
         description="Set pricing rules that automatically apply across sales or purchase workflows."

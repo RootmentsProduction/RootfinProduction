@@ -3,21 +3,24 @@ import { useEnterToSave } from "../hooks/useEnterToSave";
 import Select from "react-select";
 import Header from "../components/Header";
 import baseUrl from "../api/api";
+import { useSidebar } from "../hooks/useSidebar.js";
+import { ArrowLeft, Calendar } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Function to format location names with proper spacing
 const formatLocationName = (name) => {
     if (!name) return name;
-    
+
     // Trim whitespace first
     let formatted = name.trim();
-    
+
     // Pattern: Single letter (G, Z, S, etc.) followed immediately by a capital letter
     // Example: "GKannur" -> "G Kannur", "GCalicut" -> "G Calicut"
     formatted = formatted.replace(/^([A-Z])([A-Z][a-z])/g, '$1 $2');
-    
+
     // Also handle cases like "Gkannur" (lowercase after prefix)
     formatted = formatted.replace(/^([A-Z])([a-z])/g, '$1 $2');
-    
+
     return formatted;
 };
 
@@ -46,10 +49,11 @@ const fallbackLocations = [
     { value: "G.Kalpetta", locCode: "717" },
     { value: "G.Kannur", locCode: "716" },
     { value: "G.MG Road", locCode: "718" },
-     { value: "Dappr Squad", locCode: "555" }
+    { value: "Dappr Squad", locCode: "555" }
 ];
 
 const AdminClose = () => {
+    const navigate = useNavigate();
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [cashDate, setCashDate] = useState("");
     const [cash, setCash] = useState("");
@@ -63,6 +67,47 @@ const AdminClose = () => {
         label: formatLocationName(loc.value),
     })));
 
+    const customSelectStyles = {
+        control: (provided, state) => ({
+            ...provided,
+            minHeight: '40px',
+            height: '40px',
+            borderColor: state.isFocused ? '#a855f7' : '#e5e7eb',
+            boxShadow: state.isFocused ? '0 0 0 1px #a855f7' : 'none',
+            '&:hover': {
+                borderColor: state.isFocused ? '#a855f7' : '#e5e7eb'
+            },
+            borderRadius: '0.375rem',
+            fontSize: '14px',
+            backgroundColor: 'transparent'
+        }),
+        valueContainer: (provided) => ({
+            ...provided,
+            padding: '0 12px',
+        }),
+        input: (provided) => ({
+            ...provided,
+            margin: '0',
+            padding: '0',
+        }),
+        placeholder: (provided) => ({
+            ...provided,
+            color: '#9ca3af',
+        }),
+        indicatorSeparator: () => ({
+            display: 'none',
+        }),
+        dropdownIndicator: (provided) => ({
+            ...provided,
+            padding: '8px',
+            color: '#6b7280',
+            '&:hover': {
+                color: '#4b5563'
+            }
+        })
+    };
+
+    const isSidebarOpen = useSidebar();
     const currentUser = JSON.parse(localStorage.getItem("rootfinuser"));
     const email = currentUser?.email;
     const isOfficeUser = currentUser?.locCode === '102';
@@ -98,7 +143,7 @@ const AdminClose = () => {
                 const response = await fetch(
                     `${baseUrl.baseUrl}user/getsaveCashBank?locCode=${selectedLocation.locCode}&date=${cashDate}`
                 );
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     if (data.data) {
@@ -135,7 +180,7 @@ const AdminClose = () => {
             alert("Please fill in all fields.");
             return;
         }
-    
+
         const payload = {
             totalAmount: closingCash,    // Physical cash (from "Closing Cash" field) → Closecash in DB
             totalCash: cash,             // Calculated closing (from "Cash" field) → cash in DB
@@ -144,7 +189,7 @@ const AdminClose = () => {
             locCode: selectedLocation.locCode,
             email,
         };
-    
+
         try {
             setLoading(true);
             const res = await fetch(apiUrl5, {
@@ -154,15 +199,15 @@ const AdminClose = () => {
                 },
                 body: JSON.stringify(payload),
             });
-    
+
             const data = await res.json();
-    
+
             if (!res.ok) {
                 throw new Error(data.message || "Something went wrong");
             }
-    
+
             alert(data.message || `Data ${isEditMode ? 'updated' : 'saved'} successfully!`);
-            
+
             // Reload the data to confirm the update
             if (isEditMode) {
                 const reloadResponse = await fetch(
@@ -183,106 +228,141 @@ const AdminClose = () => {
 
     // Enter key to save admin close
     useEnterToSave((e) => {
-        const syntheticEvent = e || { preventDefault: () => {} };
+        const syntheticEvent = e || { preventDefault: () => { } };
         handleSubmit();
     }, loading);
-    
+
 
     return (
         <>
             <Header title="Admin Close" />
-            <div className="ml-[290px] mt-[80px] p-4">
-                {isEditMode && (
-                    <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 rounded">
-                        <p className="text-yellow-800 font-semibold">
-                            ✏️ Edit Mode: Updating existing closing data for {selectedLocation?.label} on {cashDate}
-                        </p>
-                    </div>
-                )}
-                
-                <div className="mb-6">
-                    <label className="block mb-2 font-semibold text-gray-700">
-                        Location
-                    </label>
-                    <Select
-                        options={AllLocations}
-                        value={selectedLocation}
-                        onChange={setSelectedLocation}
-                        placeholder="Select a location"
-                        className="w-full"
-                    />
-                </div>
+            <div className={`transition-all duration-300 min-h-screen bg-white ${isSidebarOpen ? 'ml-[240px]' : 'ml-0'}`}>
+                <div className="px-8 mt-6">
+                    {isEditMode && (
+                        <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-md w-max">
+                            <p className="text-yellow-800 text-sm font-medium">
+                                ✏️ Edit Mode: Updating existing closing data for {selectedLocation?.label} on {cashDate}
+                            </p>
+                        </div>
+                    )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block mb-2 font-semibold text-gray-700">
-                            Cash Date
-                        </label>
-                        <input
-                            type="date"
-                            value={cashDate}
-                            onChange={(e) => setCashDate(e.target.value)}
-                            className="w-full p-2 border rounded"
-                        />
+                    {/* First Row */}
+                    <div className="flex flex-wrap gap-8 mb-6">
+                        <div className="w-[320px] flex flex-col gap-1.5">
+                            <label className="text-[13px] font-medium text-gray-500">
+                                Location
+                            </label>
+                            <Select
+                                options={AllLocations}
+                                value={selectedLocation}
+                                onChange={setSelectedLocation}
+                                placeholder="Select Location"
+                                styles={customSelectStyles}
+                                isSearchable={true}
+                            />
+                        </div>
+
+                        <div className="w-[320px] flex flex-col gap-1.5">
+                            <label className="text-[13px] font-medium text-gray-500">
+                                Cash Date
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    value={cashDate}
+                                    onChange={(e) => setCashDate(e.target.value)}
+                                    className="w-full border border-gray-200 rounded-md h-[40px] pl-3 pr-10 text-sm focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors z-10 bg-transparent"
+                                />
+                                
+                            </div>
+                        </div>
                     </div>
 
+                    {/* Second Row */}
                     {loadingData ? (
-                        <div className="col-span-2 text-center py-4">
-                            <p className="text-gray-600">Loading existing data...</p>
+                        <div className="py-8 w-[320px]">
+                            <p className="text-gray-500 text-sm flex items-center gap-2">
+                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                </svg>
+                                Loading data...
+                            </p>
                         </div>
                     ) : (
-                        <>
-                            <div>
-                                <label className="block mb-2 font-semibold text-gray-700">
+                        <div className="flex flex-wrap gap-8 mb-8">
+                            <div className="w-[320px] flex flex-col gap-1.5 relative">
+                                <label className="text-[13px] font-medium text-gray-500">
                                     Cash (Calculated Closing)
                                 </label>
-                                <input
-                                    type="text"
-                                    value={cash}
-                                    onChange={(e) => setCash(e.target.value)}
-                                    placeholder="Enter calculated closing cash"
-                                    className="w-full p-2 border rounded"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Opening + Day's transactions (for next day opening)</p>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={cash}
+                                        onChange={(e) => setCash(e.target.value)}
+                                        placeholder="Enter calculated closing cash"
+                                        className="w-full border border-gray-200 rounded-md h-[40px] pl-3 pr-10 text-sm placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors bg-transparent"
+                                    />
+                                    {/* Adding a decorative chevron to perfectly match the screenshot */}
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                    </div>
+                                </div>
+                                <p className="text-[11px] text-gray-400 mt-0.5">Opening + Day's transactions (for next day opening)</p>
                             </div>
 
-                            <div>
-                                <label className="block mb-2 font-semibold text-gray-700">
+                            <div className="w-[320px] flex flex-col gap-1.5 relative">
+                                <label className="text-[13px] font-medium text-gray-500">
                                     Closing Cash (Physical Count)
                                 </label>
-                                <input
-                                    type="text"
-                                    value={closingCash}
-                                    onChange={(e) => setClosingCash(e.target.value)}
-                                    placeholder="Enter physical cash counted"
-                                    className="w-full p-2 border rounded"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Actual cash counted from denominations</p>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={closingCash}
+                                        onChange={(e) => setClosingCash(e.target.value)}
+                                        placeholder="Enter physical cash counted"
+                                        className="w-full border border-gray-200 rounded-md h-[40px] pl-3 pr-10 text-sm placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors bg-transparent"
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                    </div>
+                                </div>
+                                <p className="text-[11px] text-gray-400 mt-0.5">Actual cash counted from denominations</p>
                             </div>
 
-                            <div>
-                                <label className="block mb-2 font-semibold text-gray-700">
+                            <div className="w-[320px] flex flex-col gap-1.5 relative">
+                                <label className="text-[13px] font-medium text-gray-500">
                                     Bank
                                 </label>
-                                <input
-                                    type="text"
-                                    value={bank}
-                                    onChange={(e) => setBank(e.target.value)}
-                                    placeholder="Enter bank amount"
-                                    className="w-full p-2 border rounded"
-                                />
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={bank}
+                                        onChange={(e) => setBank(e.target.value)}
+                                        placeholder="Enter bank amount"
+                                        className="w-full border border-gray-200 rounded-md h-[40px] pl-3 pr-10 text-sm placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors bg-transparent"
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                    </div>
+                                </div>
                             </div>
-                        </>
+                        </div>
                     )}
-                </div>
 
-                <button
-                    className="mt-6 p-2 bg-blue-500 w-1/2 rounded-md text-white hover:bg-blue-700 transition-all duration-200 cursor-pointer disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    onClick={handleSubmit}
-                    disabled={loading || loadingData}
-                >
-                    {loading ? "Saving..." : isEditMode ? "Update Close" : "Save Close"}
-                </button>
+                    <button
+                        className="bg-[#a855f7] hover:bg-[#9333ea] text-white text-sm font-medium h-[38px] px-6 rounded-md transition-colors disabled:opacity-70 flex items-center justify-center"
+                        onClick={handleSubmit}
+                        disabled={loading || loadingData}
+                    >
+                        {loading ? (
+                            <><svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                            </svg>Saving...</>
+                        ) : isEditMode ? "Update Close" : "Save Close"}
+                    </button>
+                </div>
             </div>
         </>
     );

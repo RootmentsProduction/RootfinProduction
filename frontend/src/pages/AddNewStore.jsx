@@ -2,8 +2,10 @@ import { useState } from "react";
 import { FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
 import { Store } from "lucide-react";
 import baseUrl from "../api/api";
+import { useSidebar } from "../hooks/useSidebar.js";
 
 const AddNewStore = () => {
+    const isSidebarOpen = useSidebar();
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -150,11 +152,11 @@ const AddNewStore = () => {
     };
 
     return (
-        <div className="ml-[240px] bg-white min-h-screen">
+        <div className={`bg-white min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-[240px]' : 'ml-0'}`}>
             {/* Header Section */}
             <div className="bg-white px-8 py-6 border-b border-gray-200">
                 <div className="flex items-center gap-4">
-                    <div className="bg-blue-600 p-4 rounded-xl">
+                    <div className="bg-purple-600 p-4 rounded-xl">
                         <Store className="text-white" size={28} />
                     </div>
                     <div>
@@ -178,7 +180,7 @@ const AddNewStore = () => {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 placeholder="e.g., G.MG Road"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                                 required
                             />
                         </div>
@@ -195,7 +197,7 @@ const AddNewStore = () => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="e.g., store@example.com"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                                 required
                             />
                         </div>
@@ -209,7 +211,7 @@ const AddNewStore = () => {
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
                                 placeholder="+91"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                             />
                         </div>
 
@@ -222,7 +224,7 @@ const AddNewStore = () => {
                                 value={gst}
                                 onChange={(e) => setGst(e.target.value)}
                                 placeholder="e.g., 123450000AAz5"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                             />
                         </div>
                     </div>
@@ -238,7 +240,7 @@ const AddNewStore = () => {
                                 value={locCode}
                                 onChange={(e) => setLocCode(e.target.value)}
                                 placeholder="e.g., 102"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                             />
                         </div>
 
@@ -251,7 +253,7 @@ const AddNewStore = () => {
                                 onChange={(e) => setAddress(e.target.value)}
                                 placeholder="e.g., store@example.com"
                                 rows="1"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none"
                             />
                         </div>
                     </div>
@@ -268,11 +270,11 @@ const AddNewStore = () => {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Enter new password"
-                                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                                     required
                                 />
                                 <span
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 cursor-pointer hover:text-blue-700"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-600 cursor-pointer hover:text-purple-700"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
                                     {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
@@ -290,11 +292,11 @@ const AddNewStore = () => {
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     placeholder="Confirm Password"
-                                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                                     required
                                 />
                                 <span
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 cursor-pointer hover:text-blue-700"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-600 cursor-pointer hover:text-purple-700"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                 >
                                     {showConfirmPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
@@ -330,7 +332,7 @@ const AddNewStore = () => {
                             className={`px-8 py-3 rounded-lg font-medium text-white transition-colors ${
                                 loading
                                     ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-blue-600 hover:bg-blue-700"
+                                    : "bg-purple-600 hover:bg-purple-700"
                             }`}
                         >
                             {loading ? "SAVING..." : "SAVE USER"}

@@ -1,13 +1,16 @@
+import { customConfirm } from '../utils/customConfirm';
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Head from "../components/Head";
 import { X, Mail, Phone, MapPin, Building2, FileText, CreditCard, MessageSquare, FileSpreadsheet, Mail as MailIcon } from "lucide-react";
 import baseUrl from "../api/api";
+import useSidebar from "../hooks/useSidebar";
 
 const currency = (value) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(value || 0);
 
 const PurchaseVendorDetail = () => {
+  const isSidebarOpen = useSidebar();
   const { id } = useParams();
   const navigate = useNavigate();
   const [vendor, setVendor] = useState(null);
@@ -217,7 +220,7 @@ const PurchaseVendorDetail = () => {
 
   if (!vendor) {
     return (
-      <div className="ml-64 min-h-screen bg-[#f5f7fb] p-6">
+      <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
         <div className="text-center py-12">Loading...</div>
       </div>
     );
@@ -226,7 +229,7 @@ const PurchaseVendorDetail = () => {
   const tabs = ["Overview", "Comments", "Transactions", "Mails", "Statement"];
 
   return (
-    <div className="ml-64 min-h-screen bg-[#f5f7fb] p-6">
+    <div className={`transition-all duration-300 min-h-screen bg-[#f5f7fb] p-3 sm:p-6 ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       <div className="rounded-3xl border border-[#e1e5f5] bg-white shadow-[0_30px_90px_-40px_rgba(15,23,42,0.25)]">
         {/* Header */}
         <div className="border-b border-[#e7ebf8] px-8 py-4">
@@ -263,7 +266,7 @@ const PurchaseVendorDetail = () => {
                     <button
                       onClick={async () => {
                         setShowMoreMenu(false);
-                        if (confirm(`Are you sure you want to mark "${vendor.displayName || vendor.companyName}" as inactive?`)) {
+                        if (await customConfirm(`Are you sure you want to mark "${vendor.displayName || vendor.companyName}" as inactive?`)) {
                           try {
                             const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
                             const response = await fetch(`${API_URL}/api/purchase/vendors/${id}`, {
@@ -314,7 +317,7 @@ const PurchaseVendorDetail = () => {
                       onClick={async () => {
                         setShowMoreMenu(false);
                         const vendorName = vendor.displayName || vendor.companyName || "this vendor";
-                        if (confirm(`Are you sure you want to delete "${vendorName}"? This action cannot be undone.`)) {
+                        if (await customConfirm(`Are you sure you want to delete "${vendorName}"? This action cannot be undone.`)) {
                           try {
                             const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
                             const response = await fetch(`${API_URL}/api/purchase/vendors/${id}`, {

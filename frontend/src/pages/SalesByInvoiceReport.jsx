@@ -1,12 +1,30 @@
 import Headers from '../components/Header.jsx';
 import { useEffect, useState } from "react";
-import Select from "react-select";
 import baseUrl from '../api/api.js';
 import { CSVLink } from 'react-csv';
 import { Helmet } from "react-helmet";
-import { FiDownload, FiSearch } from "react-icons/fi";
+import { SlidersHorizontal, Download, Calendar, ChevronDown, X } from "lucide-react";
+import useSidebar from '../hooks/useSidebar.js';
+
+/* ── tiny native select wrapper ── */
+const NativeSelect = ({ value, onChange, options, placeholder }) => (
+  <div className="relative">
+    <select
+      value={value || ""}
+      onChange={(e) => onChange(e.target.value || null)}
+      className="w-full h-[40px] border border-gray-300 rounded-md pl-3 pr-9 text-sm text-gray-700 bg-white focus:outline-none focus:border-purple-500 appearance-none"
+    >
+      <option value="">{placeholder}</option>
+      {options.map(o => (
+        <option key={o.value || "__null__"} value={o.value || ""}>{o.label}</option>
+      ))}
+    </select>
+    <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+  </div>
+);
 
 const SalesByInvoiceReport = () => {
+  const isSidebarOpen = useSidebar();
   const todayStr = new Date().toISOString().split('T')[0];
   const [fromDate, setFromDate] = useState(todayStr);
   const [toDate, setToDate] = useState(todayStr);
@@ -14,8 +32,8 @@ const SalesByInvoiceReport = () => {
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [csvData, setCsvData] = useState([]);
-  
-  // Advanced filtering states
+
+  // Advanced filter states
   const [categoryFilter, setCategoryFilter] = useState(null);
   const [skuSearch, setSkuSearch] = useState("");
   const [sizeFilter, setSizeFilter] = useState(null);
@@ -24,18 +42,16 @@ const SalesByInvoiceReport = () => {
 
   const currentUser = JSON.parse(localStorage.getItem("rootfinuser"));
   const isAdmin = (currentUser?.power || "").toLowerCase() === "admin";
+  const isMainAdmin = currentUser?.locCode === '858' || currentUser?.locCode === '103' || (currentUser?.email && ['officerootments@gmail.com'].includes(currentUser.email.toLowerCase()));
+  const isWarehouse = (currentUser?.power || "").toLowerCase() === "warehouse";
+  const canSeeCost = isAdmin || isWarehouse || isMainAdmin;
   const isClusterManager = (currentUser?.role || "").toLowerCase() === "cluster_manager";
   const clusterAllowedLocCodes = currentUser?.allowedLocCodes || [];
   const canSelectStore = isAdmin || isClusterManager;
-  
-  // For store users, set their store as default and disable selection
+
   useEffect(() => {
-    if (!canSelectStore && currentUser?.locCode) {
-      setSelectedStore(currentUser.locCode);
-    }
-    if (isClusterManager && clusterAllowedLocCodes.length > 0 && selectedStore === "all") {
-      setSelectedStore(clusterAllowedLocCodes[0]);
-    }
+    if (!canSelectStore && currentUser?.locCode) setSelectedStore(currentUser.locCode);
+    if (isClusterManager && clusterAllowedLocCodes.length > 0 && selectedStore === "all") setSelectedStore(clusterAllowedLocCodes[0]);
   }, []);
 
   const storeOptions = [
@@ -68,43 +84,17 @@ const SalesByInvoiceReport = () => {
   ];
 
   const categoryOptions = [
-    { value: null, label: "All Categories" },
     { value: "Shoes", label: "Shoes" },
     { value: "Shirts", label: "Shirts" },
     { value: "Accessories", label: "Accessories" },
     { value: "Others", label: "Others" }
   ];
 
-  const sizeOptions = [
-    { value: null, label: "All Sizes" },
-    { value: "XS", label: "XS" },
-    { value: "S", label: "S" },
-    { value: "M", label: "M" },
-    { value: "L", label: "L" },
-    { value: "XL", label: "XL" },
-    { value: "XXL", label: "XXL" },
-    { value: "6", label: "6" },
-    { value: "7", label: "7" },
-    { value: "8", label: "8" },
-    { value: "9", label: "9" },
-    { value: "10", label: "10" },
-    { value: "11", label: "11" },
-    { value: "12", label: "12" },
-    { value: "28", label: "28" },
-    { value: "30", label: "30" },
-    { value: "32", label: "32" },
-    { value: "34", label: "34" },
-    { value: "36", label: "36" },
-    { value: "38", label: "38" },
-    { value: "40", label: "40" },
-    { value: "42", label: "42" }
-  ];
+  const sizeOptions = ["XS","S","M","L","XL","XXL","6","7","8","9","10","11","12","28","30","32","34","36","38","40","42"].map(v => ({ value: v, label: v }));
 
   const fetchReport = async () => {
     setLoading(true);
     try {
-      const endpoint = `api/reports/sales/by-invoice`;
-      
       const params = new URLSearchParams({
         dateFrom: fromDate,
         dateTo: toDate,
@@ -112,527 +102,280 @@ const SalesByInvoiceReport = () => {
         userId: currentUser?.email || currentUser?.userId,
         isAdmin: isAdmin ? "true" : "false",
         isClusterManager: isClusterManager ? "true" : "false",
-        ...(isClusterManager && clusterAllowedLocCodes.length > 0
-          ? { allowedLocCodes: clusterAllowedLocCodes.join(",") }
-          : {}),
+        ...(isClusterManager && clusterAllowedLocCodes.length > 0 ? { allowedLocCodes: clusterAllowedLocCodes.join(",") } : {}),
         ...(categoryFilter && { category: categoryFilter }),
         ...(skuSearch && { sku: skuSearch }),
         ...(sizeFilter && { size: sizeFilter }),
         ...(customerSearch && { customer: customerSearch })
       });
-
-      const response = await fetch(`${baseUrl.baseUrl}${endpoint}?${params}`);
-      
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("API Error:", response.status, text);
-        alert(`API Error: ${response.status} - ${text.substring(0, 100)}`);
-        return;
-      }
-      
+      const response = await fetch(`${baseUrl.baseUrl}api/reports/sales/by-invoice?${params}`);
+      if (!response.ok) { alert(`API Error: ${response.status}`); return; }
       const result = await response.json();
-
       if (result.success) {
-        setReportData(result.data);
-        prepareCsvData(result.data);
-      } else {
-        alert("Failed to fetch report: " + (result.message || "Unknown error"));
-      }
-    } catch (error) {
-      console.error("Error fetching report:", error);
-      alert("Error fetching report: " + error.message);
-    } finally {
-      setLoading(false);
-    }
+        const allInvoices = result.data.invoices || [];
+
+        // Fix: Exclude returned invoices (itemCount === 0) from summary totals
+        const nonReturned = allInvoices.filter(inv => inv.itemCount > 0);
+        const returnedCount = allInvoices.length - nonReturned.length;
+        const totalSales = nonReturned.reduce((s, inv) => s + (inv.totalAmount || 0), 0);
+        const totalItems = nonReturned.reduce((s, inv) => s + (inv.itemCount || 0), 0);
+        const avgInvoiceValue = nonReturned.length > 0 ? totalSales / nonReturned.length : 0;
+
+        setReportData({
+          ...result.data,
+          summary: {
+            ...(result.data.summary || {}),
+            totalInvoices: nonReturned.length,
+            totalSales,
+            totalItems,
+            avgInvoiceValue,
+            returnedCount
+          }
+        });
+
+        const csv = allInvoices.map(inv => ({
+          Date: inv.date, "Invoice No": inv.invoiceNumber, Customer: inv.customer,
+          SKU: inv.skus || "N/A", Category: inv.category, "Item Count": inv.itemCount,
+          "Total Amount": inv.totalAmount, Discount: inv.discount,
+          ...(canSeeCost ? { "Net Amount": inv.netAmount, Profit: inv.profit || 0 } : {}),
+          "Payment Method": inv.paymentMethod, Branch: inv.branch,
+          "Status": inv.itemCount === 0 ? "RETURNED" : "Active"
+        }));
+        setCsvData(csv);
+      } else { alert("Failed to fetch report: " + (result.message || "Unknown error")); }
+    } catch (error) { alert("Error: " + error.message); }
+    finally { setLoading(false); }
+
   };
 
-  const prepareCsvData = (data) => {
-    const csv = data.invoices?.map(inv => ({
-      Date: inv.date,
-      "Invoice No": inv.invoiceNumber,
-      Customer: inv.customer,
-      SKU: inv.skus || "N/A",
-      Category: inv.category,
-      "Item Count": inv.itemCount,
-      "Total Amount": inv.totalAmount,
-      Discount: inv.discount,
-      "Purchase Cost": inv.purchaseCost || 0,
-      "Net Amount": inv.netAmount,
-      "Profit": inv.profit || 0,
-      "Payment Method": inv.paymentMethod,
-      Branch: inv.branch,
-      "Sales Person": inv.salesPerson
-    })) || [];
-    setCsvData(csv);
+  const clearFilters = () => { setCategoryFilter(null); setSkuSearch(""); setSizeFilter(null); setCustomerSearch(""); };
+  const hasActiveFilters = categoryFilter || skuSearch || sizeFilter || customerSearch;
+
+  const fmt = (n) => new Intl.NumberFormat('en-IN').format(n || 0);
+  const fmtRs = (n) => `₹${fmt(n)}`;
+
+  const paymentBadgeStyle = (method) => {
+    const m = (method || "").toLowerCase();
+    if (m.includes("upi")) return "bg-purple-100 text-purple-700";
+    if (m.includes("card") || m.includes("bank")) return "bg-blue-100 text-blue-700";
+    if (m.includes("cash")) return "bg-green-100 text-green-700";
+    return "bg-gray-100 text-gray-600";
   };
 
   return (
     <>
-      <Helmet>
-        <title>Sales by Invoice Report</title>
-      </Helmet>
+      <Helmet><title>Sales by Invoice Report | RootFin</title></Helmet>
       <Headers />
-      <div style={{ marginLeft: "256px", padding: "20px", maxWidth: "calc(100% - 256px)" }}>
-        <div style={{ marginBottom: "24px" }}>
-          <h1 style={{ 
-            fontSize: "28px", 
-            fontWeight: "600", 
-            color: "#1f2937",
-            marginBottom: "8px"
-          }}>
-            Sales by Invoice Report
-          </h1>
-          <p style={{ fontSize: "14px", color: "#6b7280", margin: "0" }}>
-            Generate detailed invoice reports with filtering options
-          </p>
-        </div>
+      <div className={`transition-all duration-300 min-h-screen bg-white ${isSidebarOpen ? 'ml-[240px]' : 'ml-0'}`}>
 
-        {/* Main Filters */}
-        <div style={{ 
-          backgroundColor: "white", 
-          borderRadius: "8px", 
-          padding: "20px", 
-          marginBottom: "20px",
-          border: "1px solid #e5e7eb",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-        }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", alignItems: "end" }}>
-            <div>
-              <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", color: "#374151", fontSize: "14px" }}>From Date</label>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                style={{ 
-                  width: "100%", 
-                  padding: "8px 12px", 
-                  borderRadius: "6px", 
-                  border: "1px solid #d1d5db",
-                  fontSize: "14px"
-                }}
-              />
+        {/* ── Row 1: Primary Filters ── */}
+        <div className="flex items-end justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex items-end gap-4">
+            {/* From Date */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-medium text-gray-500">From Date</label>
+              <div className="relative">
+                <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
+                  className="w-[150px] h-[40px] border border-gray-300 rounded-md pl-3 pr-10 text-sm text-gray-700 bg-white focus:outline-none focus:border-purple-500 z-10" />
+                <Calendar size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" />
+              </div>
             </div>
-            <div>
-              <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", color: "#374151", fontSize: "14px" }}>To Date</label>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                style={{ 
-                  width: "100%", 
-                  padding: "8px 12px", 
-                  borderRadius: "6px", 
-                  border: "1px solid #d1d5db",
-                  fontSize: "14px"
-                }}
-              />
+            {/* To Date */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-medium text-gray-500">To Date</label>
+              <div className="relative">
+                <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
+                  className="w-[150px] h-[40px] border border-gray-300 rounded-md pl-3 pr-10 text-sm text-gray-700 bg-white focus:outline-none focus:border-purple-500 z-10" />
+                <Calendar size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" />
+              </div>
             </div>
-            {canSelectStore ? (
-              <div>
-                <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", color: "#374151", fontSize: "14px" }}>Store</label>
-                <Select
+            {/* Store */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[12px] font-medium text-gray-500">Store</label>
+              {canSelectStore ? (
+                <NativeSelect
+                  value={selectedStore}
+                  onChange={setSelectedStore}
+                  placeholder="Select Store"
                   options={isClusterManager
                     ? [{ value: "all", label: "All My Stores" }, ...storeOptions.filter(s => clusterAllowedLocCodes.includes(s.value))]
-                    : storeOptions
-                  }
-                  value={storeOptions.find(s => s.value === selectedStore) || { value: selectedStore, label: selectedStore }}
-                  onChange={(opt) => setSelectedStore(opt.value)}
-                  isSearchable
-                  placeholder="Select Store..."
-                  styles={{
-                    control: (base) => ({
-                      ...base,
-                      border: "1px solid #d1d5db",
-                      borderRadius: "6px",
-                      minHeight: "38px"
-                    })
-                  }}
+                    : storeOptions}
                 />
-              </div>
-            ) : (
-              <div>
-                <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", color: "#374151", fontSize: "14px" }}>Store</label>
-                <div style={{ 
-                  padding: "8px 12px", 
-                  borderRadius: "6px", 
-                  border: "1px solid #d1d5db",
-                  backgroundColor: "#f9fafb",
-                  fontSize: "14px"
-                }}>
+              ) : (
+                <div className="h-[40px] flex items-center px-3 border border-gray-300 rounded-md text-sm text-gray-700 bg-gray-50 w-[170px]">
                   {storeOptions.find(s => s.value === selectedStore)?.label || selectedStore}
                 </div>
-              </div>
-            )}
-            
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: showAdvancedFilters ? "#f3f4f6" : "white",
-                  color: "#374151",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "500"
-                }}
-              >
-                {showAdvancedFilters ? "Hide" : "Show"} Filters
-              </button>
-              
-              <button
-                onClick={fetchReport}
-                disabled={loading}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: loading ? "#9ca3af" : "#3b82f6",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  fontSize: "14px",
-                  fontWeight: "500"
-                }}
-              >
-                {loading ? "Loading..." : "Generate Report"}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Advanced Filters - Simple Collapsible */}
-        {showAdvancedFilters && (
-          <div style={{ 
-            backgroundColor: "white", 
-            borderRadius: "8px", 
-            padding: "20px", 
-            marginBottom: "20px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-          }}>
-            <h3 style={{ margin: "0 0 16px 0", fontSize: "16px", fontWeight: "600", color: "#1f2937" }}>Advanced Filters</h3>
-            
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-              <div>
-                <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", color: "#374151", fontSize: "14px" }}>Category</label>
-                <Select
-                  options={categoryOptions}
-                  value={categoryOptions.find(c => c.value === categoryFilter)}
-                  onChange={(opt) => setCategoryFilter(opt.value)}
-                  isClearable
-                  placeholder="Filter by category..."
-                  styles={{
-                    control: (base) => ({
-                      ...base,
-                      border: "1px solid #d1d5db",
-                      borderRadius: "6px",
-                      minHeight: "38px"
-                    })
-                  }}
-                />
-              </div>
-              
-              <div>
-                <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", color: "#374151", fontSize: "14px" }}>Item SKU</label>
-                <input
-                  type="text"
-                  value={skuSearch}
-                  onChange={(e) => setSkuSearch(e.target.value)}
-                  placeholder="Search by SKU..."
-                  style={{ 
-                    width: "100%", 
-                    padding: "8px 12px", 
-                    borderRadius: "6px", 
-                    border: "1px solid #d1d5db",
-                    fontSize: "14px"
-                  }}
-                />
-              </div>
-              
-              <div>
-                <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", color: "#374151", fontSize: "14px" }}>Size</label>
-                <Select
-                  options={sizeOptions}
-                  value={sizeOptions.find(s => s.value === sizeFilter)}
-                  onChange={(opt) => setSizeFilter(opt.value)}
-                  isClearable
-                  placeholder="Filter by size..."
-                  styles={{
-                    control: (base) => ({
-                      ...base,
-                      border: "1px solid #d1d5db",
-                      borderRadius: "6px",
-                      minHeight: "38px"
-                    })
-                  }}
-                />
-              </div>
-              
-              <div>
-                <label style={{ display: "block", marginBottom: "6px", fontWeight: "500", color: "#374151", fontSize: "14px" }}>Customer</label>
-                <input
-                  type="text"
-                  value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
-                  placeholder="Search customer..."
-                  style={{ 
-                    width: "100%", 
-                    padding: "8px 12px", 
-                    borderRadius: "6px", 
-                    border: "1px solid #d1d5db",
-                    fontSize: "14px"
-                  }}
-                />
-              </div>
-            </div>
-            
-            <div style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end" }}>
-              <button
-                onClick={() => {
-                  setCategoryFilter(null);
-                  setSkuSearch("");
-                  setSizeFilter(null);
-                  setCustomerSearch("");
-                }}
-                style={{
-                  padding: "6px 12px",
-                  backgroundColor: "#f9fafb",
-                  color: "#6b7280",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "14px"
-                }}
-              >
-                Clear Filters
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Report Display */}
-        {reportData && (
-          <div style={{ 
-            backgroundColor: "white", 
-            padding: "20px", 
-            borderRadius: "8px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h2 style={{ 
-                fontSize: "20px", 
-                fontWeight: "600", 
-                color: "#1f2937",
-                margin: "0"
-              }}>
-                Sales by Invoice
-              </h2>
-              {csvData.length > 0 && (
-                <CSVLink
-                  data={csvData}
-                  filename={`sales-by-invoice-${fromDate}-to-${toDate}.csv`}
-                  style={{
-                    padding: "8px 16px",
-                    backgroundColor: "#10b981",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    textDecoration: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontSize: "14px",
-                    fontWeight: "500"
-                  }}
-                >
-                  <FiDownload /> Export CSV
-                </CSVLink>
               )}
             </div>
-            
-            {/* Summary Cards */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px", marginBottom: "24px" }}>
-              <div style={{ 
-                backgroundColor: "white",
-                padding: "16px", 
-                borderRadius: "8px", 
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-              }}>
-                <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Total Invoices</div>
-                <div style={{ fontSize: "24px", fontWeight: "700", color: "#1f2937" }}>{reportData.summary?.totalInvoices || 0}</div>
-              </div>
-              <div style={{ 
-                backgroundColor: "white",
-                padding: "16px", 
-                borderRadius: "8px", 
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-              }}>
-                <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Total Sales</div>
-                <div style={{ fontSize: "24px", fontWeight: "700", color: "#1f2937" }}>₹{(reportData.summary?.totalSales || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-              </div>
-              <div style={{ 
-                backgroundColor: "white",
-                padding: "16px", 
-                borderRadius: "8px", 
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-              }}>
-                <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Purchase Cost</div>
-                <div style={{ fontSize: "24px", fontWeight: "700", color: "#dc3545" }}>₹{(reportData.summary?.totalPurchaseCost || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-              </div>
-              <div style={{ 
-                backgroundColor: "white",
-                padding: "16px", 
-                borderRadius: "8px", 
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-              }}>
-                <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Total Profit</div>
-                <div style={{ fontSize: "24px", fontWeight: "700", color: (reportData.summary?.totalProfit || 0) >= 0 ? "#28a745" : "#dc3545" }}>₹{(reportData.summary?.totalProfit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-              </div>
-              <div style={{ 
-                backgroundColor: "white",
-                padding: "16px", 
-                borderRadius: "8px", 
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-              }}>
-                <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Total Items</div>
-                <div style={{ fontSize: "24px", fontWeight: "700", color: "#1f2937" }}>{reportData.summary?.totalItems || 0}</div>
-              </div>
-              <div style={{ 
-                backgroundColor: "white",
-                padding: "16px", 
-                borderRadius: "8px", 
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)"
-              }}>
-                <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "4px" }}>Avg Invoice Value</div>
-                <div style={{ fontSize: "24px", fontWeight: "700", color: "#1f2937" }}>₹{(reportData.summary?.avgInvoiceValue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-              </div>
-            </div>
+            {/* Fetch */}
+            <button onClick={fetchReport} disabled={loading}
+              className="h-[40px] px-7 bg-[#a855f7] hover:bg-[#9333ea] text-white text-sm font-semibold rounded-md transition-colors flex items-center gap-2 disabled:opacity-60">
+              {loading ? (
+                <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>Loading...</>
+              ) : 'Fetch Data'}
+            </button>
+          </div>
+          {/* Filters toggle */}
+          <button onClick={() => setShowAdvancedFilters(v => !v)}
+            className="h-[38px] px-4 border border-gray-300 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[13px] font-medium rounded-lg flex items-center gap-2 transition-colors shadow-sm">
+            Filters <SlidersHorizontal size={14} strokeWidth={2} />
+          </button>
+        </div>
 
-            {/* Invoice Details Table */}
-            <h3>Invoice Details</h3>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "white" }}>
-                <thead>
-                  <tr style={{ backgroundColor: "#f0f0f0" }}>
-                    <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>Date</th>
-                    <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>Invoice No</th>
-                    <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>Customer</th>
-                    <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>SKU</th>
-                    <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>Category</th>
-                    <th style={{ padding: "12px", textAlign: "center", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>Items</th>
-                    <th style={{ padding: "12px", textAlign: "right", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>Amount</th>
-                    <th style={{ padding: "12px", textAlign: "right", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>Discount</th>
-                    <th style={{ padding: "12px", textAlign: "right", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>Purchase Cost</th>
-                    <th style={{ padding: "12px", textAlign: "right", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>Net Amount</th>
-                    <th style={{ padding: "12px", textAlign: "right", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>Profit</th>
-                    <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>Payment</th>
-                    <th style={{ padding: "12px", textAlign: "left", borderBottom: "2px solid #ddd", whiteSpace: "nowrap" }}>Branch</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportData.invoices?.length > 0 ? (
-                    reportData.invoices.map((invoice, idx) => {
-                      // Check if this is a returned invoice (0 items)
-                      const isReturned = invoice.itemCount === 0;
-                      const rowStyle = {
-                        borderBottom: "1px solid #eee",
-                        backgroundColor: isReturned ? "#ffe6e6" : "transparent", // Light red background for returned
-                        transition: "background-color 0.2s ease"
-                      };
-                      
-                      return (
-                        <tr key={idx} style={rowStyle}
-                          onMouseEnter={(e) => {
-                            if (!isReturned) e.currentTarget.style.backgroundColor = "#f8f9fa";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = isReturned ? "#ffe6e6" : "transparent";
-                          }}>
-                          <td style={{ padding: "10px", whiteSpace: "nowrap" }}>{invoice.date}</td>
-                          <td style={{ 
-                            padding: "10px", 
-                            whiteSpace: "nowrap", 
-                            fontWeight: "500",
-                            color: isReturned ? "#dc3545" : "inherit" // Red text for returned invoice number
-                          }}>
-                            {invoice.invoiceNumber}
-                            {isReturned && (
-                              <span style={{
-                                marginLeft: "8px",
-                                padding: "2px 6px",
-                                backgroundColor: "#dc3545",
-                                color: "white",
-                                borderRadius: "4px",
-                                fontSize: "10px",
-                                fontWeight: "600"
-                              }}>
-                                RETURNED
-                              </span>
-                            )}
-                          </td>
-                          <td style={{ padding: "10px" }}>{invoice.customer}</td>
-                          <td style={{ padding: "10px", fontFamily: "monospace", fontSize: "12px", color: "#6366f1" }}>
-                            {invoice.skus || "N/A"}
-                          </td>
-                          <td style={{ padding: "10px" }}>
-                            <span style={{ 
-                              padding: "2px 8px", 
-                              backgroundColor: "#e9ecef", 
-                              borderRadius: "12px", 
-                              fontSize: "12px" 
-                            }}>
-                              {invoice.category}
-                            </span>
-                          </td>
-                          <td style={{ 
-                            padding: "10px", 
-                            textAlign: "center",
-                            color: isReturned ? "#dc3545" : "inherit",
-                            fontWeight: isReturned ? "bold" : "normal"
-                          }}>
-                            {invoice.itemCount}
-                          </td>
-                          <td style={{ padding: "10px", textAlign: "right", fontWeight: "500" }}>₹{invoice.totalAmount.toFixed(2)}</td>
-                          <td style={{ padding: "10px", textAlign: "right", color: "#dc3545" }}>₹{invoice.discount.toFixed(2)}</td>
-                          <td style={{ padding: "10px", textAlign: "right", color: "#6c757d" }}>₹{(invoice.purchaseCost || 0).toFixed(2)}</td>
-                          <td style={{ padding: "10px", textAlign: "right", fontWeight: "bold", color: "#28a745" }}>₹{invoice.netAmount.toFixed(2)}</td>
-                          <td style={{ padding: "10px", textAlign: "right", fontWeight: "bold", color: (invoice.profit || 0) >= 0 ? "#28a745" : "#dc3545" }}>₹{(invoice.profit || 0).toFixed(2)}</td>
-                          <td style={{ padding: "10px" }}>
-                            <span style={{ 
-                              padding: "2px 8px", 
-                              backgroundColor: invoice.paymentMethod === "Cash" ? "#d4edda" : "#d1ecf1", 
-                              color: invoice.paymentMethod === "Cash" ? "#155724" : "#0c5460",
-                              borderRadius: "12px", 
-                              fontSize: "12px" 
-                            }}>
-                              {invoice.paymentMethod}
-                            </span>
-                          </td>
-                          <td style={{ padding: "10px" }}>{invoice.branch}</td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan="13" style={{ padding: "20px", textAlign: "center", color: "#666" }}>
-                        No invoices found for the selected criteria
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+        {/* ── Row 2: Advanced Filters (collapsible) ── */}
+        {showAdvancedFilters && (
+          <div className="flex flex-wrap items-end gap-4 px-6 py-4 border-b border-gray-100 bg-gray-50">
+            {/* Category */}
+            <div className="flex flex-col gap-1 w-[200px]">
+              <label className="text-[12px] font-medium text-gray-500">Category</label>
+              <NativeSelect value={categoryFilter} onChange={setCategoryFilter} placeholder="All Categories" options={categoryOptions} />
             </div>
+            {/* Size */}
+            <div className="flex flex-col gap-1 w-[170px]">
+              <label className="text-[12px] font-medium text-gray-500">Size</label>
+              <NativeSelect value={sizeFilter} onChange={setSizeFilter} placeholder="All Size" options={sizeOptions} />
+            </div>
+            {/* Item SKU */}
+            <div className="flex flex-col gap-1 w-[200px]">
+              <label className="text-[12px] font-medium text-gray-500">Item SKU</label>
+              <div className="relative">
+                <input type="text" value={skuSearch} onChange={e => setSkuSearch(e.target.value)} placeholder="Search by SKU"
+                  className="w-full h-[40px] border border-gray-300 rounded-md pl-3 pr-9 text-sm text-gray-700 bg-white focus:outline-none focus:border-purple-500" />
+                <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
+            {/* Customer */}
+            <div className="flex flex-col gap-1 w-[220px]">
+              <label className="text-[12px] font-medium text-gray-500">Customer</label>
+              <div className="relative">
+                <input type="text" value={customerSearch} onChange={e => setCustomerSearch(e.target.value)} placeholder="Search Customer"
+                  className="w-full h-[40px] border border-gray-300 rounded-md pl-3 pr-9 text-sm text-gray-700 bg-white focus:outline-none focus:border-purple-500" />
+                <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              </div>
+            </div>
+            {/* Clear */}
+            {hasActiveFilters && (
+              <button onClick={clearFilters}
+                className="h-[38px] px-5 border border-purple-500 text-purple-600 text-[13px] font-medium rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors flex items-center">
+                Clear all Filters
+              </button>
+            )}
           </div>
         )}
+
+        {/* ── Body ── */}
+        <div className="px-6 py-5">
+          {reportData ? (
+            <>
+              {/* Summary + Export row */}
+              <div className="flex items-end justify-between mb-5">
+                <div className="flex items-center gap-10">
+                  <div>
+                    <div className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase mb-1">Total Invoices</div>
+                    <div className="text-2xl font-bold text-gray-900">{fmt(reportData.summary?.totalInvoices)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase mb-1">Total Sales</div>
+                    <div className="text-2xl font-bold text-gray-900">{fmt(reportData.summary?.totalSales)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase mb-1">Total Items</div>
+                    <div className="text-2xl font-bold text-gray-900">{fmt(reportData.summary?.totalItems)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase mb-1">Avg Invoice Value</div>
+                    <div className="text-2xl font-bold text-gray-900">{fmt(reportData.summary?.avgInvoiceValue)}</div>
+                  </div>
+                  {reportData.summary?.returnedCount > 0 && (
+                    <div>
+                      <div className="text-[11px] font-semibold tracking-widest text-red-400 uppercase mb-1">Returns (Excluded)</div>
+                      <div className="text-2xl font-bold text-red-500">{fmt(reportData.summary?.returnedCount)}</div>
+                    </div>
+                  )}
+                </div>
+                {csvData.length > 0 && (
+                  <CSVLink data={csvData} filename={`sales-by-invoice-${fromDate}-to-${toDate}.csv`}
+                    className="h-[40px] px-5 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-md transition-colors flex items-center gap-2 no-underline">
+                    Export CSV <Download size={15} />
+                  </CSVLink>
+                )}
+              </div>
+
+              {/* Table */}
+              <div className="border border-gray-200 overflow-x-auto">
+                <table className="w-full text-sm min-w-max">
+                  <thead>
+                    <tr className="bg-[#1a1f2e]">
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-widest text-white uppercase whitespace-nowrap">Date</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-widest text-white uppercase whitespace-nowrap">Invoice No.</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-widest text-white uppercase whitespace-nowrap">Customer Name</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-widest text-white uppercase whitespace-nowrap">SKU</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-widest text-white uppercase whitespace-nowrap">Category</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-widest text-white uppercase whitespace-nowrap">Items</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-widest text-white uppercase whitespace-nowrap">Amount</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-widest text-white uppercase whitespace-nowrap">Discount</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-widest text-white uppercase whitespace-nowrap">Net Amount</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-widest text-white uppercase whitespace-nowrap">Payment</th>
+                      <th className="px-4 py-3 text-left text-[11px] font-semibold tracking-widest text-white uppercase whitespace-nowrap">Branch</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.invoices?.length > 0 ? reportData.invoices.map((inv, idx) => {
+                      const isReturned = inv.itemCount === 0;
+                      return (
+                        <tr key={idx} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${isReturned ? 'bg-red-50' : 'bg-white'}`}>
+                          <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{inv.date}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`font-medium ${isReturned ? 'text-red-500' : 'text-gray-700'}`}>{inv.invoiceNumber}</span>
+                            {isReturned && <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded">RETURNED</span>}
+                          </td>
+                          <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{inv.customer}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="text-purple-500 font-mono text-xs">{inv.skus || "N/A"}</span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="px-2.5 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">{inv.category}</span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                            <span className="text-xs text-gray-500 block leading-tight">Balance</span>
+                            <span className="text-xs text-gray-500 block leading-tight">Payable</span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-700 whitespace-nowrap">₹{fmt(inv.totalAmount)}</td>
+                          <td className="px-4 py-3 text-gray-700 whitespace-nowrap">₹{fmt(inv.discount)}</td>
+                          <td className="px-4 py-3 font-semibold text-green-600 whitespace-nowrap">₹{fmt(inv.netAmount)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${paymentBadgeStyle(inv.paymentMethod)}`}>
+                              {inv.paymentMethod}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{inv.branch}</td>
+                        </tr>
+                      );
+                    }) : (
+                      <tr>
+                        <td colSpan="11" className="px-4 py-14 text-center text-gray-400 text-sm">No invoices found for the selected criteria</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-24 text-gray-400">
+              {loading ? (
+                <><svg className="animate-spin h-8 w-8 text-purple-400 mb-3" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg><span className="text-sm">Loading report...</span></>
+              ) : (
+                <><span className="text-4xl mb-3">📊</span><span className="text-sm">Select a date range and click Fetch Data</span></>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
