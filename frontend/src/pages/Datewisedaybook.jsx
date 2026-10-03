@@ -35,10 +35,11 @@ const headers = [
   { label: "Discount", key: "discountAmount" },
   { label: "Bill Value", key: "billValue" },
   { label: "Cash", key: "cash" },
-  { label: "Razorpay", key: "rbl" }, // ✅ Added RBL to headers
+  { label: "Razorpay", key: "rbl" },
   { label: "Card/Bank", key: "bank" },
   { label: "UPI", key: "upi" },
   { label: "Attachment", key: "attachment" },
+  { label: "Branch", key: "branch" },
 ];
 
 const subCategories = [
@@ -117,29 +118,32 @@ const CATEGORY_LABEL_MAP = {
 const getCatLabel = (val) => CATEGORY_LABEL_MAP[(val || "").toLowerCase().trim()] || val;
 
 const AllLoation = [
-  { locName: "Z-Edapally1", locCode: "144" },
+  { locName: "Zorucci Edappally", locCode: "144" },
   { locName: "Warehouse", locCode: "858" },
-  { locName: "G-Edappally", locCode: "702" },
+  { locName: "Suitor Guy Edappally", locCode: "702" },
   { locName: "HEAD OFFICE01", locCode: "759" },
-  { locName: "SG-Trivandrum", locCode: "700" },
-  { locName: "Z- Edappal", locCode: "100" },
-  { locName: "Z.Perinthalmanna", locCode: "133" },
-  { locName: "Z.Kottakkal", locCode: "122" },
-  { locName: "G.Kottayam", locCode: "701" },
-  { locName: "G.Perumbavoor", locCode: "703" },
-  { locName: "G.Thrissur", locCode: "704" },
-  { locName: "G.Chavakkad", locCode: "706" },
-  { locName: "G.Calicut ", locCode: "712" },
-  { locName: "G.Vadakara", locCode: "708" },
-  { locName: "G.Edappal", locCode: "707" },
-  { locName: "G.Perinthalmanna", locCode: "709" },
-  { locName: "G.Kottakkal", locCode: "711" },
-  { locName: "G.Manjeri", locCode: "710" },
-  { locName: "G.Palakkad ", locCode: "705" },
-  { locName: "G.Kalpetta", locCode: "717" },
-  { locName: "G.Kannur", locCode: "716" },
-  { locName: "G.MG Road", locCode: "718" },
-  { locName: "WAREHOUSE", locCode: "103" }
+  { locName: "Suitor Guy Trivandrum", locCode: "700" },
+  { locName: "Zorucci Edappal", locCode: "100" },
+  { locName: "Zorucci Perinthalmanna", locCode: "133" },
+  { locName: "Zorucci Kottakkal", locCode: "122" },
+  { locName: "Suitor Guy Kottayam", locCode: "701" },
+  { locName: "Suitor Guy Perumbavoor", locCode: "703" },
+  { locName: "Suitor Guy Thrissur", locCode: "704" },
+  { locName: "Suitor Guy Chavakkad", locCode: "706" },
+  { locName: "Suitor Guy Kozhikode", locCode: "712" },
+  { locName: "Suitor Guy Vatakara", locCode: "708" },
+  { locName: "Suitor Guy Edappal", locCode: "707" },
+  { locName: "Suitor Guy Perinthalmanna", locCode: "709" },
+  { locName: "Suitor Guy Kottakkal", locCode: "711" },
+  { locName: "Suitor Guy Manjeri", locCode: "710" },
+  { locName: "Suitor Guy palakkad", locCode: "705" },
+  { locName: "Suitor Guy Kalpetta", locCode: "717" },
+  { locName: "Suitor Guy Kannur", locCode: "716" },
+  { locName: "Suitor Guy MG Road", locCode: "718" },
+  { locName: "Production", locCode: "101" },
+  { locName: "Office", locCode: "102" },
+  { locName: "WAREHOUSE", locCode: "103" },
+  { locName: "Dappr Squad", locCode: "555" }
 ];
 
 const allStoresCsvHeaders = [
@@ -152,28 +156,7 @@ const allStoresCsvHeaders = [
   { label: "Total Amount", key: "amount" },
 ];
 
-const multiBranchCsvHeaders = [
-  { label: "Date", key: "date" },
-  { label: "Invoice No", key: "invoiceNo" },
-  { label: "Customer Name", key: "customerName" },
-  { label: "Quantity", key: "quantity" },
-  { label: "Category", key: "Category" },
-  { label: "Sub Category", key: "SubCategory" },
-  { label: "Balance Payable", key: "SubCategory1" },
-  { label: "Amount", key: "amount" },
-  { label: "Total Transaction", key: "totalTransaction" },
-  { label: "security", key: "securityAmount" },
-  { label: "Balance Payable", key: "Balance" },
-  { label: "Remark", key: "remark" },
-  { label: "Discount", key: "discountAmount" },
-  { label: "Bill Value", key: "billValue" },
-  { label: "Cash", key: "cash" },
-  { label: "Razorpay", key: "rbl" },
-  { label: "Card/Bank", key: "bank" },
-  { label: "UPI", key: "upi" },
-  { label: "Attachment", key: "attachment" },
-  { label: "Branch", key: "branch" },
-];
+const multiBranchCsvHeaders = headers;
 
 const Datewisedaybook = () => {
   const todayStr = new Date().toISOString().split('T')[0];
@@ -596,6 +579,7 @@ const Datewisedaybook = () => {
               invoiceNo: item.invoiceNo,
               Category: "Return",
               SubCategory: "Security Refund",
+              securityAmount: Math.abs(returnCashAmount + returnRblAmount + returnBankAmount + returnUPIAmount),
               discountAmount: Number(item.discountAmount || 0),
               billValue: Number(item.invoiceAmount || 0),
               cash: returnCashAmount,
@@ -819,6 +803,7 @@ const Datewisedaybook = () => {
           invoiceNo: item.invoiceNo,
           Category: "Return",
           SubCategory: "Security Refund",
+          securityAmount: Math.abs(returnCashAmount + returnRblAmount + returnBankAmount + returnUPIAmount),
           discountAmount: Number(item.discountAmount || 0),
           billValue: Number(item.invoiceAmount || 0),
           cash: returnCashAmount,
@@ -1104,83 +1089,113 @@ const Datewisedaybook = () => {
     return isNaN(n) ? 0 : n;
   };
 
-  // ✅ Updated export data with RBL
-  const exportData = [
-    {
-      date: "OPENING BALANCE",
-      invoiceNo: "",
-      customerName: "",
-      quantity: "",
-      Category: "",
-      SubCategory: "",
-      SubCategory1: "",
-      amount: openingCash + openingRbl,
-      totalTransaction: openingCash + openingRbl,
-      securityAmount: "",
-      Balance: "",
-      remark: "",
-      billValue: "",
-      cash: openingCash,
-      rbl: openingRbl, // ✅ Added RBL to export
-      bank: 0,
-      upi: 0,
-      attachment: "",
-    },
+  // Format transaction rows exactly matching Rootfin CSV Format.xlsx
+  const formatTransactionForCsv = (t) => {
+    const rawCat = t.Category ?? t.type ?? "";
+    const isReturn = rawCat === "Return" || String(rawCat).toLowerCase() === "return";
+    const isCancel = rawCat === "Cancel" || String(rawCat).toLowerCase() === "cancel";
+    const isRent = rawCat === "RentOut" || String(rawCat).toLowerCase() === "rentout";
+    const isBooking = rawCat === "Booking" || String(rawCat).toLowerCase() === "booking";
+    const isExpense = rawCat === "expense" || String(rawCat).toLowerCase() === "expense";
+    const isIncome = rawCat === "income" || String(rawCat).toLowerCase() === "income";
 
-    ...(mergedTransactions)
-      .filter(
-        (t) =>
-          (selectedCategoryValue === "all" ||
-            (t.Category ?? t.type ?? "").toLowerCase() === selectedCategoryValue) &&
-          (selectedSubCategoryValue === "all" ||
-            (t.SubCategory ?? "").toLowerCase() === selectedSubCategoryValue ||
-            (t.SubCategory1 ?? "").toLowerCase() === selectedSubCategoryValue)
-      )
-      .map((t) => {
-        const isReturn = t.Category === "Return";
-        const isCancel = t.Category === "Cancel";
-        const isRent = t.Category === "RentOut";
+    let cash = num(t.cash);
+    let rbl = num(t.rbl);
+    let bank = num(t.bank);
+    let upi = num(t.upi);
 
-        let cash = num(t.cash);
-        let rbl = num(t.rbl); // ✅ Added RBL to export mapping
-        let bank = num(t.bank);
-        let upi = num(t.upi);
+    if (isReturn || isCancel || isExpense) {
+      cash = -Math.abs(cash);
+      rbl = -Math.abs(rbl);
+      bank = -Math.abs(bank);
+      upi = -Math.abs(upi);
+    }
 
-        if (isReturn || isCancel) {
-          cash = -Math.abs(cash);
-          rbl = -Math.abs(rbl); // ✅ Added RBL negative handling
-          bank = -Math.abs(bank);
-          upi = -Math.abs(upi);
-        }
+    const securityAmount = isRent
+      ? num(t.securityAmount)
+      : isReturn
+      ? num(t.securityAmount || Math.abs(cash + rbl + bank + upi))
+      : (isExpense || isIncome || isBooking || isCancel ? 0 : "");
+    const balance = isRent ? num(t.Balance) : (isExpense || isIncome ? 0 : "");
+    const amount = isRent
+      ? num(t.securityAmount) + num(t.Balance)
+      : cash + rbl + bank + upi;
 
-        const securityAmount = num(t.securityAmount);
-        const balance = num(t.Balance);
-        const amount = isRent ? securityAmount + balance
-          : cash + rbl + bank + upi; // ✅ Added rbl
+    const rawSubCat = t.SubCategory || t.subCategory || t.category || "";
+    const subCatFormatted = isReturn && rawSubCat && !rawSubCat.toLowerCase().endsWith("return") && !isRent && !isBooking && !isCancel
+      ? `${rawSubCat} Return`
+      : rawSubCat;
 
-        return {
-          date: t.date,
-          invoiceNo: t.invoiceNo || t.locCode || "",
-          customerName: t.customerName || "",
-          quantity: t.quantity || 1,
-          Category: t.Category || t.type || "",
-          SubCategory: getCatLabel(t.SubCategory || t.category || ""),
-          SubCategory1: t.SubCategory1 || t.subCategory1 || "",
-          amount,
-          totalTransaction: t.totalTransaction ?? amount,
-          securityAmount: isRent ? securityAmount : "",
-          Balance: isRent ? balance : "",
-          remark: t.remark || "",
-          discountAmount: num(t.discountAmount || 0),
-          billValue: num(t.billValue || t.invoiceAmount || t.amount || amount),
-          cash,
-          rbl, // ✅ Added RBL to export
-          bank,
-          upi,
-          attachment: t.hasAttachment ? "Yes" : "No",
-        };
-      }),
-  ];
+    const branchName =
+      t.branch ||
+      AllLoation.find((l) => String(l.locCode) === String(t.locCode || currentusers?.locCode))?.locName ||
+      currentusers?.locName ||
+      currentusers?.name ||
+      "";
+
+    const qty = (isBooking || isRent || (!isReturn && !isCancel && isIncome && t.quantity))
+      ? (t.quantity || 1)
+      : (t.quantity ? t.quantity : "");
+
+    const categoryLabel = isRent ? "RentOut" : isBooking ? "Booking" : isReturn ? "Return" : isCancel ? "Cancel" : rawCat;
+
+    return {
+      date: t.date,
+      invoiceNo: t.invoiceNo || t.locCode || "",
+      customerName: t.customerName || "",
+      quantity: qty,
+      Category: categoryLabel,
+      SubCategory: getCatLabel(subCatFormatted),
+      SubCategory1: isRent ? (t.SubCategory1 || t.subCategory1 || "Balance Payable") : (t.SubCategory1 || t.subCategory1 || ""),
+      amount,
+      totalTransaction: t.totalTransaction ?? amount,
+      securityAmount,
+      Balance: balance,
+      remark: (() => {
+        const r = t.remark || t.remarks || "";
+        return r === "Thanks for your business." || r === "Thanks for your business" ? "" : r;
+      })(),
+      discountAmount: num(t.discountAmount || 0),
+      billValue: num(t.billValue || t.invoiceAmount || t.amount || amount),
+      cash,
+      rbl,
+      bank,
+      upi,
+      attachment: t.hasAttachment ? "Yes" : "No",
+      branch: branchName,
+    };
+  };
+
+  // ✅ Export data matching Rootfin CSV Format.xlsx
+  const exportData = (mergedTransactions)
+    .filter(
+      (t) =>
+        (selectedCategoryValue === "all" ||
+          (t.Category ?? t.type ?? "").toLowerCase() === selectedCategoryValue) &&
+        (selectedSubCategoryValue === "all" ||
+          (t.SubCategory ?? "").toLowerCase() === selectedSubCategoryValue ||
+          (t.SubCategory1 ?? "").toLowerCase() === selectedSubCategoryValue ||
+          (t.subCategory ?? "").toLowerCase() === selectedSubCategoryValue ||
+          (t.category ?? "").toLowerCase() === selectedSubCategoryValue)
+    )
+    .map(formatTransactionForCsv);
+
+  const filteredMultiBranchData = multiBranchData
+    .filter(
+      (t) =>
+        (selectedCategoryValue === "all" ||
+          (t.category?.toLowerCase() === selectedCategoryValue ||
+            t.Category?.toLowerCase() === selectedCategoryValue ||
+            t.type?.toLowerCase() === selectedCategoryValue)) &&
+        (selectedSubCategoryValue === "all" ||
+          (t.subCategory?.toLowerCase() === selectedSubCategoryValue ||
+            t.SubCategory?.toLowerCase() === selectedSubCategoryValue ||
+            t.type?.toLowerCase() === selectedSubCategoryValue ||
+            t.subCategory1?.toLowerCase() === selectedSubCategoryValue ||
+            t.SubCategory1?.toLowerCase() === selectedSubCategoryValue ||
+            t.category?.toLowerCase() === selectedSubCategoryValue))
+    )
+    .map(formatTransactionForCsv);
 
   const [editingIndex, setEditingIndex] = useState(null);
   const [editedTransaction, setEditedTransaction] = useState({});
@@ -2305,8 +2320,8 @@ const Datewisedaybook = () => {
             {/* Action Buttons */}
             <div className="flex justify-end gap-3 mt-5 no-print">
               <CSVLink
-                data={selectedStore === "all" ? allStoresSummary : selectedStore === "multi" ? multiBranchData.map(t => ({ ...t, attachment: t.hasAttachment ? "Yes" : "No" })) : exportData}
-                headers={selectedStore === "all" ? allStoresCsvHeaders : selectedStore === "multi" ? multiBranchCsvHeaders : headers}
+                data={selectedStore === "all" ? allStoresSummary : selectedStore === "multi" ? filteredMultiBranchData : exportData}
+                headers={selectedStore === "all" ? allStoresCsvHeaders : headers}
                 filename={`${fromDate} to ${toDate} report.csv`}
               >
                 <button className="border border-blue-600 text-blue-600 py-2 px-5 rounded-sm text-sm font-medium hover:bg-blue-50 transition-colors">
