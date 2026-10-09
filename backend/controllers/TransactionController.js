@@ -100,6 +100,8 @@ export const CreatePayment = async (req, res) => {
       type,
       category,
       subCategory,
+      expenseType,
+      entryType,
       remark,
       amount,
       cash,
@@ -161,6 +163,8 @@ export const CreatePayment = async (req, res) => {
       type,
       category,
       subCategory: subCategory || "",
+      expenseType: expenseType || "",
+      entryType: entryType || "",
       remark,
       amount,
       quantity,
@@ -175,9 +179,9 @@ export const CreatePayment = async (req, res) => {
       attachment: attachmentObj                     // 🔺 ADDED
     });
 
-    // ✅ Propagate cash to CloseTransaction for date >= txDate
+    // ✅ Propagate cash to CloseTransaction for date >= txDate (only for store-level entries)
     const cashAmount = Number(cash) || 0;
-    if (cashAmount !== 0 && locCode && date) {
+    if (cashAmount !== 0 && locCode && date && !isAdminLevel) {
       await propagateCashDiff(locCode, date, cashAmount, true);
     }
 
@@ -252,7 +256,17 @@ export const GetPayment = async (req, res) => {
         // Query transactions based on LocCode and Date Range — exclude binary attachment but include hasAttachment flag
         const transactions = await Transaction.aggregate([
           { $match: query },
-          { $addFields: { hasAttachment: { $cond: [{ $gt: [{ $ifNull: ["$attachment.data", null] }, null] }, true, false] } } },
+          {
+            $addFields: {
+              hasAttachment: {
+                $or: [
+                  { $in: [{ $type: "$attachment.data" }, ["binData", "string"]] },
+                  { $gt: [{ $strLenCP: { $ifNull: ["$attachment.filename", ""] } }, 0] },
+                  { $eq: [{ $type: "$attachment" }, "string"] },
+                ],
+              },
+            },
+          },
           { $project: { attachment: 0 } },
           { $sort: { date: -1 } }
         ]).option({ allowDiskUse: true });

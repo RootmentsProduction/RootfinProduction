@@ -568,12 +568,14 @@ const SalesInvoiceDetail = () => {
         .filter(Boolean);
 
       if (updatedLineItems.length > 0) {
-        const remainingSubTotal = updatedLineItems.reduce((sum, item) => sum + item.amount, 0);
-        const originalSubTotal = parseFloat(invoice.subTotal || 0);
-        const ratio = originalSubTotal > 0 ? remainingSubTotal / originalSubTotal : 1;
+        const remainingComputedAmount = updatedLineItems.reduce((sum, item) => sum + (parseFloat(item.quantity || 0) * parseFloat(item.rate || 0)), 0);
+        const originalComputedAmount = invoice.lineItems.reduce((sum, item) => sum + (parseFloat(item.quantity || 0) * parseFloat(item.rate || 0)), 0);
+        const ratio = originalComputedAmount > 0 ? remainingComputedAmount / originalComputedAmount : 1;
 
+        const remainingSubTotal = parseFloat(invoice.subTotal || 0) * ratio;
         const remainingFinalTotal = parseFloat(invoice.finalTotal || 0) * ratio;
         const remainingTax = parseFloat(invoice.totalTax || 0) * ratio;
+        const remainingDiscount = parseFloat(invoice.discountAmount || 0) * ratio;
 
         await fetch(`${API_URL}/api/sales/invoices/${invoice._id}`, {
           method: "PUT",
@@ -583,6 +585,7 @@ const SalesInvoiceDetail = () => {
             subTotal: remainingSubTotal,
             finalTotal: remainingFinalTotal,
             totalTax: remainingTax,
+            discountAmount: remainingDiscount,
             returnStatus: "partial",
             userId: user?.email,
           }),
@@ -593,6 +596,10 @@ const SalesInvoiceDetail = () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             lineItems: [],
+            subTotal: 0,
+            finalTotal: 0,
+            totalTax: 0,
+            discountAmount: 0,
             returnStatus: "full",
             userId: user?.email,
           }),
@@ -1029,7 +1036,7 @@ const SalesInvoiceDetail = () => {
                     </div>
                     <div className="pt-1">
                       <span className="inline-flex items-center px-2 py-0.5 bg-[#F3F4F6] border border-[#E5E7EB] text-[#111827] text-[11px] font-bold tracking-wider font-mono">
-                        GSTIN: 32AEHCR4208L1ZS
+                        GSTIN: 32AANCB8936G1ZG
                       </span>
                     </div>
                   </div>

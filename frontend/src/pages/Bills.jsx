@@ -8,6 +8,7 @@ import baseUrl from "../api/api";
 import { mapLocNameToWarehouse as mapWarehouse } from "../utils/warehouseMapping";
 import ImageUpload from "../components/ImageUpload";
 import useSidebar from "../hooks/useSidebar";
+import Header from "../components/Header";
 
 const Label = ({ children, required = false }) => (
   <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${required ? "text-[#ef4444]" : "text-[#64748b]"}`}>
@@ -2080,13 +2081,25 @@ const NewBillForm = ({ billId, isEditMode = false }) => {
   // Enter key to save bill
   useEnterToSave(() => handleSaveBill("completed"), saving);
 
+  // Show loading state while fetching bill data in edit mode
+  if (isEditMode && loadingBill) {
+    return (
+      <div className={`transition-all duration-300 min-h-screen bg-[#f8fafc] flex items-center justify-center ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#e2e8f0] border-t-[#6366f1] mx-auto mb-4"></div>
+          <p className="text-lg text-[#64748b]">Loading bill details...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`transition-all duration-300 min-h-screen bg-[#f8fafc] ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
       {/* Header */}
       <div className="bg-white border-b border-[#e2e8f0]">
         <div className="px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-[#111827]">New Bill</h1>
+            <h1 className="text-xl font-bold text-[#111827]">{isEditMode ? 'Edit Bill' : 'New Bill'}</h1>
             <p className="text-sm text-[#6b7280] mt-0.5">Create and manage purchase bills</p>
           </div>
           <button
@@ -3682,8 +3695,10 @@ const Bills = () => {
   }
 
   return (
-    <div className={`transition-all duration-300 min-h-screen bg-[#f0f4ff] ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
-      <div className="px-4 md:px-8 pt-6 pb-16">
+    <>
+      <Header title="Bills" />
+      <div className={`transition-all duration-300 min-h-screen bg-[#f0f4ff] ${isSidebarOpen ? 'lg:ml-64 ml-0' : 'ml-0'}`}>
+        <div className="px-4 md:px-8 pt-6 pb-16">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-5">
@@ -4181,8 +4196,9 @@ const Bills = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
-    </div>
+    </>
   );
 };
 

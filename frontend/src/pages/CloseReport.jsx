@@ -56,7 +56,9 @@ const CloseReport = () => {
 
     setIsLoading(true);
     const formattedDate = formatDate(fromDate);
-    const updatedApiUrl = `${baseUrl?.baseUrl}user/AdminColseView?date=${formattedDate}&role=${currentuser?.power}`;
+    const roleParam = currentuser?.power === 'admin' ? 'admin' : (currentuser?.role || currentuser?.power || '');
+    const cleanBaseUrl = baseUrl?.baseUrl?.replace(/\/$/, "") || "";
+    const updatedApiUrl = `${cleanBaseUrl}/user/AdminColseView?date=${formattedDate}&role=${roleParam}`;
 
     try {
       const response = await fetch(updatedApiUrl);

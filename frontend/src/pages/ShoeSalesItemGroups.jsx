@@ -18,7 +18,6 @@ const columns = [
 
 // Generate skeleton rows for loading state (no mock data)
 const generateSkeletonRows = (count = 5) => {
-  const isSidebarOpen = useSidebar();
   return Array.from({ length: count }, (_, i) => ({
     id: `skeleton-${i}`,
     name: "",
@@ -55,7 +54,7 @@ const ShoeSalesItemGroups = () => {
       const userId = user?.email || null;
       const userPower = user?.power || "";
       const userEmail = user?.email || user?.username || "";
-      const adminEmails = ['officerootments@gmail.com'];
+      const adminEmails = ['officebrynex@gmail.com'];
       const isAdminEmail = userEmail && adminEmails.some(email => userEmail.toLowerCase() === email.toLowerCase());
       const isAdmin = isAdminEmail ||
                       user?.power === "admin" || 

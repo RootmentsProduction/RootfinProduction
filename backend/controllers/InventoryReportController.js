@@ -3,126 +3,41 @@ import ItemGroup from "../model/ItemGroup.js";
 import SalesInvoice from "../model/SalesInvoice.js";
 import TransferOrder from "../model/TransferOrder.js";
 import PurchaseReceive from "../model/PurchaseReceive.js";
-// Import PostgreSQL InventoryAdjustment instead of MongoDB
-import { InventoryAdjustment } from "../models/sequelize/index.js";
-// Also import MongoDB model as fallback
 import MongoInventoryAdjustment from "../model/InventoryAdjustment.js";
-import { Op } from "sequelize";
 
-// Helper function to get inventory adjustments from both PostgreSQL and MongoDB
+// Helper function to get inventory adjustments from MongoDB
 const getInventoryAdjustments = async (whereConditions) => {
   try {
-    // Try PostgreSQL first
-    const pgAdjustments = await InventoryAdjustment.findAll({
-      where: whereConditions
-    });
-    
-    // Filter in JavaScript for JSONB array search if itemId is specified
-    let relevantPgAdjustments = pgAdjustments;
+    const mongoWhereConditions = { ...whereConditions };
+
+    if (whereConditions.createdAt) {
+      mongoWhereConditions.createdAt = {};
+      if (whereConditions.createdAt.gte || whereConditions.createdAt['$gte']) {
+        mongoWhereConditions.createdAt.$gte = whereConditions.createdAt.gte || whereConditions.createdAt['$gte'];
+      }
+      if (whereConditions.createdAt.lte || whereConditions.createdAt['$lte']) {
+        mongoWhereConditions.createdAt.$lte = whereConditions.createdAt.lte || whereConditions.createdAt['$lte'];
+      }
+    }
+
     if (whereConditions.itemId) {
-      relevantPgAdjustments = pgAdjustments.filter(ia => {
-        return ia.items && ia.items.some(adjItem => 
-          adjItem.itemId && adjItem.itemId.toString() === whereConditions.itemId.toString()
-        );
-      });
+      mongoWhereConditions['items.itemId'] = whereConditions.itemId;
+      delete mongoWhereConditions.itemId;
     }
-    
-    console.log(`📊 Found ${relevantPgAdjustments.length} adjustments in PostgreSQL`);
-    
-    // Also try MongoDB as fallback/additional source
-    try {
-      const mongoWhereConditions = { ...whereConditions };
-      
-      // Convert PostgreSQL conditions to MongoDB conditions
-      if (whereConditions.createdAt) {
-        mongoWhereConditions.createdAt = {};
-        if (whereConditions.createdAt[Op.gte]) {
-          mongoWhereConditions.createdAt.$gte = whereConditions.createdAt[Op.gte];
-        }
-        if (whereConditions.createdAt[Op.lte]) {
-          mongoWhereConditions.createdAt.$lte = whereConditions.createdAt[Op.lte];
-        }
-      }
-      
-      // Handle itemId search for MongoDB
-      if (whereConditions.itemId) {
-        mongoWhereConditions['items.itemId'] = whereConditions.itemId;
-        delete mongoWhereConditions.itemId; // Remove the converted field
-      }
-      
-      const mongoAdjustments = await MongoInventoryAdjustment.find(mongoWhereConditions);
-      console.log(`📊 Found ${mongoAdjustments.length} adjustments in MongoDB`);
-      
-      // Convert MongoDB documents to match PostgreSQL format
-      const convertedMongoAdjustments = mongoAdjustments.map(doc => ({
-        id: doc._id.toString(),
-        items: doc.items || [],
-        warehouse: doc.warehouse,
-        status: doc.status,
-        createdAt: doc.createdAt,
-        adjustmentType: doc.adjustmentType,
-        // Add other fields as needed
-      }));
-      
-      // Combine results, avoiding duplicates by reference number
-      const allAdjustments = [...relevantPgAdjustments];
-      const pgReferenceNumbers = new Set(relevantPgAdjustments.map(adj => adj.referenceNumber));
-      
-      convertedMongoAdjustments.forEach(mongoAdj => {
-        // Only add if not already present from PostgreSQL
-        if (!pgReferenceNumbers.has(mongoAdj.referenceNumber)) {
-          allAdjustments.push(mongoAdj);
-        }
-      });
-      
-      console.log(`📊 Total combined adjustments: ${allAdjustments.length}`);
-      return allAdjustments;
-      
-    } catch (mongoError) {
-      console.log(`⚠️  MongoDB query failed, using PostgreSQL results only:`, mongoError.message);
-      return relevantPgAdjustments;
-    }
-    
-  } catch (pgError) {
-    console.log(`⚠️  PostgreSQL query failed, trying MongoDB only:`, pgError.message);
-    
-    // Fallback to MongoDB only
-    try {
-      const mongoWhereConditions = { ...whereConditions };
-      
-      // Convert PostgreSQL conditions to MongoDB conditions
-      if (whereConditions.createdAt) {
-        mongoWhereConditions.createdAt = {};
-        if (whereConditions.createdAt[Op.gte]) {
-          mongoWhereConditions.createdAt.$gte = whereConditions.createdAt[Op.gte];
-        }
-        if (whereConditions.createdAt[Op.lte]) {
-          mongoWhereConditions.createdAt.$lte = whereConditions.createdAt[Op.lte];
-        }
-      }
-      
-      // Handle itemId search for MongoDB
-      if (whereConditions.itemId) {
-        mongoWhereConditions['items.itemId'] = whereConditions.itemId;
-        delete mongoWhereConditions.itemId;
-      }
-      
-      const mongoAdjustments = await MongoInventoryAdjustment.find(mongoWhereConditions);
-      
-      // Convert MongoDB documents to match PostgreSQL format
-      return mongoAdjustments.map(doc => ({
-        id: doc._id.toString(),
-        items: doc.items || [],
-        warehouse: doc.warehouse,
-        status: doc.status,
-        createdAt: doc.createdAt,
-        adjustmentType: doc.adjustmentType,
-      }));
-      
-    } catch (mongoError) {
-      console.error(`❌ Both PostgreSQL and MongoDB queries failed:`, pgError.message, mongoError.message);
-      return [];
-    }
+
+    const mongoAdjustments = await MongoInventoryAdjustment.find(mongoWhereConditions);
+
+    return mongoAdjustments.map(doc => ({
+      id: doc._id.toString(),
+      items: doc.items || [],
+      warehouse: doc.warehouse,
+      status: doc.status,
+      createdAt: doc.createdAt,
+      adjustmentType: doc.adjustmentType,
+    }));
+  } catch (mongoError) {
+    console.error(`❌ MongoDB inventory adjustments query failed:`, mongoError.message);
+    return [];
   }
 };
 
@@ -283,7 +198,7 @@ export const getInventorySummary = async (req, res) => {
     const userId = req.query.userId || req.body.userId;
 
     // Check if user is admin
-    const adminEmails = ['officerootments@gmail.com'];
+    const adminEmails = ['officebrynex@gmail.com'];
     const isAdminEmail = userId && adminEmails.some(email => userId.toLowerCase() === email.toLowerCase());
     const isAdmin = isAdminEmail || (locCode && (locCode === '858' || locCode === '103'));
     const isMainAdmin = isAdmin;
@@ -689,7 +604,7 @@ export const getStockSummary = async (req, res) => {
     const userId = req.query.userId || req.body.userId;
 
     // Check if user is admin
-    const adminEmails = ['officerootments@gmail.com'];
+    const adminEmails = ['officebrynex@gmail.com'];
     const isAdminEmail = userId && adminEmails.some(email => userId.toLowerCase() === email.toLowerCase());
     const isAdmin = isAdminEmail || (locCode && (locCode === '858' || locCode === '103'));
     const isMainAdmin = isAdmin;
@@ -979,7 +894,7 @@ export const getInventoryValuation = async (req, res) => {
     const userId = req.query.userId || req.body.userId;
 
     // Check if user is admin
-    const adminEmails = ['officerootments@gmail.com'];
+    const adminEmails = ['officebrynex@gmail.com'];
     const isAdminEmail = userId && adminEmails.some(email => userId.toLowerCase() === email.toLowerCase());
     const isAdmin = isAdminEmail || (locCode && (locCode === '858' || locCode === '103'));
     const isMainAdmin = isAdmin;
@@ -1110,7 +1025,7 @@ export const getInventoryAging = async (req, res) => {
     const userId = req.query.userId || req.body.userId;
 
     // Check if user is admin
-    const adminEmails = ['officerootments@gmail.com'];
+    const adminEmails = ['officebrynex@gmail.com'];
     const isAdminEmail = userId && adminEmails.some(email => userId.toLowerCase() === email.toLowerCase());
     const isAdmin = isAdminEmail || (locCode && (locCode === '858' || locCode === '103'));
     const isMainAdmin = isAdmin;
@@ -1285,7 +1200,7 @@ export const getOpeningStockReport = async (req, res) => {
       };
     }
 
-    const adminEmails = ['officerootments@gmail.com'];
+    const adminEmails = ['officebrynex@gmail.com'];
     const isAdminEmail = userId && adminEmails.some(email => userId.toLowerCase() === email.toLowerCase());
     const isAdmin = isAdminEmail || (locCode && (locCode === '858' || locCode === '103'));
     const isMainAdmin = isAdmin;
@@ -1460,7 +1375,7 @@ export const getStockOnHandReport = async (req, res) => {
     console.log("📊 Stock On Hand Report Request:", { locCode, warehouse, startDate, endDate });
 
     // Check if user is admin
-    const adminEmails = ['officerootments@gmail.com'];
+    const adminEmails = ['officebrynex@gmail.com'];
     const isAdminEmail = userId && adminEmails.some(email => userId.toLowerCase() === email.toLowerCase());
     const isAdmin = isAdminEmail || (locCode && (locCode === '858' || locCode === '103'));
     const isMainAdmin = isAdmin;

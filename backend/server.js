@@ -31,6 +31,7 @@ import ManufacturerRoutes from "./route/ManufacturerRoutes.js";
 import BrandRoutes from "./route/BrandRoutes.js";
 import ExternalSalesRoutes from "./route/ExternalSalesRoutes.js";
 import ExpenseTargetRoutes from "./route/ExpenseTargetRoutes.js";
+import DashboardRoutes from "./route/DashboardRoutes.js";
 import setupSwagger   from "./swagger.js";
 
 const env     = process.env.NODE_ENV || "development";
@@ -54,11 +55,11 @@ app.use(
       "http://localhost:5173",
       "http://localhost:3000",
       "https://rootfin.vercel.app",
-      "https://rootfin.rootments.live",
+      "https://rootfin.brynex.live",
       "https://rootfin-testenv-clab.vercel.app",
       "https://rootfin-testenv-3.onrender.com",
       "https://rootfin-testenv-ebb5.onrender.com",
-      "https://api.rootments.live",
+      "https://api.brynex.live",
       "https://rootfin-production.vercel.app",
       "https://rootfin.brynex.com",
       "https://rootfin-brynex-testenv.vercel.app"
@@ -99,6 +100,7 @@ app.use("/api",     ManufacturerRoutes);
 app.use("/api",     BrandRoutes);
 app.use("/api",     ExternalSalesRoutes);
 app.use("/api",     ExpenseTargetRoutes);
+app.use("/api/dashboard", DashboardRoutes);
 
 // Test route to verify server is running
 app.get("/api/test", (_req, res) => {

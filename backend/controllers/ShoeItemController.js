@@ -360,7 +360,7 @@ export const createShoeItem = async (req, res) => {
     return res.status(201).json(item);
   } catch (error) {
     console.error("Error creating shoe item:", error);
-    return res.status(500).json({ message: "Failed to create shoe item." });
+    return res.status(500).json({ message: error.message || "Failed to create shoe item.", error: error.message });
   }
 };
 
@@ -442,9 +442,9 @@ export const getShoeItems = async (req, res) => {
     const userPower = req.query.userPower || "";
     const userLocCode = req.query.locCode || "";
     
-    // User is admin if: power === 'admin' OR locCode === '858' (Warehouse) OR email === 'officerootments@gmail.com'
+    // User is admin if: power === 'admin' OR locCode === '858' (Warehouse) OR email === 'officebrynex@gmail.com'
     const userId = req.query.userId || "";
-    const adminEmails = ['officerootments@gmail.com'];
+    const adminEmails = ['officebrynex@gmail.com'];
     const isAdminEmail = userId && typeof userId === 'string' && adminEmails.some(email => userId.toLowerCase() === email.toLowerCase());
     const isAdmin = req.query.isAdmin === "true" || req.query.isAdmin === true || 
                     isAdminEmail ||
@@ -812,7 +812,7 @@ export const updateShoeItem = async (req, res) => {
     return res.json(updatedItem);
   } catch (error) {
     console.error("Error updating shoe item:", error);
-    return res.status(500).json({ message: "Failed to update shoe item." });
+    return res.status(500).json({ message: error.message || "Failed to update shoe item.", error: error.message });
   }
 };
 

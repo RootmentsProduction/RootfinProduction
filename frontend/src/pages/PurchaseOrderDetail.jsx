@@ -26,6 +26,7 @@ const formatDate = (date) => {
 const PurchaseOrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const isSidebarOpen = useSidebar();
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
 
   const [order, setOrder] = useState(null);
@@ -42,7 +43,7 @@ const PurchaseOrderDetail = () => {
         // Get user info
         const userStr = localStorage.getItem("rootfinuser");
         const user = userStr ? JSON.parse(userStr) : null;
-        // Use email as primary identifier (e.g., officerootments@gmail.com)
+        // Use email as primary identifier (e.g., officebrynex@gmail.com)
         const userId = user?.email || user?._id || user?.id || user?.locCode || null;
         const locCode = user?.locCode || "";
 
@@ -200,7 +201,7 @@ const PurchaseOrderDetail = () => {
   // Get company details (you may need to fetch this from user/organization settings)
   const companyName = "Meenakshi Apparels"; // This should come from user/organization settings
   const companyAddress = "6182 MAINROAD, GANDHI NAGAR, DELHI-110051"; // This should come from user/organization settings
-  const companyGSTIN = "07AACPA8514M1ZX"; // This should come from user/organization settings
+  const companyGSTIN = "32AANCB8936G1ZG"; // This should come from user/organization settings
   const companyCountry = "India";
 
   // Get vendor details

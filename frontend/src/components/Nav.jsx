@@ -29,7 +29,10 @@ import {
     UserCog,
     KeyRound,
     Menu,
-    ChevronLeft
+    ChevronLeft,
+    ArrowDownRight,
+    ArrowUpRight,
+    Wallet
 } from "lucide-react";
 import salesInventoryAccessConfig from "../config/salesInventoryAccess.json";
 import baseUrl from "../api/api.js";
@@ -85,6 +88,7 @@ const Nav = () => {
     const isSuperAdmin = (currentuser?.role || "").toLowerCase() === "superadmin";
     const isAdminOrSuperAdmin = isAdmin || isSuperAdmin;
     const isClusterManager = (currentuser?.role || "").toLowerCase() === "cluster_manager";
+    const isFinancialHead = (currentuser?.role || "").toLowerCase() === "financial_head";
     const isInAllowedList = salesInventoryAccessConfig.allowedEmails
         .map(email => email.toLowerCase())
         .includes(userEmail);
@@ -209,6 +213,9 @@ const Nav = () => {
         if (isClusterManager) {
             return "Cluster Manager";
         }
+        if (isFinancialHead) {
+            return "Financial Head";
+        }
         const candidateName = currentUser?.name || currentUser?.username;
         const isStoreName = allLocations.some(
             loc => loc.locName?.toLowerCase().trim() === candidateName?.toLowerCase().trim()
@@ -329,11 +336,14 @@ const Nav = () => {
             : "text-zinc-400 font-medium hover:text-white hover:bg-[#27272a]/40"
         }`;
 
-    const singleLinkClasses = (path) =>
-        `flex items-center gap-3.5 px-5 py-3 text-[14px] font-medium whitespace-nowrap truncate transition-all rounded-full ${activePath === path
+    const singleLinkClasses = (path) => {
+        const isActive = activePath === path || 
+            (path === "/record-expense" && (activePath === "/record-expense" || activePath === "/direct-expenses" || activePath === "/indirect-expenses"));
+        return `flex items-center gap-3.5 px-5 py-3 text-[14px] font-medium whitespace-nowrap truncate transition-all rounded-full ${isActive
             ? "bg-[#a855f7] text-white font-semibold shadow-sm"
             : "text-zinc-400 hover:text-white hover:bg-[#27272a]/60"
         }`;
+    };
 
     // alert(location.pathname)
     const isInvoiceCreatePage = activePath === "/sales/invoices/new" || activePath.startsWith("/sales/invoices/edit");
@@ -410,6 +420,93 @@ const Nav = () => {
                                         </div>
                                     )}
                                 </div>
+                            </>
+                        ) : isFinancialHead ? (
+                            <>
+                                {/* Dashboard */}
+                                <Link to="/" className={singleLinkClasses("/")}>
+                                    <LineChart size={18} className="shrink-0" />
+                                    <span>Dashboard</span>
+                                </Link>
+
+                                {/* Financial Summary */}
+                                <Link to="/datewisedaybook" className={singleLinkClasses("/datewisedaybook")}>
+                                    <FileTextIcon size={18} className="shrink-0" />
+                                    <span>Financial Summary</span>
+                                </Link>
+
+                                {/* Record Expense */}
+                                <Link to="/record-expense" className={singleLinkClasses("/record-expense")}>
+                                    <Wallet size={18} className="shrink-0" />
+                                    <span>Record Expense</span>
+                                </Link>
+
+                                {/* Close Report */}
+                                <Link to="/CloseReport" className={singleLinkClasses("/CloseReport")}>
+                                    <FolderClosed size={18} className="shrink-0" />
+                                    <span>Close Report</span>
+                                </Link>
+
+                                {/* Admin Close */}
+                                <Link to="/AdminClose" className={singleLinkClasses("/AdminClose")}>
+                                    <Notebook size={18} className="shrink-0" />
+                                    <span>Admin Close</span>
+                                </Link>
+
+                                {/* Late Closures */}
+                                <Link to="/PendingDaybookClosures" className={singleLinkClasses("/PendingDaybookClosures")}>
+                                    <Notebook size={18} className="shrink-0" />
+                                    <span>Late Closures</span>
+                                </Link>
+
+                                {/* Reports */}
+                                <div>
+                                    <button
+                                        onClick={() => setOpenSection(isReportsOpen ? null : "reports")}
+                                        className={groupButtonClasses(isReportsOpen, isReportsActive)}
+                                    >
+                                        <div className="flex w-full items-center gap-3.5">
+                                            <LineChart size={18} className="shrink-0" />
+                                            <span className="flex-1 text-left whitespace-nowrap truncate">Reports</span>
+                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isReportsOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                        </div>
+                                    </button>
+                                    {isReportsOpen && (
+                                        <div className="mt-1 space-y-0.5 border-l border-[#27272a] ml-[25px]">
+                                            <Link to="/BookingReport" className={subLinkClasses('/BookingReport')}><span>Booking Report</span></Link>
+                                            <Link to="/RentOutReport" className={subLinkClasses('/RentOutReport')}><span>Rent Out Report</span></Link>
+                                            <Link to="/securityReport" className={subLinkClasses('/securityReport')}><span>Security Report</span></Link>
+                                            <Link to="/Revenuereport" className={subLinkClasses('/Revenuereport')}><span>Revenue Report</span></Link>
+                                            <Link to="/reports/sales-by-invoice" className={subLinkClasses('/reports/sales-by-invoice')}><span>Sales by Invoice</span></Link>
+                                            <Link to="/reports/sales" className={subLinkClasses('/reports/sales')}><span>Sales Report</span></Link>
+                                            <Link to="/reports/sales-by-group" className={subLinkClasses('/reports/sales-by-group')}><span>Sales by Group</span></Link>
+                                            <Link to="/reports/inventory" className={subLinkClasses('/reports/inventory')}><span>Inventory Report</span></Link>
+                                            <Link to="/reports/income-expense" className={subLinkClasses('/reports/income-expense')}><span>Income &amp; Expense</span></Link>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Purchase */}
+                                <div>
+                                    <button onClick={() => setOpenSection(isPurchaseOpen ? null : "purchase")} className={groupButtonClasses(isPurchaseOpen, isPurchaseActive)}>
+                                        <div className="flex w-full items-center gap-3.5">
+                                            <Truck size={18} className="shrink-0" />
+                                            <span className="flex-1 text-left whitespace-nowrap truncate">Purchase</span>
+                                            <ChevronDown size={16} className={`shrink-0 transition-transform ${isPurchaseOpen ? "rotate-180 text-white" : "rotate-0 text-zinc-400"}`} />
+                                        </div>
+                                    </button>
+                                    {isPurchaseOpen && (
+                                        <div className="mt-1 space-y-0.5 border-l border-[#27272a] ml-[25px]">
+                                            {purchaseLinks.map(({ to, label }) => (
+                                                <Link key={to} to={to} className={subLinkClasses(to)}><span>{label}</span></Link>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Income & Expenses */}
+                                <Link to="/income" className={singleLinkClasses("/income")}><DollarSign size={18} className="shrink-0" /><span>Income</span></Link>
+                                <Link to="/expenses" className={singleLinkClasses("/expenses")}><DollarSign size={18} className="shrink-0" /><span>Expenses</span></Link>
                             </>
                         ) : (
                             <>
@@ -523,7 +620,10 @@ const Nav = () => {
 
                                 {/* Income & Expenses */}
                                 <Link to="/income" className={singleLinkClasses("/income")}><DollarSign size={18} className="shrink-0" /><span>Income</span></Link>
-                                <Link to="/expenses" className={singleLinkClasses("/expenses")}><DollarSign size={18} className="shrink-0" /><span>Expenses</span></Link>
+                                {isAdminOrSuperAdmin && (
+                                    <Link to="/record-expense" className={singleLinkClasses("/record-expense")}><Wallet size={18} className="shrink-0" /><span>Record Expense</span></Link>
+                                )}
+                                <Link to="/expenses" className={singleLinkClasses("/expenses")}><DollarSign size={18} className="shrink-0" /><span>All Expenses</span></Link>
 
                                 {/* Admin only */}
                                 {(currentuser.power === 'admin' || currentuser.locCode === '102') && (
@@ -539,8 +639,8 @@ const Nav = () => {
                                             <Link to="/PendingDaybookClosures" className={singleLinkClasses("/PendingDaybookClosures")}><Notebook size={18} className="shrink-0" /><span>Late Closures</span></Link>
                                         )}
 
-                                        {/* Manage Users — super admin only */}
-                                        {currentuser.role === 'superadmin' && (
+                                        {/* Manage Users — admin and super admin */}
+                                        {(currentuser.power === 'admin' || currentuser.role === 'superadmin') && (
                                             <div>
                                                 <button onClick={() => setOpenSection(isManageUsersOpen ? null : "manageUsers")} className={groupButtonClasses(isManageUsersOpen, isManageUsersActive)}>
                                                     <div className="flex w-full items-center gap-3.5">

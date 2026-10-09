@@ -60,9 +60,9 @@ const InventoryAdjustmentDetail = () => {
   const companyName = "Grooms Wedding Hub";
   const companyAddress = "Thrissur Kerala 680002";
   const companyCountry = "India";
-  const companyGSTIN = "32ABCFR1426N1Z9";
+  const companyGSTIN = "32AANCB8936G1ZG";
   const companyPhone = "7593838704";
-  const companyEmail = "rootmentsoffice@gmail.com";
+  const companyEmail = "brynexoffice@gmail.com";
   
   if (loading) {
     return (

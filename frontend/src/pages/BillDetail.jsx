@@ -6,7 +6,6 @@ import AttachmentDisplay from "../components/AttachmentDisplay";
 import useSidebar from "../hooks/useSidebar";
 
 const formatCurrency = (value) => {
-  const isSidebarOpen = useSidebar();
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
@@ -32,6 +31,7 @@ const daysBetween = (date1, date2) => {
 const BillDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const isSidebarOpen = useSidebar();
   const API_URL = baseUrl?.baseUrl?.replace(/\/$/, "") || "http://localhost:7000";
   const printRef = useRef(null);
 
@@ -356,8 +356,8 @@ const BillDetail = () => {
   // Get company details (you may need to fetch this from user/organization settings)
   const companyName = "Grooms Wedding Hub"; // This should come from user/organization settings
   const companyAddress = "Kerala"; // This should come from user/organization settings
-  const companyGSTIN = "32ABCFR1426N129"; // This should come from user/organization settings
-  const companyEmail = "rootmentsoffice@gmail.com"; // This should come from user/organization settings
+  const companyGSTIN = "32AANCB8936G1ZG"; // This should come from user/organization settings
+  const companyEmail = "brynexoffice@gmail.com"; // This should come from user/organization settings
   const companyCountry = "India";
 
   // Get vendor details

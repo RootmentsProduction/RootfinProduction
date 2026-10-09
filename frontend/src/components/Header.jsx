@@ -1,5 +1,5 @@
 import { IoPersonCircleOutline } from "react-icons/io5";
-import Rootments from '../assets/Rootments.jpg';
+
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Bell } from 'lucide-react';
@@ -218,10 +218,10 @@ const Header = (prop) => {
 
         fetchStores();
 
-        // Fetch notifications for admins
+        // Fetch notifications for admins & financial head
         const fetchNotifications = async () => {
             const user = getInitialUser();
-            if (user?.power === 'admin' || user?.role === 'superadmin') {
+            if (user?.power === 'admin' || user?.role === 'superadmin' || (user?.role || '').toLowerCase() === 'financial_head') {
                 try {
                     const closuresRes = await fetch(`${API_URL}/user/pendingClosures`);
                     if (closuresRes.ok) {
@@ -233,10 +233,11 @@ const Header = (prop) => {
                 }
 
                 try {
-                    const adjRes = await fetch(`${API_URL}/inventory/adjustments?status=pending_approval`);
+                    const adjRes = await fetch(`${API_URL}/api/inventory/adjustments?status=pending_approval`);
                     if (adjRes.ok) {
                         const adjData = await adjRes.json();
-                        setPendingAdjustmentsCount(adjData.data?.length || 0);
+                        const count = Array.isArray(adjData) ? adjData.length : (adjData.data?.length || 0);
+                        setPendingAdjustmentsCount(count);
                     }
                 } catch (e) {
                     console.error("Error fetching pending adjustments", e);
@@ -328,6 +329,7 @@ const Header = (prop) => {
         .includes(userEmail);
     const hasBetaAccess = !isAdmin && isInBetaList; // Only show badge for non-admin beta testers
     const isClusterManager = (currentUser?.role || "").toLowerCase() === "cluster_manager";
+    const isFinancialHead = (currentUser?.role || "").toLowerCase() === "financial_head";
 
     return (
         <nav className="bg-white border-b border-gray-200 shadow-sm">
@@ -364,7 +366,7 @@ const Header = (prop) => {
                 
                 <div className="flex items-center gap-4 shrink-0">
                     {/* Notification Bell */}
-                    {(isAdmin || currentUser?.role === 'superadmin') && (
+                    {(isAdmin || currentUser?.role === 'superadmin' || isFinancialHead) && (
                         <div className="relative" ref={notificationRef}>
                             <button
                                 type="button"
@@ -430,7 +432,7 @@ const Header = (prop) => {
                     
                     {/* Location Selector */}
                     {location.pathname !== '/' && (
-                        (isAdmin || isClusterManager) ? (
+                        (isAdmin || isClusterManager || isFinancialHead) ? (
                             <div className="relative" ref={dropdownRef}>
                                 <button
                                     type="button"
@@ -451,7 +453,7 @@ const Header = (prop) => {
                                 
                                 {isDropdownOpen && (
                                     <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
-                                        {(isAdmin
+                                        {(isAdmin || isFinancialHead
                                             ? AllLoation
                                             : AllLoation.filter(item => (currentUser?.allowedLocCodes || []).includes(item.locCode))
                                         ).map((item) => (

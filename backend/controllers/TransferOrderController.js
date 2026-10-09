@@ -1,6 +1,4 @@
 // Transfer Order Controller - Manages stock transfers between warehouses
-import { Op } from "sequelize";
-import { TransferOrder as TransferOrderPostgres } from "../models/sequelize/index.js";
 import TransferOrder from "../model/TransferOrder.js"; // MongoDB model
 import ShoeItem from "../model/ShoeItem.js";
 import ItemGroup from "../model/ItemGroup.js";
@@ -1339,7 +1337,7 @@ export const getTransferOrders = async (req, res) => {
     const validDestinationWarehouse = destinationWarehouse && destinationWarehouse !== 'undefined' && destinationWarehouse !== 'null' ? destinationWarehouse : null;
     
     // Check if user is admin or warehouse user
-    const isAdmin = userPower === 'admin' || (userId && userId.toLowerCase() === 'officerootments@gmail.com');
+    const isAdmin = userPower === 'admin' || (userId && userId.toLowerCase() === 'officebrynex@gmail.com');
     const isWarehouseUser = userPower === 'warehouse' || locCode === '858' || locCode === '103';
     
     console.log(`\n=== GET TRANSFER ORDERS REQUEST ===`);
