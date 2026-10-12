@@ -1364,20 +1364,20 @@ const InventoryReport = () => {
                               padding: "16px 20px", 
                               textAlign: "right",
                               color: "#6c757d"
-                            }}>₹{item.cost.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                            }}>₹{(Number(item.cost) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                           )}
                           <td style={{ 
                             padding: "16px 20px", 
                             textAlign: "right",
                             fontWeight: "600",
                             color: "#a855f7"
-                          }}>{item.totalStock}</td>
+                          }}>{item.totalStock ?? 0}</td>
                           <td style={{ 
                             padding: "16px 20px", 
                             textAlign: "right",
                             fontWeight: "700",
                             color: "#a855f7"
-                          }}>₹{item.totalValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                          }}>₹{(Number(item.totalValue) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1589,7 +1589,7 @@ const InventoryReport = () => {
                             textAlign: "right",
                             fontWeight: "700",
                             color: "#a855f7"
-                          }}>₹{wh.totalValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                          }}>₹{(Number(wh.totalValue) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                           <td style={{ 
                             padding: "16px 20px", 
                             textAlign: "right",
@@ -1914,7 +1914,7 @@ const InventoryReport = () => {
                                 textAlign: "right",
                                 fontWeight: "700",
                                 color: "#a855f7"
-                              }}>₹{item.openingValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                              }}>₹{(Number(item.openingValue) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                               <td style={{ 
                                 padding: "16px 20px",
                                 color: "#6c757d",
@@ -2029,7 +2029,7 @@ const InventoryReport = () => {
                                 textAlign: "right",
                                 fontWeight: "700",
                                 color: "#a855f7"
-                              }}>₹{store.totalValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                              }}>₹{(Number(store.totalValue) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                               <td style={{ 
                                 padding: "16px 20px", 
                                 textAlign: "right",
@@ -2577,7 +2577,7 @@ const InventoryReport = () => {
                                 textAlign: "right",
                                 fontWeight: "700",
                                 color: "#a855f7"
-                              }}>₹{warehouse.totalValue.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                              }}>₹{(Number(warehouse.totalValue) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                               <td style={{ 
                                 padding: "16px 20px", 
                                 textAlign: "right",

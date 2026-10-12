@@ -748,7 +748,7 @@ const SalesReport = () => {
                               fontSize: "20px", 
                               fontWeight: "700",
                               color: payment.color
-                            }}>₹{payment.value.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                            }}>₹{(Number(payment.value) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
                           </div>
                         ))}
                       </div>
@@ -828,7 +828,7 @@ const SalesReport = () => {
                               textAlign: "right",
                               fontWeight: "600",
                               color: "#a855f7"
-                            }}>₹{cat.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                            }}>₹{(Number(cat.amount) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -954,7 +954,7 @@ const SalesReport = () => {
                               fontWeight: "700",
                               color: "#a855f7",
                               fontSize: "16px"
-                            }}>₹{person.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                            }}>₹{(Number(person.amount) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1243,14 +1243,14 @@ const SalesReport = () => {
                               padding: "16px 20px", 
                               textAlign: "right",
                               color: "#6c757d"
-                            }}>₹{item.unitPrice.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                            }}>₹{(Number(item.unitPrice) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                             <td style={{ 
                               padding: "16px 20px", 
                               textAlign: "right", 
                               fontWeight: "700", 
                               color: "#a855f7",
                               fontSize: "15px"
-                            }}>₹{item.totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                            }}>₹{(Number(item.totalAmount) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                             <td style={{ padding: "16px 20px", textAlign: "center" }}>
                               <span style={{ 
                                 padding: "4px 12px", 
@@ -1467,7 +1467,7 @@ const SalesReport = () => {
                               textAlign: "right",
                               fontWeight: "600",
                               color: "#dc3545"
-                            }}>₹{reason.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                            }}>₹{(Number(reason.amount) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1566,7 +1566,7 @@ const SalesReport = () => {
                               textAlign: "right",
                               fontWeight: "600",
                               color: "#dc3545"
-                            }}>₹{ret.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                            }}>₹{(Number(ret.amount) || 0).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
                             <td style={{ 
                               padding: "16px 20px",
                               color: "#6c757d",

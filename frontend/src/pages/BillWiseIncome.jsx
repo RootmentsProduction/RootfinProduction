@@ -1957,13 +1957,13 @@ const DayBookInc = () => {
                                             <div className="flex justify-between items-center py-1">
                                                 <span className="text-[14px] text-gray-600 font-medium">Closing Cash</span>
                                                 <span className="text-[16px] font-bold text-gray-900">
-                                                    {calculatedTotals.totalCash.toLocaleString()}
+                                                    {(Number(calculatedTotals?.totalCash) || 0).toLocaleString()}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between items-center py-1">
                                                 <span className="text-[14px] text-gray-600 font-medium">Physical Cash</span>
                                                 <span className="text-[16px] font-bold text-gray-900">
-                                                    {physicalCash.toLocaleString()}
+                                                    {(Number(physicalCash) || 0).toLocaleString()}
                                                 </span>
                                             </div>
                                             <div className="border-t border-dashed border-gray-300 my-2" />
@@ -1971,7 +1971,7 @@ const DayBookInc = () => {
                                                 <span className="text-[15px] font-bold text-gray-900">Difference</span>
                                                 <span className={`text-[16px] font-bold ${difference !== 0 ? "text-red-500" : "text-gray-900"
                                                     }`}>
-                                                    {difference !== 0 ? difference.toLocaleString() : "0"}
+                                                    {difference !== 0 ? (Number(difference) || 0).toLocaleString() : "0"}
                                                 </span>
                                             </div>
                                         </div>
