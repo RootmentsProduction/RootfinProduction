@@ -250,7 +250,8 @@ export const GetPayment = async (req, res) => {
         // Build query — if LocCode is "all" or omitted, fetch all stores
         const query = { date: { $gte: fromDate, $lte: toDate } };
         if (LocCode && LocCode !== "all") {
-            query.locCode = String(LocCode);
+            const locNum = Number(LocCode);
+            query.locCode = !isNaN(locNum) ? { $in: [String(LocCode), locNum] } : String(LocCode);
         }
 
         // Query transactions based on LocCode and Date Range — exclude binary attachment but include hasAttachment flag
