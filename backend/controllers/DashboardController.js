@@ -306,7 +306,12 @@ export const getDashboardSummary = async (req, res) => {
           sub === "cash to bank" ||
           tp === "money transfer");
 
-      const isExpenseCategory = tp === "expense" || EXPENSE_CATS.has(cat);
+      const isExpenseCategory =
+        tp === "expense" ||
+        EXPENSE_CATS.has(cat) ||
+        EXPENSE_CATS.has(sub) ||
+        isSalesReturn ||
+        isReturnInvoice;
       const cash = Number(t.cash || 0),
         rbl = Number(t.rbl || t.rblRazorPay || 0),
         bank = Number(t.bank || 0),
@@ -316,12 +321,12 @@ export const getDashboardSummary = async (req, res) => {
         // Bank to cash
       } else if (isCashToBank) {
         // Cash to bank
-      } else if (isReturnInvoice || isExpenseCategory) {
+      } else if (isExpenseCategory) {
         eCash += cash;
         eRbl += rbl;
         eBank += bank;
         eUpi += upi;
-      } else if (tp === "income") {
+      } else if (tp === "income" || isShoeOrShirtSale) {
         iCash += cash;
         iRbl += rbl;
         iBank += bank;
@@ -379,20 +384,71 @@ export const getDashboardSummary = async (req, res) => {
       });
       sMgTxns.forEach((t) => {
         const tp = (t.type || "").toLowerCase(),
+          sub = (t.subCategory || "").toLowerCase().trim(),
           cat = (t.category || "").toLowerCase().trim();
         const inv = (t.invoiceNo || "").toUpperCase();
-        const isExp =
+
+        const isShoeOrShirtSale =
+          sub === "shoe sales" ||
+          sub === "shirt sales" ||
+          sub === "mixed sales" ||
+          cat === "shoe sales" ||
+          cat === "shirt sales" ||
+          cat === "mixed sales";
+        const isSalesReturn =
+          sub === "shoe sales return" ||
+          sub === "shirt sales return" ||
+          sub === "mixed sales return" ||
+          cat === "shoe sales return" ||
+          cat === "shirt sales return" ||
+          cat === "mixed sales return";
+        const isReturnInvoice = inv.startsWith("RTN-") || inv.startsWith("RET-");
+
+        // Skip duplicate TWS rental invoices (already counted from TWS booking/rentout API)
+        if (
+          !isShoeOrShirtSale &&
+          !isSalesReturn &&
+          !isReturnInvoice &&
+          (inv.startsWith("INV-") ||
+            inv.startsWith("RTN-") ||
+            inv.startsWith("RET-"))
+        ) {
+          return;
+        }
+
+        // Skip internal transfers
+        const isBankToCash =
+          cat === "bank to cash" ||
+          sub === "bank to cash" ||
+          cat.includes("bank to cash") ||
+          sub.includes("bank to cash") ||
+          cat.includes("cash to branch") ||
+          sub.includes("cash to branch");
+        const isCashToBank =
+          !isBankToCash &&
+          (cat === "bulk amount transfer" ||
+            cat === "cash to bank" ||
+            sub === "bulk amount transfer" ||
+            sub === "cash to bank" ||
+            tp === "money transfer");
+
+        if (isBankToCash || isCashToBank) return;
+
+        const isExpenseCategory =
           tp === "expense" ||
           EXPENSE_CATS.has(cat) ||
-          inv.startsWith("RTN-") ||
-          inv.startsWith("RET-");
-        const amt =
-          Number(t.cash || 0) +
-          Number(t.rbl || t.rblRazorPay || 0) +
-          Number(t.bank || 0) +
-          Number(t.upi || 0);
-        if (isExp) sExp += amt;
-        else if (tp === "income") sInc += amt;
+          EXPENSE_CATS.has(sub) ||
+          isSalesReturn ||
+          isReturnInvoice;
+
+        const cash = Math.abs(Number(t.cash || 0));
+        const rbl = Math.abs(Number(t.rbl || t.rblRazorPay || 0));
+        const bank = Math.abs(Number(t.bank || 0));
+        const upi = Math.abs(Number(t.upi || 0));
+        const amt = cash + rbl + bank + upi;
+
+        if (isExpenseCategory) sExp += amt;
+        else if (tp === "income" || isShoeOrShirtSale) sInc += amt;
       });
 
       let sExpLimit = 0;
