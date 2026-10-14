@@ -496,6 +496,39 @@ const SalesInvoiceDetail = () => {
       const user = getUserInfo();
       const returnTotal = calculateTotalReturnAmountWithTax();
 
+      // Determine return subCategory based on returned items and original invoice
+      let returnSubCategory = "";
+      const returnItemCategories = itemsToReturn
+        .map((item) => (item.itemData?.category || item.category || "").toLowerCase().trim())
+        .filter(Boolean);
+
+      if (returnItemCategories.length > 0) {
+        const hasShoe = returnItemCategories.some((c) => c === "shoe" || c.includes("shoe"));
+        const hasShirt = returnItemCategories.some((c) => c === "shirt" || c.includes("shirt"));
+        if (hasShoe && hasShirt) {
+          returnSubCategory = "mixed sales return";
+        } else if (hasShoe) {
+          returnSubCategory = "shoe sales return";
+        } else if (hasShirt) {
+          returnSubCategory = "shirt sales return";
+        }
+      }
+
+      if (!returnSubCategory) {
+        const origSub = (invoice.subCategory || "").toLowerCase().trim();
+        if (origSub.includes("shoe")) {
+          returnSubCategory = "shoe sales return";
+        } else if (origSub.includes("shirt")) {
+          returnSubCategory = "shirt sales return";
+        } else if (origSub.includes("mixed")) {
+          returnSubCategory = "mixed sales return";
+        } else if (origSub && !origSub.endsWith("return")) {
+          returnSubCategory = `${origSub} return`;
+        } else {
+          returnSubCategory = origSub || "shoe sales return";
+        }
+      }
+
       const returnInvoicePayload = {
         invoiceNumber: `RET-${invoice.invoiceNumber}-${Date.now()}`,
         customer: invoice.customer || invoice.customerName || "Walk-in Customer",
@@ -506,6 +539,7 @@ const SalesInvoiceDetail = () => {
         locCode: invoice.locCode || "",
         salesperson: invoice.salesperson || "",
         category: "Return",
+        subCategory: returnSubCategory,
         originalInvoiceId: invoice._id,
         originalInvoiceNumber: invoice.invoiceNumber,
         notes: `Return for Invoice ${invoice.invoiceNumber}. Reason: ${returnReason}`,

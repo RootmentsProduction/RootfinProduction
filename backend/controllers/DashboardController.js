@@ -83,6 +83,21 @@ const EXPENSE_CATS = new Set([
   "write off",
 ]);
 
+const safeDbQuery = async (fn, fallback) => {
+  try {
+    return await fn();
+  } catch (err) {
+    console.warn("DB query retry on SSL/network error:", err.message);
+    try {
+      await new Promise((r) => setTimeout(r, 200));
+      return await fn();
+    } catch (retryErr) {
+      console.error("DB query failed after retry:", retryErr.message);
+      return fallback;
+    }
+  }
+};
+
 const fetchTwsJson = async (url) => {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(20000) });
@@ -129,28 +144,46 @@ export const getDashboardSummary = async (req, res) => {
       ...twsFlatResults
     ] = await Promise.all([
       // Closing status for dateTo
-      CloseTransaction.find({
-        date: { $gte: startOfDay, $lte: endOfDay },
-      }).lean(),
+      safeDbQuery(
+        () =>
+          CloseTransaction.find({
+            date: { $gte: startOfDay, $lte: endOfDay },
+          }).lean(),
+        []
+      ),
 
       // Pending closures count
-      CloseTransaction.countDocuments({ status: "pending_approval" }),
+      safeDbQuery(
+        () => CloseTransaction.countDocuments({ status: "pending_approval" }),
+        0
+      ),
 
       // Active reorder alerts
-      ReorderAlert.countDocuments({ status: "active" }),
+      safeDbQuery(
+        () => ReorderAlert.countDocuments({ status: "active" }),
+        0
+      ),
 
       // Open purchase orders
-      PurchaseOrder.countDocuments({
-        status: { $nin: ["Closed", "Cancelled", "Received"] },
-      }),
+      safeDbQuery(
+        () =>
+          PurchaseOrder.countDocuments({
+            status: { $nin: ["Closed", "Cancelled", "Received"] },
+          }),
+        0
+      ),
 
       // Expense targets
-      ExpenseTarget.find({}).lean(),
+      safeDbQuery(() => ExpenseTarget.find({}).lean(), []),
 
       // Mongo transactions in date range
-      Transaction.find({
-        date: { $gte: startOfDay, $lte: endOfDay },
-      }).lean(),
+      safeDbQuery(
+        () =>
+          Transaction.find({
+            date: { $gte: startOfDay, $lte: endOfDay },
+          }).lean(),
+        []
+      ),
 
       // TWS Booking, Rentout, Delete for all 20 retail stores
       ...STORE_LOC_CODES.flatMap((lc) => [
@@ -224,14 +257,36 @@ export const getDashboardSummary = async (req, res) => {
       eBank = 0,
       eUpi = 0;
 
+    const storeTotals = {};
+    STORE_LOC_CODES.forEach((lc) => {
+      storeTotals[lc] = {
+        incTotals: { cash: 0, rbl: 0, bank: 0, upi: 0 },
+        retTotals: { cash: 0, rbl: 0, bank: 0, upi: 0 },
+        expTotals: { cash: 0, rbl: 0, bank: 0, upi: 0 },
+        netTotals: { cash: 0, rbl: 0, bank: 0, upi: 0 },
+      };
+    });
+
     STORE_LOC_CODES.forEach((lc) => {
       const sData = twsByStore[lc];
       // Booking -> Income
       sData.booking.forEach((item) => {
-        iCash += Number(item.bookingCashAmount || 0);
-        iRbl += Number(item.rblRazorPay || 0);
-        iBank += Number(item.bookingBankAmount || 0);
-        iUpi += Number(item.bookingUPIAmount || 0);
+        const c = Number(item.bookingCashAmount || 0);
+        const r = Number(item.rblRazorPay || 0);
+        const b = Number(item.bookingBankAmount || 0);
+        const u = Number(item.bookingUPIAmount || 0);
+
+        iCash += c;
+        iRbl += r;
+        iBank += b;
+        iUpi += u;
+
+        if (storeTotals[lc]) {
+          storeTotals[lc].incTotals.cash += c;
+          storeTotals[lc].incTotals.rbl += r;
+          storeTotals[lc].incTotals.bank += b;
+          storeTotals[lc].incTotals.upi += u;
+        }
       });
 
       // RentOut -> Split into Income (Balance Payable) and Returnable Income (Security)
@@ -241,17 +296,34 @@ export const getDashboardSummary = async (req, res) => {
         const balancePayable = Number(item.invoiceAmount || 0) - advance;
         if (security > 0 || item.securityAmount) {
           retCash += security;
+          if (storeTotals[lc]) {
+            storeTotals[lc].retTotals.cash += security;
+          }
         }
         iCash += balancePayable;
+        if (storeTotals[lc]) {
+          storeTotals[lc].incTotals.cash += balancePayable;
+        }
       });
 
       // Cancel -> Expense
       sData.delete.forEach((item) => {
         const rbl = -Math.abs(Number(item.rblRazorPay || 0));
-        eCash += -Math.abs(Number(item.deleteCashAmount || 0));
+        const c = -Math.abs(Number(item.deleteCashAmount || 0));
+        const b = rbl !== 0 ? 0 : -Math.abs(Number(item.deleteBankAmount || 0));
+        const u = rbl !== 0 ? 0 : -Math.abs(Number(item.deleteUPIAmount || 0));
+
+        eCash += c;
         eRbl += rbl;
-        eBank += rbl !== 0 ? 0 : -Math.abs(Number(item.deleteBankAmount || 0));
-        eUpi += rbl !== 0 ? 0 : -Math.abs(Number(item.deleteUPIAmount || 0));
+        eBank += b;
+        eUpi += u;
+
+        if (storeTotals[lc]) {
+          storeTotals[lc].expTotals.cash += Math.abs(c);
+          storeTotals[lc].expTotals.rbl += Math.abs(rbl);
+          storeTotals[lc].expTotals.bank += Math.abs(b);
+          storeTotals[lc].expTotals.upi += Math.abs(u);
+        }
       });
     });
 
@@ -326,11 +398,23 @@ export const getDashboardSummary = async (req, res) => {
         eRbl += rbl;
         eBank += bank;
         eUpi += upi;
+        if (storeTotals[t.locCode]) {
+          storeTotals[t.locCode].expTotals.cash += Math.abs(cash);
+          storeTotals[t.locCode].expTotals.rbl += Math.abs(rbl);
+          storeTotals[t.locCode].expTotals.bank += Math.abs(bank);
+          storeTotals[t.locCode].expTotals.upi += Math.abs(upi);
+        }
       } else if (tp === "income" || isShoeOrShirtSale) {
         iCash += cash;
         iRbl += rbl;
         iBank += bank;
         iUpi += upi;
+        if (storeTotals[t.locCode]) {
+          storeTotals[t.locCode].incTotals.cash += cash;
+          storeTotals[t.locCode].incTotals.rbl += rbl;
+          storeTotals[t.locCode].incTotals.bank += bank;
+          storeTotals[t.locCode].incTotals.upi += upi;
+        }
       }
     });
 
@@ -348,6 +432,16 @@ export const getDashboardSummary = async (req, res) => {
       bank: iBank - Math.abs(eBank),
       upi: iUpi - Math.abs(eUpi),
     };
+
+    STORE_LOC_CODES.forEach((lc) => {
+      const st = storeTotals[lc];
+      st.netTotals = {
+        cash: st.incTotals.cash - st.expTotals.cash,
+        rbl: st.incTotals.rbl - st.expTotals.rbl,
+        bank: st.incTotals.bank - st.expTotals.bank,
+        upi: st.incTotals.upi - st.expTotals.upi,
+      };
+    });
 
     // 6. Chart Data
     const perStoreData = STORE_LOC_CODES.map((lc) => {
@@ -459,6 +553,7 @@ export const getDashboardSummary = async (req, res) => {
         });
 
       return {
+        locCode: lc,
         name: shortName,
         fullName: storeName,
         income: Math.abs(sInc),
@@ -478,6 +573,7 @@ export const getDashboardSummary = async (req, res) => {
       retTotals,
       expTotals,
       netTotals,
+      storeTotals,
       chartData: perStoreData,
     };
 
