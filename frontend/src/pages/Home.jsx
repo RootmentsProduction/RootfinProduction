@@ -32,6 +32,8 @@ const STORE_LIST = [
   { locName: "Z-Perinthalmanna", locCode: "133" },
 ];
 
+const DEPT_CODES = new Set(["759", "102", "101", "858", "103"]);
+
 // ── SKELETON PLACEHOLDERS (Facebook / Progressive style) ──────────────────────
 const CardSkeleton = () => (
   <div className="bg-white p-5 px-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col animate-pulse">
@@ -98,6 +100,12 @@ const QuickOverviewSkeleton = () => (
 );
 
 const Dashboard = ({ isSidebarOpen }) => {
+  const currentUser = JSON.parse(localStorage.getItem("rootfinuser") || "{}");
+  const isAdmin = (currentUser?.power || "").toLowerCase() === "admin";
+  const isClusterManager = (currentUser?.role || "").toLowerCase() === "cluster_manager";
+  const clusterAllowedLocCodes = currentUser?.allowedLocCodes || [];
+  const canSelectStore = isAdmin || isClusterManager || !currentUser?.locCode;
+
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
@@ -109,6 +117,10 @@ const Dashboard = ({ isSidebarOpen }) => {
     d.setDate(d.getDate() - 1);
     return d.toISOString().split('T')[0];
   });
+
+  const [selectedStore, setSelectedStore] = useState("all");
+  const [storeTotals, setStoreTotals] = useState({});
+  const [closuresList, setClosuresList] = useState([]);
 
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [financialLoading, setFinancialLoading] = useState(true);
@@ -152,6 +164,12 @@ const Dashboard = ({ isSidebarOpen }) => {
     }
     return null;
   };
+
+  useEffect(() => {
+    if (!canSelectStore && currentUser?.locCode) {
+      setSelectedStore(currentUser.locCode);
+    }
+  }, []);
 
   useEffect(() => {
     fetchAllDashboardStreams();
@@ -228,8 +246,9 @@ const Dashboard = ({ isSidebarOpen }) => {
         const poList = Array.isArray(poRes) ? poRes : (poRes?.data || []);
         setPurchaseOrders(poList.filter(o => o.status !== "Closed" && o.status !== "Cancelled" && o.status !== "Received").length);
 
-        const closuresList = closuresRes?.data || closuresRes || [];
-        setLateClosures(Array.isArray(closuresList) ? closuresList.length : 0);
+        const closuresListRaw = closuresRes?.data || closuresRes || [];
+        setClosuresList(Array.isArray(closuresListRaw) ? closuresListRaw : []);
+        setLateClosures(Array.isArray(closuresListRaw) ? closuresListRaw.length : 0);
       } catch (e) {
         // Silently handle
       } finally {
@@ -248,6 +267,7 @@ const Dashboard = ({ isSidebarOpen }) => {
           setRetTotals(summaryRes.retTotals || { cash: 0, bank: 0, rbl: 0, upi: 0 });
           setExpTotals(summaryRes.expTotals || { cash: 0, bank: 0, rbl: 0, upi: 0 });
           setNetTotals(summaryRes.netTotals || { cash: 0, bank: 0, rbl: 0, upi: 0 });
+          setStoreTotals(summaryRes.storeTotals || {});
           setChartData(summaryRes.chartData || []);
           setFinancialLoading(false);
           return;
@@ -283,27 +303,60 @@ const Dashboard = ({ isSidebarOpen }) => {
         let retCash = 0, retRbl = 0, retBank = 0, retUpi = 0;
         let eCash = 0, eRbl = 0, eBank = 0, eUpi = 0;
 
+        const storeTotalsFallback = {};
+        STORE_LOC_CODES.forEach(lc => {
+          storeTotalsFallback[lc] = {
+            incTotals: { cash: 0, rbl: 0, bank: 0, upi: 0 },
+            retTotals: { cash: 0, rbl: 0, bank: 0, upi: 0 },
+            expTotals: { cash: 0, rbl: 0, bank: 0, upi: 0 },
+            netTotals: { cash: 0, rbl: 0, bank: 0, upi: 0 },
+          };
+        });
+
         STORE_LOC_CODES.forEach(lc => {
           const sData = twsByStore[lc];
           sData.booking.forEach(item => {
-            iCash += Number(item.bookingCashAmount || 0);
-            iRbl += Number(item.rblRazorPay || 0);
-            iBank += Number(item.bookingBankAmount || 0);
-            iUpi += Number(item.bookingUPIAmount || 0);
+            const c = Number(item.bookingCashAmount || 0);
+            const r = Number(item.rblRazorPay || 0);
+            const b = Number(item.bookingBankAmount || 0);
+            const u = Number(item.bookingUPIAmount || 0);
+
+            iCash += c; iRbl += r; iBank += b; iUpi += u;
+            if (storeTotalsFallback[lc]) {
+              storeTotalsFallback[lc].incTotals.cash += c;
+              storeTotalsFallback[lc].incTotals.rbl += r;
+              storeTotalsFallback[lc].incTotals.bank += b;
+              storeTotalsFallback[lc].incTotals.upi += u;
+            }
           });
           sData.rentout.forEach(item => {
             const security = Number(item.securityAmount || 0);
             const advance = Number(item.advanceAmount || 0);
             const balancePayable = Number(item.invoiceAmount || 0) - advance;
-            if (security > 0 || item.securityAmount) retCash += security;
+            if (security > 0 || item.securityAmount) {
+              retCash += security;
+              if (storeTotalsFallback[lc]) {
+                storeTotalsFallback[lc].retTotals.cash += security;
+              }
+            }
             iCash += balancePayable;
+            if (storeTotalsFallback[lc]) {
+              storeTotalsFallback[lc].incTotals.cash += balancePayable;
+            }
           });
           sData.delete.forEach(item => {
             const rbl = -Math.abs(Number(item.rblRazorPay || 0));
-            eCash += -Math.abs(Number(item.deleteCashAmount || 0));
-            eRbl += rbl;
-            eBank += rbl !== 0 ? 0 : -Math.abs(Number(item.deleteBankAmount || 0));
-            eUpi += rbl !== 0 ? 0 : -Math.abs(Number(item.deleteUPIAmount || 0));
+            const c = -Math.abs(Number(item.deleteCashAmount || 0));
+            const b = rbl !== 0 ? 0 : -Math.abs(Number(item.deleteBankAmount || 0));
+            const u = rbl !== 0 ? 0 : -Math.abs(Number(item.deleteUPIAmount || 0));
+
+            eCash += c; eRbl += rbl; eBank += b; eUpi += u;
+            if (storeTotalsFallback[lc]) {
+              storeTotalsFallback[lc].expTotals.cash += Math.abs(c);
+              storeTotalsFallback[lc].expTotals.rbl += Math.abs(rbl);
+              storeTotalsFallback[lc].expTotals.bank += Math.abs(b);
+              storeTotalsFallback[lc].expTotals.upi += Math.abs(u);
+            }
           });
         });
 
@@ -326,22 +379,45 @@ const Dashboard = ({ isSidebarOpen }) => {
           const isBankToCash = cat === "bank to cash" || sub === "bank to cash" || cat.includes("bank to cash") || sub.includes("bank to cash") || cat.includes("cash to branch") || sub.includes("cash to branch");
           const isCashToBank = !isBankToCash && (cat === "bulk amount transfer" || cat === "cash to bank" || sub === "bulk amount transfer" || sub === "cash to bank" || tp === "money transfer");
 
-          const isExpenseCategory = tp === "expense" || EXPENSE_CATS.has(cat);
+          const isExpenseCategory = tp === "expense" || EXPENSE_CATS.has(cat) || EXPENSE_CATS.has(sub) || isSalesReturn || isReturnInvoice;
           const cash = Number(t.cash || 0), rbl = Number(t.rbl || t.rblRazorPay || 0), bank = Number(t.bank || 0), upi = Number(t.upi || 0);
 
           if (isBankToCash) {}
           else if (isCashToBank) {}
-          else if (isReturnInvoice || isExpenseCategory) {
+          else if (isExpenseCategory) {
             eCash += cash; eRbl += rbl; eBank += bank; eUpi += upi;
-          } else if (tp === "income") {
+            if (storeTotalsFallback[t.locCode]) {
+              storeTotalsFallback[t.locCode].expTotals.cash += Math.abs(cash);
+              storeTotalsFallback[t.locCode].expTotals.rbl += Math.abs(rbl);
+              storeTotalsFallback[t.locCode].expTotals.bank += Math.abs(bank);
+              storeTotalsFallback[t.locCode].expTotals.upi += Math.abs(upi);
+            }
+          } else if (tp === "income" || isShoeOrShirtSale) {
             iCash += cash; iRbl += rbl; iBank += bank; iUpi += upi;
+            if (storeTotalsFallback[t.locCode]) {
+              storeTotalsFallback[t.locCode].incTotals.cash += cash;
+              storeTotalsFallback[t.locCode].incTotals.rbl += rbl;
+              storeTotalsFallback[t.locCode].incTotals.bank += bank;
+              storeTotalsFallback[t.locCode].incTotals.upi += upi;
+            }
           }
+        });
+
+        STORE_LOC_CODES.forEach(lc => {
+          const st = storeTotalsFallback[lc];
+          st.netTotals = {
+            cash: st.incTotals.cash - st.expTotals.cash,
+            rbl: st.incTotals.rbl - st.expTotals.rbl,
+            bank: st.incTotals.bank - st.expTotals.bank,
+            upi: st.incTotals.upi - st.expTotals.upi,
+          };
         });
 
         setIncTotals({ cash: iCash, rbl: iRbl, bank: iBank, upi: iUpi });
         setRetTotals({ cash: retCash, rbl: retRbl, bank: retBank, upi: retUpi });
         setExpTotals({ cash: Math.abs(eCash), rbl: Math.abs(eRbl), bank: Math.abs(eBank), upi: Math.abs(eUpi) });
         setNetTotals({ cash: iCash - Math.abs(eCash), rbl: iRbl - Math.abs(eRbl), bank: iBank - Math.abs(eBank), upi: iUpi - Math.abs(eUpi) });
+        setStoreTotals(storeTotalsFallback);
 
         const getShortName = (name) => {
           const map = {
@@ -377,12 +453,36 @@ const Dashboard = ({ isSidebarOpen }) => {
             sExp += Math.abs(Number(i.deleteCashAmount || 0)) + rbl + bank + upi;
           });
           sMgTxns.forEach(t => {
-            const tp = (t.type || "").toLowerCase(), cat = (t.category || "").toLowerCase().trim();
+            const tp = (t.type || "").toLowerCase(),
+              sub = (t.subCategory || "").toLowerCase().trim(),
+              cat = (t.category || "").toLowerCase().trim();
             const inv = (t.invoiceNo || "").toUpperCase();
-            const isExp = tp === "expense" || EXPENSE_CATS.has(cat) || inv.startsWith("RTN-") || inv.startsWith("RET-");
-            const amt = Number(t.cash || 0) + Number(t.rbl || t.rblRazorPay || 0) + Number(t.bank || 0) + Number(t.upi || 0);
-            if (isExp) sExp += amt;
-            else if (tp === "income") sInc += amt;
+
+            const isShoeOrShirtSale = sub === "shoe sales" || sub === "shirt sales" || sub === "mixed sales"
+              || cat === "shoe sales" || cat === "shirt sales" || cat === "mixed sales";
+            const isSalesReturn = sub === "shoe sales return" || sub === "shirt sales return" || sub === "mixed sales return"
+              || cat === "shoe sales return" || cat === "shirt sales return" || cat === "mixed sales return";
+            const isReturnInvoice = inv.startsWith("RTN-") || inv.startsWith("RET-");
+
+            // Skip duplicate TWS rental invoices (already counted from TWS booking/rentout API)
+            if (!isShoeOrShirtSale && !isSalesReturn && !isReturnInvoice && (inv.startsWith("INV-") || inv.startsWith("RTN-") || inv.startsWith("RET-"))) return;
+
+            // Skip internal transfers
+            const isBankToCash = cat === "bank to cash" || sub === "bank to cash" || cat.includes("bank to cash") || sub.includes("bank to cash") || cat.includes("cash to branch") || sub.includes("cash to branch");
+            const isCashToBank = !isBankToCash && (cat === "bulk amount transfer" || cat === "cash to bank" || sub === "bulk amount transfer" || sub === "cash to bank" || tp === "money transfer");
+
+            if (isBankToCash || isCashToBank) return;
+
+            const isExpenseCategory = tp === "expense" || EXPENSE_CATS.has(cat) || EXPENSE_CATS.has(sub) || isSalesReturn || isReturnInvoice;
+
+            const cash = Math.abs(Number(t.cash || 0));
+            const rbl = Math.abs(Number(t.rbl || t.rblRazorPay || 0));
+            const bank = Math.abs(Number(t.bank || 0));
+            const upi = Math.abs(Number(t.upi || 0));
+            const amt = cash + rbl + bank + upi;
+
+            if (isExpenseCategory) sExp += amt;
+            else if (tp === "income" || isShoeOrShirtSale) sInc += amt;
           });
 
           let sExpLimit = 0;
@@ -390,7 +490,7 @@ const Dashboard = ({ isSidebarOpen }) => {
             sExpLimit += Number(et.targetAmount || 0);
           });
 
-          return { name: shortName, fullName: storeName, income: Math.abs(sInc), expense: Math.abs(sExp), expenseLimit: sExpLimit };
+          return { locCode: lc, name: shortName, fullName: storeName, income: Math.abs(sInc), expense: Math.abs(sExp), expenseLimit: sExpLimit };
         });
 
         setChartData(perStoreData);
@@ -402,11 +502,39 @@ const Dashboard = ({ isSidebarOpen }) => {
     })();
   };
 
-  const sum = (t) => t.cash + t.rbl + t.bank + t.upi;
-  const incTotal = sum(incTotals);
-  const retTotal = sum(retTotals);
-  const expTotal = sum(expTotals);
-  const netTotal = sum(netTotals);
+  const sum = (t) => (t?.cash || 0) + (t?.rbl || 0) + (t?.bank || 0) + (t?.upi || 0);
+
+  const isStoreFiltered = selectedStore !== "all" && storeTotals[selectedStore];
+  const activeIncTotals = isStoreFiltered ? storeTotals[selectedStore].incTotals : incTotals;
+  const activeRetTotals = isStoreFiltered ? storeTotals[selectedStore].retTotals : retTotals;
+  const activeExpTotals = isStoreFiltered ? storeTotals[selectedStore].expTotals : expTotals;
+  const activeNetTotals = isStoreFiltered ? storeTotals[selectedStore].netTotals : netTotals;
+
+  const incTotal = sum(activeIncTotals);
+  const retTotal = sum(activeRetTotals);
+  const expTotal = sum(activeExpTotals);
+  const netTotal = sum(activeNetTotals);
+
+  const activeLateClosures = selectedStore !== "all"
+    ? closuresList.filter(c => c.locCode === selectedStore).length
+    : lateClosures;
+
+  const retailStores = STORE_LIST.filter(s => !DEPT_CODES.has(s.locCode)).filter(s => {
+    if (isClusterManager && clusterAllowedLocCodes.length > 0) {
+      return clusterAllowedLocCodes.includes(s.locCode);
+    }
+    if (!canSelectStore && currentUser?.locCode) {
+      return s.locCode === currentUser.locCode;
+    }
+    return true;
+  });
+
+  const selectedStoreObj = STORE_LIST.find(s => s.locCode === selectedStore);
+  const selectedStoreName = selectedStoreObj ? selectedStoreObj.locName : "All Stores";
+
+  const displayedChartData = selectedStore !== "all"
+    ? chartData.filter(d => d.locCode === selectedStore)
+    : chartData;
 
   let displayedDaybooks = [];
   if (daybookFilter === "All") displayedDaybooks = [
@@ -417,6 +545,10 @@ const Dashboard = ({ isSidebarOpen }) => {
   if (daybookFilter === "Closed") displayedDaybooks = closedStores.map(s => ({ ...s, st: 'closed' }));
   if (daybookFilter === "Not Closed") displayedDaybooks = pendingStores.map(s => ({ ...s, st: 'not' }));
   if (daybookFilter === "Late Closed") displayedDaybooks = lateClosedStores.map(s => ({ ...s, st: 'late' }));
+
+  if (selectedStore !== "all") {
+    displayedDaybooks = displayedDaybooks.filter(s => s.locCode === selectedStore);
+  }
 
   const isAnyLoading = overviewLoading || financialLoading;
 
@@ -432,6 +564,26 @@ const Dashboard = ({ isSidebarOpen }) => {
             <p className="text-[14px] text-gray-400 mt-1">Overview of your stores and financial metrics</p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
+            {/* Store Filter */}
+            <div className="flex flex-col">
+              <p className="text-[12px] text-gray-400 mb-2">Store</p>
+              <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 h-[42px]" style={{ minWidth: '180px' }}>
+                <select
+                  id="dashboard-store-filter"
+                  value={selectedStore}
+                  onChange={e => setSelectedStore(e.target.value)}
+                  className="w-full text-[14px] font-medium text-gray-800 bg-transparent outline-none cursor-pointer"
+                  disabled={!canSelectStore && retailStores.length <= 1}
+                >
+                  {canSelectStore && <option value="all">All Stores</option>}
+                  {retailStores.map(s => (
+                    <option key={s.locCode} value={s.locCode}>
+                      {s.locName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             {/* From Date */}
             <div className="flex flex-col">
               <p className="text-[12px] text-gray-400 mb-2">From Date</p>
@@ -485,7 +637,21 @@ const Dashboard = ({ isSidebarOpen }) => {
             {/* Chart */}
             <div className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col relative" style={{ height: '420px' }}>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 z-10">
-                <h3 className="text-[16px] font-bold text-gray-900 tracking-tight">Store Financial Ranking</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-[16px] font-bold text-gray-900 tracking-tight">Store Financial Ranking</h3>
+                  {selectedStore !== "all" && (
+                    <span className="text-[12px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                      <span>{selectedStoreName}</span>
+                      <button 
+                        onClick={() => setSelectedStore("all")}
+                        className="text-purple-400 hover:text-purple-700 ml-1 font-bold text-xs"
+                        title="Reset to All Stores"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  )}
+                </div>
                 <div className="flex p-1 bg-[#f9fafb] rounded-full border border-gray-100 text-[12px] font-medium">
                   <button onClick={() => setChartFilter("Income")} className={`flex items-center px-4 py-1.5 rounded-full transition-all ${chartFilter === "Income" ? "bg-white shadow-sm font-bold text-gray-800" : "text-gray-500 hover:text-gray-700"}`}>
                     <span className="w-2.5 h-2.5 rounded-full bg-[#dfbbfd] mr-1.5"></span> Income
@@ -507,12 +673,12 @@ const Dashboard = ({ isSidebarOpen }) => {
                   </div>
 
                   <div className="flex-1 w-full overflow-x-auto relative pb-3 custom-horizontal-scrollbar z-10">
-                    <div className="min-w-[1000px] h-full">
+                    <div className={`${selectedStore !== "all" ? "w-full max-w-sm sm:max-w-md mx-auto" : "min-w-[1000px]"} h-full`}>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart 
-                          data={chartData.map(d => {
-                            if (chartFilter === "Income") return { name: d.name, fullName: d.fullName, income: d.income };
-                            if (chartFilter === "Expense") return { name: d.name, fullName: d.fullName, expense: d.expense, expenseLimit: d.expenseLimit };
+                          data={displayedChartData.map(d => {
+                            if (chartFilter === "Income") return { locCode: d.locCode, name: d.name, fullName: d.fullName, income: d.income };
+                            if (chartFilter === "Expense") return { locCode: d.locCode, name: d.name, fullName: d.fullName, expense: d.expense, expenseLimit: d.expenseLimit };
                             return d;
                           })} 
                           margin={{ top: 10, right: 0, left: -20, bottom: 0 }} 
@@ -522,11 +688,33 @@ const Dashboard = ({ isSidebarOpen }) => {
                           <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280', fontWeight: 500 }} tickFormatter={(v) => v >= 1000 ? `${v / 1000}K` : v} />
                           <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f3f4f6', opacity: 0.4 }} />
                           {chartFilter === "Income" && (
-                            <Bar dataKey="income" fill="#dfbbfd" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                            <Bar 
+                              dataKey="income" 
+                              fill="#dfbbfd" 
+                              radius={[4, 4, 0, 0]} 
+                              maxBarSize={selectedStore === "all" ? 40 : 64}
+                              cursor={selectedStore === "all" ? "pointer" : "default"}
+                              onClick={(entry) => {
+                                if (selectedStore === "all" && entry?.locCode) {
+                                  setSelectedStore(entry.locCode);
+                                }
+                              }}
+                            />
                           )}
                           {chartFilter === "Expense" && (
-                            <Bar dataKey="expense" fill="#6a1e9c" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                              {chartData.map((entry, index) => (
+                            <Bar 
+                              dataKey="expense" 
+                              fill="#6a1e9c" 
+                              radius={[4, 4, 0, 0]} 
+                              maxBarSize={selectedStore === "all" ? 40 : 64}
+                              cursor={selectedStore === "all" ? "pointer" : "default"}
+                              onClick={(entry) => {
+                                if (selectedStore === "all" && entry?.locCode) {
+                                  setSelectedStore(entry.locCode);
+                                }
+                              }}
+                            >
+                              {displayedChartData.map((entry, index) => (
                                 <Cell 
                                   key={`cell-${index}`} 
                                   fill={entry.expenseLimit > 0 && entry.expense > entry.expenseLimit ? "#ef4444" : "#6a1e9c"} 
@@ -535,7 +723,7 @@ const Dashboard = ({ isSidebarOpen }) => {
                             </Bar>
                           )}
                           {chartFilter === "Expense" && (
-                            <Bar dataKey="expenseLimit" name="Expense Limit" fill="#fb923c" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                            <Bar dataKey="expenseLimit" name="Expense Limit" fill="#fb923c" radius={[4, 4, 0, 0]} maxBarSize={selectedStore === "all" ? 40 : 64} />
                           )}
                         </BarChart>
                       </ResponsiveContainer>
@@ -624,11 +812,11 @@ const Dashboard = ({ isSidebarOpen }) => {
                       {/* Late Closure */}
                       <div className="flex justify-between items-center pb-2">
                         <div>
-                          <h4 className={`text-[28px] leading-none font-bold tracking-tight mb-1 ${lateClosures > 0 ? 'text-[#ef4444]' : 'text-gray-900'}`}>{lateClosures}</h4>
+                          <h4 className={`text-[28px] leading-none font-bold tracking-tight mb-1 ${activeLateClosures > 0 ? 'text-[#ef4444]' : 'text-gray-900'}`}>{activeLateClosures}</h4>
                           <p className="text-[13px] font-medium text-gray-500">Late Closure</p>
                         </div>
-                        <span className={`text-[11px] font-bold px-3 py-1.5 rounded-md ${lateClosures > 0 ? 'bg-[#fee2e2] text-[#ef4444]' : 'bg-[#dcfce7] text-[#16a34a]'}`}>
-                          {lateClosures > 0 ? 'Action Needed' : 'All Good'}
+                        <span className={`text-[11px] font-bold px-3 py-1.5 rounded-md ${activeLateClosures > 0 ? 'bg-[#fee2e2] text-[#ef4444]' : 'bg-[#dcfce7] text-[#16a34a]'}`}>
+                          {activeLateClosures > 0 ? 'Action Needed' : 'All Good'}
                         </span>
                       </div>
                     </div>
@@ -658,15 +846,15 @@ const Dashboard = ({ isSidebarOpen }) => {
                 <div className="pt-4 space-y-2.5">
                   <div className="flex justify-between items-center">
                     <span className="text-[13px] font-medium text-gray-500">Cash :</span>
-                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(incTotals.cash)}</strong>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(activeIncTotals.cash)}</strong>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[13px] font-medium text-gray-500">Card/Bank :</span>
-                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(incTotals.bank + incTotals.rbl)}</strong>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(activeIncTotals.bank + activeIncTotals.rbl)}</strong>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[13px] font-medium text-gray-500">UPI :</span>
-                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(incTotals.upi)}</strong>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(activeIncTotals.upi)}</strong>
                   </div>
                 </div>
               </div>
@@ -707,15 +895,15 @@ const Dashboard = ({ isSidebarOpen }) => {
                 <div className="pt-4 space-y-2.5">
                   <div className="flex justify-between items-center">
                     <span className="text-[13px] font-medium text-gray-500">Cash :</span>
-                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(Math.abs(expTotals.cash))}</strong>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(Math.abs(activeExpTotals.cash))}</strong>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[13px] font-medium text-gray-500">Card/Bank :</span>
-                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(Math.abs(expTotals.bank + expTotals.rbl))}</strong>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(Math.abs(activeExpTotals.bank + activeExpTotals.rbl))}</strong>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[13px] font-medium text-gray-500">UPI :</span>
-                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(Math.abs(expTotals.upi))}</strong>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(Math.abs(activeExpTotals.upi))}</strong>
                   </div>
                 </div>
               </div>
@@ -737,15 +925,15 @@ const Dashboard = ({ isSidebarOpen }) => {
                 <div className="pt-4 space-y-2.5">
                   <div className="flex justify-between items-center">
                     <span className="text-[13px] font-medium text-gray-500">Cash :</span>
-                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(netTotals.cash)}</strong>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(activeNetTotals.cash)}</strong>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[13px] font-medium text-gray-500">Card/Bank :</span>
-                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(netTotals.bank + netTotals.rbl)}</strong>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(activeNetTotals.bank + activeNetTotals.rbl)}</strong>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[13px] font-medium text-gray-500">UPI :</span>
-                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(netTotals.upi)}</strong>
+                    <strong className="text-[#1f2937] text-[13px] font-bold">{fmt(activeNetTotals.upi)}</strong>
                   </div>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 // backend/cont/TransactionController.js
 import Transaction from "../model/Transaction.js";
+import SalesInvoice from "../model/SalesInvoice.js";
 import CloseTransaction from "../model/Closing.js";
 import { propagateCashDiff } from "../utils/cashPropagation.js";
 import { getCachedData, setCachedData, generateCacheKey } from "../utils/cacheManager.js";
@@ -250,7 +251,8 @@ export const GetPayment = async (req, res) => {
         // Build query — if LocCode is "all" or omitted, fetch all stores
         const query = { date: { $gte: fromDate, $lte: toDate } };
         if (LocCode && LocCode !== "all") {
-            query.locCode = String(LocCode);
+            const locNum = Number(LocCode);
+            query.locCode = !isNaN(locNum) ? { $in: [String(LocCode), locNum] } : String(LocCode);
         }
 
         // Query transactions based on LocCode and Date Range — exclude binary attachment but include hasAttachment flag
@@ -270,6 +272,79 @@ export const GetPayment = async (req, res) => {
           { $project: { attachment: 0 } },
           { $sort: { date: -1 } }
         ]).option({ allowDiskUse: true });
+
+        // ✅ Resolve return subCategories if missing or "General"
+        const returnTxWithoutSubCat = transactions.filter(t => {
+          const isReturn = (t.type || "").toLowerCase() === "return" ||
+                           (t.category || "").toLowerCase() === "return" ||
+                           /^(RTN-|RET-)/i.test(t.invoiceNo || "");
+          const sub = (t.subCategory || "").toLowerCase().trim();
+          return isReturn && (!sub || sub === "general" || sub === "return" || sub === "general return");
+        });
+
+        if (returnTxWithoutSubCat.length > 0) {
+          try {
+            const invNumbers = returnTxWithoutSubCat.map(t => t.invoiceNo).filter(Boolean);
+            const matchingInvoices = await SalesInvoice.find({ invoiceNumber: { $in: invNumbers } }).lean();
+            const invMap = new Map(matchingInvoices.map(i => [i.invoiceNumber, i]));
+
+            const origInvNumbers = matchingInvoices.map(i => i.originalInvoiceNumber).filter(Boolean);
+            const origInvoices = origInvNumbers.length > 0
+              ? await SalesInvoice.find({ invoiceNumber: { $in: origInvNumbers } }).lean()
+              : [];
+            const origInvMap = new Map(origInvoices.map(i => [i.invoiceNumber, i]));
+
+            for (const t of returnTxWithoutSubCat) {
+              const inv = invMap.get(t.invoiceNo);
+              const orig = inv ? origInvMap.get(inv.originalInvoiceNumber) : null;
+              let resolvedSub = "";
+
+              if (inv?.lineItems?.length > 0) {
+                const cats = inv.lineItems
+                  .map(li => (li.itemData?.category || li.category || "").toLowerCase().trim())
+                  .filter(Boolean);
+                const hasShoe = cats.some(c => c === "shoe" || c.includes("shoe"));
+                const hasShirt = cats.some(c => c === "shirt" || c.includes("shirt"));
+                if (hasShoe && hasShirt) resolvedSub = "mixed sales return";
+                else if (hasShoe) resolvedSub = "shoe sales return";
+                else if (hasShirt) resolvedSub = "shirt sales return";
+              }
+
+              if (!resolvedSub && orig?.subCategory) {
+                const os = orig.subCategory.toLowerCase().trim();
+                if (os.includes("shoe")) resolvedSub = "shoe sales return";
+                else if (os.includes("shirt")) resolvedSub = "shirt sales return";
+                else if (os.includes("mixed")) resolvedSub = "mixed sales return";
+                else if (!os.endsWith("return")) resolvedSub = `${os} return`;
+                else resolvedSub = os;
+              }
+
+              if (!resolvedSub && inv?.subCategory) {
+                const is = inv.subCategory.toLowerCase().trim();
+                if (is && is !== "general" && is !== "return") {
+                  if (is.includes("shoe")) resolvedSub = "shoe sales return";
+                  else if (is.includes("shirt")) resolvedSub = "shirt sales return";
+                  else if (is.includes("mixed")) resolvedSub = "mixed sales return";
+                  else if (!is.endsWith("return")) resolvedSub = `${is} return`;
+                  else resolvedSub = is;
+                }
+              }
+
+              if (!resolvedSub) {
+                const text = `${t.remark || ""} ${t.invoiceNo || ""}`.toLowerCase();
+                if (text.includes("shoe")) resolvedSub = "shoe sales return";
+                else if (text.includes("shirt")) resolvedSub = "shirt sales return";
+              }
+
+              if (resolvedSub) {
+                t.subCategory = resolvedSub;
+                Transaction.updateOne({ _id: t._id }, { $set: { subCategory: resolvedSub } }).catch(() => {});
+              }
+            }
+          } catch (lookupErr) {
+            console.error("Error resolving return subCategories:", lookupErr);
+          }
+        }
 
         console.log(`   Found ${transactions.length} transactions`);
         

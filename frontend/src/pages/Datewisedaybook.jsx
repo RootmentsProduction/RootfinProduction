@@ -171,6 +171,7 @@ const subCategories = [
   { value: "promotion_services", label: "Promotion / Services" },
   { value: "shoe sales return", label: "Shoe Sales Return" },
   { value: "shirt sales return", label: "Shirt Sales Return" },
+  { value: "mixed sales return", label: "Mixed Sales Return" },
   // Income sub-categories
   { value: "compensation from cancellation", label: "Compensation from Cancellation" },
   { value: "compensation from product damage", label: "Compensation from Product Damage" },
@@ -206,8 +207,40 @@ const CATEGORY_LABEL_MAP = {
   "promotion_services": "Promotion / Services",
   "shoe sales return": "Shoe Sales Return",
   "shirt sales return": "Shirt Sales Return",
+  "mixed sales return": "Mixed Sales Return",
+  "shoe sales": "Shoe Sales",
+  "shirt sales": "Shirt Sales",
+  "mixed sales": "Mixed Sales",
 };
 const getCatLabel = (val) => CATEGORY_LABEL_MAP[(val || "").toLowerCase().trim()] || val;
+
+// Resolves subcategory label for transactions, ensuring Shoe/Shirt sales returns are correctly labeled
+const resolveSubCategoryLabel = (rawSubCat, isReturn, tx = {}) => {
+  const lower = (rawSubCat || "").toLowerCase().trim();
+  if (isReturn) {
+    if (lower === "shoe sales return" || lower === "shoe sales" || lower === "shoe") {
+      return "Shoe Sales Return";
+    }
+    if (lower === "shirt sales return" || lower === "shirt sales" || lower === "shirt") {
+      return "Shirt Sales Return";
+    }
+    if (lower === "mixed sales return" || lower === "mixed sales" || lower === "mixed") {
+      return "Mixed Sales Return";
+    }
+    if (lower === "general" || lower === "general return" || lower === "return" || !lower) {
+      const text = `${tx?.remark || ""} ${tx?.remarks || ""} ${tx?.invoiceNo || ""} ${tx?.customerName || ""}`.toLowerCase();
+      if (text.includes("shoe")) return "Shoe Sales Return";
+      if (text.includes("shirt")) return "Shirt Sales Return";
+      if (text.includes("mixed")) return "Mixed Sales Return";
+      return rawSubCat ? (rawSubCat.toLowerCase().endsWith("return") ? rawSubCat : `${rawSubCat} Return`) : "Return";
+    }
+    if (rawSubCat && !lower.endsWith("return")) {
+      return `${rawSubCat} Return`;
+    }
+    return getCatLabel(rawSubCat);
+  }
+  return rawSubCat;
+};
 
 const AllLoation = [
   { locName: "Z-Edapally1", locCode: "144" },
@@ -494,18 +527,22 @@ const Datewisedaybook = () => {
 
       const mongoList = (mongoData?.data || []).filter(tx => !tx.isAdminLevel).map(tx => {
         const isReturn = (tx.type || "").toLowerCase() === "return" || (tx.subCategory || "").toLowerCase().includes("return") || (tx.category || "").toLowerCase().includes("return") || (tx.invoiceNo || "").toUpperCase().startsWith("RTN-") || (tx.invoiceNo || "").toUpperCase().startsWith("RET-");
+        const rawCash = Number(tx.cash || 0);
+        const rawRbl = Number(tx.rbl || tx.rblRazorPay || 0);
+        const rawBank = Number(tx.bank || 0);
+        const rawUpi = Number(tx.upi || 0);
+        const cash = isReturn ? -Math.abs(rawCash) : rawCash;
+        const rbl = isReturn ? -Math.abs(rawRbl) : rawRbl;
+        const bank = isReturn ? -Math.abs(rawBank) : rawBank;
+        const upi = isReturn ? -Math.abs(rawUpi) : rawUpi;
+        const total = cash + rbl + bank + upi;
         const sign = isReturn ? -1 : 1;
-        const cash = Number(tx.cash || 0) * sign;
-        const rbl = Number(tx.rbl || tx.rblRazorPay || 0) * sign; // ✅ Added RBL mapping
-        const bank = Number(tx.bank || 0) * sign;
-        const upi = Number(tx.upi || 0) * sign;
         const isExpense = (tx.type || "").toLowerCase() === "expense";
         const rawSubCat = isExpense ? (tx.category || tx.subCategory || "") : (tx.subCategory || tx.category || "");
-        const subCatLabel = isReturn && rawSubCat && !rawSubCat.toLowerCase().endsWith("return")
-          ? `${rawSubCat} Return`
-          : rawSubCat;
+        const subCatLabel = resolveSubCategoryLabel(rawSubCat, isReturn, tx);
         const discountAmount = Number(tx.discountAmount || 0);
         const billValue = (Number(tx.billValue || tx.subTotal || 0) || (Number(tx.invoiceAmount || Math.abs(Number(tx.amount) || 0)) + discountAmount)) * sign;
+        const finalAmount = isReturn ? -Math.abs(Number(tx.totalTransaction ?? tx.amount ?? total)) : Number(tx.totalTransaction ?? tx.amount ?? total);
         return {
           ...tx,
           date: tx.date?.split("T")[0] || "",
@@ -518,11 +555,11 @@ const Datewisedaybook = () => {
           discountAmount: discountAmount,
           billValue: billValue,
           cash: cash,
-          rbl: rbl, // ✅ Added RBL
+          rbl: rbl,
           bank: bank,
           upi: upi,
-          amount: Number(tx.totalTransaction ?? tx.amount ?? (Math.abs(Number(tx.cash)) + Math.abs(rbl) + Math.abs(Number(tx.bank)) + Math.abs(Number(tx.upi)))) * sign,
-          totalTransaction: Number(tx.totalTransaction ?? tx.amount ?? (Math.abs(Number(tx.cash)) + Math.abs(rbl) + Math.abs(Number(tx.bank)) + Math.abs(Number(tx.upi)))) * sign,
+          amount: finalAmount,
+          totalTransaction: finalAmount,
           source: "mongo",
           _id: tx._id,
           hasAttachment: !!(tx.hasAttachment || tx.attachment?.filename || tx.attachment?.data || (typeof tx.attachment === "string" && tx.attachment)),
@@ -814,19 +851,22 @@ const Datewisedaybook = () => {
 
           const mList = (mongoData?.data || []).filter(tx => !tx.isAdminLevel).map(tx => {
             const isReturn = (tx.type || "").toLowerCase() === "return" || (tx.subCategory || "").toLowerCase().includes("return") || (tx.category || "").toLowerCase().includes("return") || (tx.invoiceNo || "").toUpperCase().startsWith("RTN-") || (tx.invoiceNo || "").toUpperCase().startsWith("RET-");
-            const sign = isReturn ? -1 : 1;
-            const cash = Number(tx.cash || 0) * sign;
-            const rbl = Number(tx.rbl || tx.rblRazorPay || 0) * sign;
-            const bank = Number(tx.bank || 0) * sign;
-            const upi = Number(tx.upi || 0) * sign;
+            const rawCash = Number(tx.cash || 0);
+            const rawRbl = Number(tx.rbl || tx.rblRazorPay || 0);
+            const rawBank = Number(tx.bank || 0);
+            const rawUpi = Number(tx.upi || 0);
+            const cash = isReturn ? -Math.abs(rawCash) : rawCash;
+            const rbl = isReturn ? -Math.abs(rawRbl) : rawRbl;
+            const bank = isReturn ? -Math.abs(rawBank) : rawBank;
+            const upi = isReturn ? -Math.abs(rawUpi) : rawUpi;
             const total = cash + rbl + bank + upi;
+            const sign = isReturn ? -1 : 1;
             const isExpense = (tx.type || "").toLowerCase() === "expense";
             const rawSubCat = isExpense ? (tx.category || tx.subCategory || "") : (tx.subCategory || tx.category || "");
-            const subCatLabel = isReturn && rawSubCat && !rawSubCat.toLowerCase().endsWith("return")
-              ? `${rawSubCat} Return`
-              : rawSubCat;
+            const subCatLabel = resolveSubCategoryLabel(rawSubCat, isReturn, tx);
             const discountAmount = Number(tx.discountAmount || 0);
             const billValue = (Number(tx.billValue || tx.subTotal || 0) || (Number(tx.invoiceAmount || Math.abs(Number(tx.amount) || 0)) + discountAmount)) * sign;
+            const finalAmount = isReturn ? -Math.abs(Number(tx.totalTransaction ?? tx.amount ?? total)) : Number(tx.totalTransaction ?? tx.amount ?? total);
             return {
               ...tx,
               date: tx.date?.split("T")[0] || "",
@@ -839,8 +879,8 @@ const Datewisedaybook = () => {
               discountAmount: discountAmount,
               billValue: billValue,
               cash, rbl, bank, upi,
-              amount: total,
-              totalTransaction: total,
+              amount: finalAmount,
+              totalTransaction: finalAmount,
               source: "mongo",
               branch: locName,
               _id: tx._id,
@@ -1063,19 +1103,23 @@ const Datewisedaybook = () => {
       });
 
       const mongoList = (mongoData?.data || []).filter(tx => !tx.isAdminLevel).map(tx => {
-        const cash = Number(tx.cash || 0);
-        const rbl = Number(tx.rbl || tx.rblRazorPay || 0); // ✅ Added RBL mapping
-        const bank = Number(tx.bank || 0);
-        const upi = Number(tx.upi || 0);
-        const total = cash + rbl + bank + upi; // ✅ Added rbl
-        const isReturn = (tx.type || "").toLowerCase() === "return";
+        const isReturn = (tx.type || "").toLowerCase() === "return" || (tx.subCategory || "").toLowerCase().includes("return") || (tx.category || "").toLowerCase().includes("return") || (tx.invoiceNo || "").toUpperCase().startsWith("RTN-") || (tx.invoiceNo || "").toUpperCase().startsWith("RET-");
+        const rawCash = Number(tx.cash || 0);
+        const rawRbl = Number(tx.rbl || tx.rblRazorPay || 0);
+        const rawBank = Number(tx.bank || 0);
+        const rawUpi = Number(tx.upi || 0);
+        const cash = isReturn ? -Math.abs(rawCash) : rawCash;
+        const rbl = isReturn ? -Math.abs(rawRbl) : rawRbl;
+        const bank = isReturn ? -Math.abs(rawBank) : rawBank;
+        const upi = isReturn ? -Math.abs(rawUpi) : rawUpi;
+        const total = cash + rbl + bank + upi;
+        const sign = isReturn ? -1 : 1;
         const isExpense = (tx.type || "").toLowerCase() === "expense";
         const rawSubCat = isExpense ? (tx.category || tx.subCategory || "") : (tx.subCategory || tx.category || "");
-        const subCatLabel = isReturn && rawSubCat && !rawSubCat.toLowerCase().endsWith("return")
-          ? `${rawSubCat} Return`
-          : rawSubCat;
+        const subCatLabel = resolveSubCategoryLabel(rawSubCat, isReturn, tx);
         const discountAmount = Number(tx.discountAmount || 0);
-        const billValue = Number(tx.billValue || tx.subTotal || (Number(tx.invoiceAmount || Math.abs(Number(tx.amount) || 0)) + discountAmount));
+        const billValue = (Number(tx.billValue || tx.subTotal || 0) || (Number(tx.invoiceAmount || Math.abs(Number(tx.amount) || 0)) + discountAmount)) * sign;
+        const finalAmount = isReturn ? -Math.abs(Number(tx.totalTransaction ?? tx.amount ?? total)) : Number(tx.totalTransaction ?? tx.amount ?? total);
         return {
           ...tx,
           date: tx.date?.split("T")[0] || "",
@@ -1087,12 +1131,12 @@ const Datewisedaybook = () => {
           remark: (() => { const r = tx.remark || tx.remarks || ""; return (r === "Thanks for your business." || r === "Thanks for your business") ? "" : r; })(),
           discountAmount: discountAmount,
           billValue: billValue,
-          cash: Number(tx.cash),
-          rbl: rbl, // ✅ Added RBL
-          bank: Number(tx.bank),
-          upi: Number(tx.upi),
-          amount: total, // ✅ Added rbl
-          totalTransaction: total, // ✅ Added rbl
+          cash: cash,
+          rbl: rbl,
+          bank: bank,
+          upi: upi,
+          amount: finalAmount,
+          totalTransaction: finalAmount,
           source: "mongo",
           _id: tx._id,
           hasAttachment: !!(tx.hasAttachment || tx.attachment?.filename || tx.attachment?.data || (typeof tx.attachment === "string" && tx.attachment)),
@@ -2002,16 +2046,10 @@ const Datewisedaybook = () => {
                         ...(((currentusers.power || '').toLowerCase() === 'admin' || isFinancialHead)
                           ? [{ value: "multi", label: "Multiple Branches" }]
                           : []),
-                        ...(((currentusers.power || '').toLowerCase() === 'admin' || (currentusers.role || '').toLowerCase() === 'superadmin' || isClusterManager || isFinancialHead) ? [{
-                          label: "Stores",
-                          options: (isClusterManager
-                            ? AllLoation.filter(s => clusterAllowedLocCodes.includes(s.locCode) && !DEPT_LOC_CODES.includes(s.locCode))
-                            : AllLoation.filter(s => !DEPT_LOC_CODES.includes(s.locCode))
-                          ).map(s => ({ value: s.locCode, label: s.locName }))
-                        }] : []),
                         ...(showAction ? [{
                           label: "Departments",
                           options: [
+                            { value: "all_departments", label: "All Departments" },
                             ...AllLoation.filter(s => DEPT_LOC_CODES.includes(s.locCode))
                               .map(s => ({ value: s.locCode, label: s.locName })),
                             { value: "Office", label: "Office" },
@@ -2071,77 +2109,6 @@ const Datewisedaybook = () => {
                       }}
                     />
                   </div>
-
-                  {/* Department (Only visible to admin / superadmin / cluster manager / financial head) */}
-                  {(showAction || isClusterManager || isFinancialHead || isAdminOrSuperAdmin) && (
-                    <div className="flex flex-col">
-                      <label className="text-sm font-medium text-gray-500 mb-1.5">Department</label>
-                      <Select
-                        placeholder="Select Department"
-                        options={[
-                          ...(((currentusers.power || '').toLowerCase() === 'admin' || isClusterManager || isFinancialHead)
-                            ? [{ value: "all_departments", label: "All Departments" }]
-                            : []),
-                          { value: "759", label: "HEAD OFFICE01" },
-                          { value: "Office", label: "Office" },
-                          { value: "Production", label: "Production" },
-                          { value: "858", label: "Warehouse" },
-                          { value: "103", label: "WAREHOUSE" }
-                        ]}
-                        value={[
-                          { value: "all_departments", label: "All Departments" },
-                          { value: "759", label: "HEAD OFFICE01" },
-                          { value: "Office", label: "Office" },
-                          { value: "Production", label: "Production" },
-                          { value: "858", label: "Warehouse" },
-                          { value: "103", label: "WAREHOUSE" }
-                        ].find(o => o.value === selectedDepartment) || null}
-                        onChange={(opt) => {
-                            if (opt) setSelectedDepartment(opt.value);
-                        }}
-                        menuPortalTarget={document.body}
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            minHeight: '42px',
-                            height: '42px',
-                            border: state.isFocused ? '1px solid #9B48D7' : '1px solid #e5e7eb',
-                            borderRadius: '0px',
-                            boxShadow: state.isFocused ? '0 0 0 2px rgba(155,72,215,0.15)' : 'none',
-                            fontSize: '0.875rem',
-                            backgroundColor: 'white',
-                            transition: 'all 0.15s ease',
-                            '&:hover': { border: '1px solid #cbd5e1' }
-                          }),
-                          valueContainer: base => ({ ...base, height: '40px', padding: '0 12px' }),
-                          input: base => ({ ...base, margin: '0px', padding: '0px' }),
-                          indicatorSeparator: base => ({ ...base, display: 'none' }),
-                          dropdownIndicator: (base, state) => ({
-                            ...base,
-                            padding: '0 12px',
-                            transition: 'transform 0.2s ease',
-                            transform: state.selectProps.menuIsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                            color: '#6b7280'
-                          }),
-                          menu: base => ({
-                            ...base,
-                            zIndex: 9999,
-                            borderRadius: '0px',
-                            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
-                            animation: 'dropdownOpen 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                            overflow: 'hidden'
-                          }),
-                          option: (base, state) => ({
-                            ...base,
-                            fontSize: '0.875rem',
-                            backgroundColor: state.isSelected ? '#9B48D7' : state.isFocused ? '#f5f3ff' : 'white',
-                            color: state.isSelected ? 'white' : '#374151',
-                            cursor: 'pointer',
-                          }),
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {/* Bottom Row Actions: Fetch Data on Left, Export & Print on Right */}

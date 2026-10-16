@@ -75,6 +75,7 @@ const EXPENSE_CATEGORIES = new Set([
   "tds late fee","trademark expense","cost of goods sold","labor","materials","subcontractor",
   "job costing","transportation expenses","freight expenses","dry cleaning expenses",
   "uniform stitching","alteration expense","raw materials / dress accessories","raw materials and consumables",
+  "raw materials","raw material","raw materials & consumables","raw materials/dress accessories",
   "freight charges","product expenses","labour charges - warehouse","uniform expense","food expense",
   "refund"
 ]);
@@ -215,7 +216,11 @@ const CATEGORY_LABEL_MAP = {
   "uniform stitching":                  "Uniform Stitching",
   "alteration expense":                 "Alteration Expense",
   "raw materials / dress accessories":  "Raw Materials / Dress Accessories",
+  "raw materials/dress accessories":    "Raw Materials / Dress Accessories",
   "raw materials and consumables":      "Raw Materials And Consumables",
+  "raw materials & consumables":        "Raw Materials And Consumables",
+  "raw materials":                      "Raw Materials And Consumables",
+  "raw material":                       "Raw Materials And Consumables",
   "product expenses":                   "Product expenses",
   "uniform expense":                    "Uniform Expense",
   "food expense":                       "Food expense"
@@ -243,7 +248,7 @@ export default function IncomeExpenseReport() {
   const [toDate, setToDate] = useState(today());
   const [filterCategories, setFilterCategories] = useState([]);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [selectedStore, setSelectedStore] = useState("all_stores");
+  const [selectedStore, setSelectedStore] = useState("all");
   
   const [incomeRows, setIncomeRows] = useState([]);
   const [returnableIncomeRows, setReturnableIncomeRows] = useState([]);
@@ -308,8 +313,11 @@ export default function IncomeExpenseReport() {
         locCodesToFetch = ALL_DEPTS_ONLY;
       }
 
+      // TWS rental endpoints only exist for retail stores, so exclude department codes
+      const twsLocCodes = locCodesToFetch.filter(lc => !DEPT_LOC_CODES.includes(lc));
+
       const twsResults = await Promise.all(
-        locCodesToFetch.map(lc => Promise.all([
+        twsLocCodes.map(lc => Promise.all([
           safeFetch(`${TWS_BASE}/GetBookingList?LocCode=${lc}&DateFrom=${fromDate}&DateTo=${toDate}`),
           safeFetch(`${TWS_BASE}/GetRentoutList?LocCode=${lc}&DateFrom=${fromDate}&DateTo=${toDate}`),
           safeFetch(`${TWS_BASE}/GetReturnList?LocCode=${lc}&DateFrom=${fromDate}&DateTo=${toDate}`),
@@ -318,13 +326,17 @@ export default function IncomeExpenseReport() {
       );
 
       const withLoc = (rows, lc) => (rows || []).map((item) => ({ ...item, locCode: item.locCode || lc }));
-      const bookingData = { dataSet: { data: twsResults.flatMap((r, i) => withLoc(r[0]?.dataSet?.data, locCodesToFetch[i])) } };
-      const rentoutData = { dataSet: { data: twsResults.flatMap((r, i) => withLoc(r[1]?.dataSet?.data, locCodesToFetch[i])) } };
-      const returnData  = { dataSet: { data: twsResults.flatMap((r, i) => withLoc(r[2]?.dataSet?.data, locCodesToFetch[i])) } };
-      const cancelData  = { dataSet: { data: twsResults.flatMap((r, i) => withLoc(r[3]?.dataSet?.data, locCodesToFetch[i])) } };
+      const bookingData = { dataSet: { data: twsResults.flatMap((r, i) => withLoc(r[0]?.dataSet?.data, twsLocCodes[i])) } };
+      const rentoutData = { dataSet: { data: twsResults.flatMap((r, i) => withLoc(r[1]?.dataSet?.data, twsLocCodes[i])) } };
+      const returnData  = { dataSet: { data: twsResults.flatMap((r, i) => withLoc(r[2]?.dataSet?.data, twsLocCodes[i])) } };
+      const cancelData  = { dataSet: { data: twsResults.flatMap((r, i) => withLoc(r[3]?.dataSet?.data, twsLocCodes[i])) } };
 
       let mongoJson = { data: [] };
-      if (locCode === "all" || locCode === "all_stores" || locCode === "all_depts" || (isClusterManager && (!locCode || locCode === "all"))) {
+      if (locCode === "all" || (!locCode && canSelectStore)) {
+        // Query LocCode=all directly for 100% complete Mongo transactions across all stores & departments
+        const mongoRes = await fetch(`${API}/user/Getpayment?LocCode=all&DateFrom=${fromDate}&DateTo=${toDate}`);
+        mongoJson = mongoRes.ok ? await mongoRes.json() : {};
+      } else if (locCode === "all_stores" || locCode === "all_depts" || (isClusterManager && (!locCode || locCode === "all"))) {
         const mongoResults = await Promise.all(
           locCodesToFetch.map(lc =>
             fetch(`${API}/user/Getpayment?LocCode=${lc}&DateFrom=${fromDate}&DateTo=${toDate}`)
@@ -446,13 +458,21 @@ export default function IncomeExpenseReport() {
         const isSalesReturn = sub === "shoe sales return" || sub === "shirt sales return" || sub === "mixed sales return"
           || cat === "shoe sales return" || cat === "shirt sales return" || cat === "mixed sales return";
         const isReturnInvoice = inv.startsWith("RTN-") || inv.startsWith("RET-");
-        if (!isShoeOrShirtSale && !isSalesReturn && !isReturnInvoice && (inv.startsWith("INV-") || inv.startsWith("RTN-") || inv.startsWith("RET-"))) return;
+
+        const rmk = (t.remark || t.remarks || "").toUpperCase();
+        const expType = (t.expenseType || "").toLowerCase().trim();
+        const isDirectOrIndirect = expType === "direct" || expType === "indirect" ||
+          rmk.includes("[DIRECT") || rmk.includes("[INDIRECT") ||
+          tp === "direct" || tp === "indirect" || tp === "direct expense" || tp === "indirect expense";
 
         const isBankToCash = cat === "bank to cash" || sub === "bank to cash" || cat.includes("bank to cash") || sub.includes("bank to cash") || cat.includes("cash to branch") || sub.includes("cash to branch");
         const isCashToBank = !isBankToCash && (cat === "bulk amount transfer" || cat === "cash to bank" || sub === "bulk amount transfer" || sub === "cash to bank" || tp === "money transfer");
         
-        const isExpenseCategory = tp === "expense" || EXPENSE_CATEGORIES.has(cat);
+        const isExpenseCategory = tp === "expense" || isDirectOrIndirect || EXPENSE_CATEGORIES.has(cat);
         const isActualExpense = isExpenseCategory || isReturnInvoice;
+
+        // Skip non-expense and non-shoe/shirt sales that have INV- or RTN- prefix
+        if (!isActualExpense && !isShoeOrShirtSale && !isSalesReturn && !isReturnInvoice && (inv.startsWith("INV-") || inv.startsWith("RTN-") || inv.startsWith("RET-"))) return;
 
         if (isExpenseCategory && t.isAdminLevel && !userCanSeeAdminExpenses) {
           return; // Skip admin level expenses for non-admins
@@ -1114,6 +1134,7 @@ export default function IncomeExpenseReport() {
                   onChange={(e) => setSelectedStore(e.target.value)}
                   className="w-full h-[38px] bg-white border border-gray-300 rounded-lg px-3 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all shadow-sm cursor-pointer"
                 >
+                  <option value="all">All (Stores &amp; Departments)</option>
                   <option value="all_stores">{isClusterManager ? "All My Stores" : "All Stores"}</option>
                   {(isAdmin || isSuperAdmin || isFinancialHead) && (
                     <option value="all_depts">All Departments</option>
@@ -1151,7 +1172,7 @@ export default function IncomeExpenseReport() {
                   setFromDate(firstOfMonth());
                   setToDate(today());
                   setFilterCategories([]);
-                  setSelectedStore("all_stores");
+                  setSelectedStore("all");
                   setIncomeRows([]);
                   setReturnableIncomeRows([]);
                   setExpenseRows([]);

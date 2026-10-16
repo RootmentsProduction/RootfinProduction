@@ -85,6 +85,43 @@ export const createSalesInvoice = async (req, res) => {
       invoicePrefix = "RET-";
     }
 
+    // For return invoices, ensure subCategory is properly set (e.g., "shoe sales return", "shirt sales return")
+    if (categoryLower === "return" || invoicePrefix === "RTN-" || invoicePrefix === "RET-") {
+      let resolvedReturnSubCat = (invoiceData.subCategory || "").trim();
+      if (!resolvedReturnSubCat || resolvedReturnSubCat.toLowerCase() === "general" || resolvedReturnSubCat.toLowerCase() === "return") {
+        resolvedReturnSubCat = "";
+        // Check lineItems
+        if (invoiceData.lineItems?.length > 0) {
+          const cats = invoiceData.lineItems
+            .map(li => (li.itemData?.category || li.category || "").toLowerCase().trim())
+            .filter(Boolean);
+          const hasShoe = cats.some(c => c === "shoe" || c.includes("shoe"));
+          const hasShirt = cats.some(c => c === "shirt" || c.includes("shirt"));
+          if (hasShoe && hasShirt) resolvedReturnSubCat = "mixed sales return";
+          else if (hasShoe) resolvedReturnSubCat = "shoe sales return";
+          else if (hasShirt) resolvedReturnSubCat = "shirt sales return";
+        }
+        // If not found from line items, check original invoice
+        if (!resolvedReturnSubCat && (invoiceData.originalInvoiceNumber || invoiceData.originalInvoiceId)) {
+          const origQuery = invoiceData.originalInvoiceId
+            ? { _id: invoiceData.originalInvoiceId }
+            : { invoiceNumber: invoiceData.originalInvoiceNumber };
+          const origInv = await SalesInvoice.findOne(origQuery).lean();
+          if (origInv?.subCategory) {
+            const os = origInv.subCategory.toLowerCase().trim();
+            if (os.includes("shoe")) resolvedReturnSubCat = "shoe sales return";
+            else if (os.includes("shirt")) resolvedReturnSubCat = "shirt sales return";
+            else if (os.includes("mixed")) resolvedReturnSubCat = "mixed sales return";
+            else if (!os.endsWith("return")) resolvedReturnSubCat = `${os} return`;
+            else resolvedReturnSubCat = os;
+          }
+        }
+        invoiceData.subCategory = resolvedReturnSubCat || "shoe sales return";
+      } else if (!resolvedReturnSubCat.toLowerCase().endsWith("return")) {
+        invoiceData.subCategory = `${resolvedReturnSubCat} return`;
+      }
+    }
+
     // Run user lookup and invoice number generation in parallel
     const [user, existingInvoice] = await Promise.all([
       User.findOne({ email: userId }).lean(),
@@ -203,12 +240,49 @@ const createFinancialTransaction = async (invoice) => {
     console.log(`📍 Creating transaction with locCode: "${locCode}" (from invoice.locCode: "${invoice.locCode}")`);
     console.log(`📅 Transaction date: ${invoice.invoiceDate}`);
     
+    // Resolve subCategory properly, especially for return invoices
+    const isReturn = (invoice.category || "").toLowerCase() === "return" ||
+                     (invoice.invoiceNumber || "").startsWith("RTN-") ||
+                     (invoice.invoiceNumber || "").startsWith("RET-");
+
+    let subCategory = (invoice.subCategory || "").trim();
+    if (isReturn && (!subCategory || subCategory.toLowerCase() === "general" || subCategory.toLowerCase() === "return")) {
+      subCategory = "";
+      if (invoice.lineItems?.length > 0) {
+        const cats = invoice.lineItems
+          .map(li => (li.itemData?.category || li.category || "").toLowerCase().trim())
+          .filter(Boolean);
+        const hasShoe = cats.some(c => c === "shoe" || c.includes("shoe"));
+        const hasShirt = cats.some(c => c === "shirt" || c.includes("shirt"));
+        if (hasShoe && hasShirt) subCategory = "mixed sales return";
+        else if (hasShoe) subCategory = "shoe sales return";
+        else if (hasShirt) subCategory = "shirt sales return";
+      }
+      if (!subCategory && (invoice.originalInvoiceNumber || invoice.originalInvoiceId)) {
+        const origQuery = invoice.originalInvoiceId
+          ? { _id: invoice.originalInvoiceId }
+          : { invoiceNumber: invoice.originalInvoiceNumber };
+        const origInv = await SalesInvoice.findOne(origQuery).lean();
+        if (origInv?.subCategory) {
+          const os = origInv.subCategory.toLowerCase().trim();
+          if (os.includes("shoe")) subCategory = "shoe sales return";
+          else if (os.includes("shirt")) subCategory = "shirt sales return";
+          else if (os.includes("mixed")) subCategory = "mixed sales return";
+          else if (!os.endsWith("return")) subCategory = `${os} return`;
+          else subCategory = os;
+        }
+      }
+      if (!subCategory) subCategory = "shoe sales return";
+    } else if (!subCategory) {
+      subCategory = "General";
+    }
+
     // Create financial transaction entry
     const transactionData = {
       type: transactionType, // Use selected category as transaction type
       invoiceNo: invoice.invoiceNumber,
       category: invoice.category || "Sales", // Use invoice category for transaction category
-      subCategory: invoice.subCategory || "General", // Use invoice subCategory for transaction subCategory
+      subCategory: subCategory,
       remark: invoice.remark || invoice.customerNotes || invoice.subject || `Invoice for ${invoice.customer}`, // Use actual remarks from invoice
       billValue: parseFloat(invoice.subTotal || invoice.finalTotal || 0), // subTotal = before discount (bill value)
       discountAmount: parseFloat(invoice.discountAmount || 0), // discount applied
@@ -266,11 +340,48 @@ const updateFinancialTransaction = async (invoice) => {
     // Get location code from invoice or use existing
     const locCode = invoice.locCode || existingTransaction.locCode || "001";
     
+    // Resolve subCategory properly, especially for return invoices
+    const isReturn = (invoice.category || "").toLowerCase() === "return" ||
+                     (invoice.invoiceNumber || "").startsWith("RTN-") ||
+                     (invoice.invoiceNumber || "").startsWith("RET-");
+
+    let subCategory = (invoice.subCategory || "").trim();
+    if (isReturn && (!subCategory || subCategory.toLowerCase() === "general" || subCategory.toLowerCase() === "return")) {
+      subCategory = "";
+      if (invoice.lineItems?.length > 0) {
+        const cats = invoice.lineItems
+          .map(li => (li.itemData?.category || li.category || "").toLowerCase().trim())
+          .filter(Boolean);
+        const hasShoe = cats.some(c => c === "shoe" || c.includes("shoe"));
+        const hasShirt = cats.some(c => c === "shirt" || c.includes("shirt"));
+        if (hasShoe && hasShirt) subCategory = "mixed sales return";
+        else if (hasShoe) subCategory = "shoe sales return";
+        else if (hasShirt) subCategory = "shirt sales return";
+      }
+      if (!subCategory && (invoice.originalInvoiceNumber || invoice.originalInvoiceId)) {
+        const origQuery = invoice.originalInvoiceId
+          ? { _id: invoice.originalInvoiceId }
+          : { invoiceNumber: invoice.originalInvoiceNumber };
+        const origInv = await SalesInvoice.findOne(origQuery).lean();
+        if (origInv?.subCategory) {
+          const os = origInv.subCategory.toLowerCase().trim();
+          if (os.includes("shoe")) subCategory = "shoe sales return";
+          else if (os.includes("shirt")) subCategory = "shirt sales return";
+          else if (os.includes("mixed")) subCategory = "mixed sales return";
+          else if (!os.endsWith("return")) subCategory = `${os} return`;
+          else subCategory = os;
+        }
+      }
+      if (!subCategory) subCategory = existingTransaction.subCategory || "shoe sales return";
+    } else if (!subCategory) {
+      subCategory = existingTransaction.subCategory || "General";
+    }
+
     // Update transaction data
     const updateData = {
       type: transactionType,
       category: invoice.category || "Sales",
-      subCategory: invoice.subCategory || "General",
+      subCategory: subCategory,
       remark: invoice.remark || invoice.customerNotes || invoice.subject || `Invoice for ${invoice.customer}`,
       billValue: parseFloat(invoice.subTotal || invoice.finalTotal || 0), // subTotal = pre-discount bill value
       discountAmount: parseFloat(invoice.discountAmount || 0),
