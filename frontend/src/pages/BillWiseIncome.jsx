@@ -52,6 +52,7 @@ const AllLoation = [
     { locName: "G.Kalpetta", locCode: "717" },
     { locName: "G.Kannur", locCode: "716" },
     { locName: "G.MG Road", locCode: "718" },
+    { locName: "Dappr Squad", locCode: "555" },
     { locName: "WAREHOUSE", locCode: "103" }
 ];
 

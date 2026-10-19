@@ -27,6 +27,7 @@ const STORES = [
   { value: "717", label: "G.Kalpetta" },
   { value: "716", label: "G.Kannur" },
   { value: "718", label: "G.MG Road" },
+  { value: "555", label: "Dappr Squad" },
 ];
 
 const SalesByGroupReport = () => {

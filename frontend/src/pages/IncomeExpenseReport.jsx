@@ -18,6 +18,7 @@ const firstOfMonth = () => {
 };
 
 const STORE_LIST = [
+  { locName: "Dappr Squad",      locCode: "555" },
   { locName: "G-Edappal",        locCode: "707" },
   { locName: "G-Edappally",      locCode: "702" },
   { locName: "G-Kalpetta",       locCode: "717" },
@@ -691,7 +692,7 @@ export default function IncomeExpenseReport() {
   const toggleExpand  = (key) => setExpanded(p => ({ ...p, [key]: !p[key] }));
 
   const getBranchName = (lc) => {
-    const store = STORE_LIST.find(s => s.locCode === String(lc));
+    const store = STORE_LIST.find(s => s.locCode === String(lc) || s.locName.toLowerCase() === String(lc).toLowerCase());
     return store ? store.locName : (lc || "-");
   };
 
